@@ -16,15 +16,18 @@ using namespace Lengine;
          
         if (ImGui::Button(camera.isFixed ? "Fix Camera: ON" : "Fix Camera: OFF"))
             camera.isFixed = !camera.isFixed;
+
+        ImGui::SameLine();
         if (ImGui::Button("Fullscreen Mode"))
             viewportFullscreen = true;
+
+        ImGui::Separator();
 
         ImVec2 avail = ImGui::GetContentRegionAvail();
         m_ViewportSize = { avail.x, avail.y };
         m_ViewportPos = ImGui::GetWindowPos();
 
-        m_Focused = ImGui::IsWindowFocused();
-        m_Hovered = ImGui::IsWindowHovered();
+       
 
 
 
@@ -49,7 +52,8 @@ using namespace Lengine;
              ImVec2(0, 1),
              ImVec2(1, 0)
          );
-
+         m_Focused = ImGui::IsItemFocused();
+         m_Hovered = ImGui::IsItemHovered();
          ImVec2 imagePos = ImGui::GetItemRectMin();
          ImVec2 mousePos = ImGui::GetMousePos();
   

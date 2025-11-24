@@ -5,7 +5,7 @@ using namespace Lengine;
 void ImGuiLayer::init(SDL_Window* window, SDL_GLContext glContext) {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGuiIO& io = ImGui::GetIO(); 
 
     
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -28,7 +28,6 @@ void ImGuiLayer::shutdown() {
 
 void ImGuiLayer::processEvent(const SDL_Event& event) {
     ImGui_ImplSDL2_ProcessEvent(&event);
-
     switch (event.type) {
     case SDL_QUIT:
         isRunning = false;

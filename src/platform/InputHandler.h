@@ -24,11 +24,7 @@ namespace Lengine {
 		}
 
 		void handleInputs(ImGuiLayer& imguiLayer, EditorLayer& editorLayer);
-		
-		void processEvents(const SDL_Event& event);
-		void moveEntity(glm::vec2 mouseCooords);
-
-	private:
+	
 		Camera3d& camera;
 		InputManager& inputManager;
 		Scene& scene;
@@ -58,8 +54,9 @@ namespace Lengine {
 		int lastMouseX = 0;
 		int lastMouseY = 0;
 
-		void handleMouseResponse();
-		void handleKeyboardResponse();
+	private:
+		
+
 
 	};
 }
