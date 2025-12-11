@@ -2,85 +2,91 @@
 using namespace Lengine;
 SceneHierarchyPanel::SceneHierarchyPanel(
     Camera3d& cam,
-    Scene& scn,
+    SceneManager& scnMgr,
     AssetManager& assetMgr,
     Entity* selectedEntity
 )
     :
     camera(cam),
-    scene(scn),
+    sceneManager(scnMgr),
     assetManager(assetMgr),
     m_SelectedEntity(selectedEntity)
 {
 }
 
 void SceneHierarchyPanel::OnImGuiRender() {
-    
-    // Delete queued entities
-    while (!deletedEntityQueue.empty()) {
-        scene.removeEntity(deletedEntityQueue.front());
-        deletedEntityQueue.pop();
-    }
-    
     ImGui::Begin("Hierarchy");
 
-   
+    auto& allScenes = sceneManager.getScenes();
+    Scene* activeScene = sceneManager.getActiveScene();
 
-    ImGui::Separator();
-    bool sceneOpen = ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_DefaultOpen);
-    static bool openModelPopup = false;
-    // Right-click popup on Scene node
-    if (ImGui::BeginPopupContextItem("SceneContextMenu")) {
-        if (ImGui::MenuItem("Add Entity")) {
-            ImGui::OpenPopup("Add New Entity");
-            openModelPopup = true;
-        }
-        
-        if (ImGui::MenuItem("Save")) {
-            assetManager.saveScene(scene, "../TestGameFolder/scenes" );
-        }
-        ImGui::EndPopup();
-        
-    }
-    if (openModelPopup)
+    // Root node
+    if (ImGui::TreeNodeEx("Scenes", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        for (Scene* scene : allScenes)
         {
-            ImGui::OpenPopup("Add New Entity");
-            openModelPopup = false;
-        }
-    createNewModel();
+            // Highlight active scene
+            ImGuiTreeNodeFlags flags =
+                (scene == activeScene ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+            bool sceneOpen = ImGui::TreeNodeEx(
+                scene->getName().c_str(),
+                flags | ImGuiTreeNodeFlags_OpenOnArrow
+            );
 
-    if (sceneOpen) {
-        for (auto& entity : scene.getEntities()) {
+            // --- RIGHT CLICK MENU FOR SCENE ---
+            if (ImGui::BeginPopupContextItem(scene->getName().c_str()))
+            {
+                if (ImGui::MenuItem("Set Active"))
+                    sceneManager.setActiveScene(scene);
 
-            bool isSelected = entity->isSelected;
+                if (ImGui::MenuItem("Save Scene"))
+                    assetManager.saveScene(*scene, "../TestGameFolder/scenes");
 
-            if (ImGui::Selectable(entity->getName().c_str(), isSelected)) {
-
-                // Unselect all other entities
-                for (auto& other : scene.getEntities())
-                    other->isSelected = false;
-
-                // Select this entity
-                entity->isSelected = true;
-            }
-
-            if (ImGui::BeginPopupContextItem(entity->getName().c_str())) {
-                if (ImGui::MenuItem("Delete")) {
-                    deletedEntityQueue.push(entity->getName());
-                    entity->isSelected = false;
-                }
-
-                
+                if (ImGui::MenuItem("Add Entity") && scene == activeScene)
+                    ImGui::OpenPopup("Add New Entity");
 
                 ImGui::EndPopup();
             }
+
+            // --- ENTITIES UNDER THAT SCENE ---
+            if (sceneOpen && scene == activeScene)
+            {
+                for (auto& entity : scene->getEntities())
+                {
+                    bool isSelected = entity->isSelected;
+
+                    if (ImGui::Selectable(entity->getName().c_str(), isSelected))
+                    {
+                        // deselect all entities in activeScene
+                        for (auto& e : activeScene->getEntities())
+                            e->isSelected = false;
+
+                        entity->isSelected = true;
+                    }
+
+                    if (ImGui::BeginPopupContextItem(entity->getName().c_str()))
+                    {
+                        if (ImGui::MenuItem("Delete"))
+                        {
+                            deletedEntityQueue.push(entity->getName());
+                            entity->isSelected = false;
+                        }
+                        ImGui::EndPopup();
+                    }
+                }
+                ImGui::TreePop();
+            }
         }
+
         ImGui::TreePop();
     }
 
-    ImGui::End();
+    // Modal for new entity creation
+    createNewModel();
 
+    ImGui::End();
 }
+
 
 
 
@@ -97,7 +103,7 @@ void SceneHierarchyPanel::createNewModel() {
         {
             if (strlen(EntityName) > 0) {
 
-                scene.createEntity(
+                activeScene->createEntity(
                     EntityName,
                     UUID(0)                   
                 );

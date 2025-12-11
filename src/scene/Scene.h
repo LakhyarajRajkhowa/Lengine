@@ -7,6 +7,10 @@
 namespace Lengine {
     class Scene {
     public:
+        
+        Scene(const std::string& n, UUID sID)
+            : name(n), sceneID(sID) {
+        }
   
         Entity* createEntity(
             const std::string& name,
@@ -25,8 +29,12 @@ namespace Lengine {
 
         bool showBoundingSphere = false;
         const std::string& getName() const { return name; }
+        std::string getName() { return name; }
+        UUID getUUID() const { return sceneID; }
+
     private:
-        std::string name = "scene1";
+        std::string name;
+        UUID sceneID;
         std::vector<std::unique_ptr<Entity>> entities;
 
     };

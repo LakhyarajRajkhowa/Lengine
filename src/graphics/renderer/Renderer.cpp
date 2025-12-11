@@ -6,7 +6,7 @@ using namespace Lengine;
 void Renderer::renderScene(const Scene& scene, Camera3d& camera, AssetManager& assetManager ) {
     const auto& entities = scene.getEntities();
     const Entity* sun = scene.getEntityByName("sun");
-
+    
     if (!sun) lightPos = glm::vec3(10, 10, 10);
     else lightPos = sun->getTransform().position;
 

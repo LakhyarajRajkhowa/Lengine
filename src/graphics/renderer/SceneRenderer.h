@@ -7,12 +7,21 @@
 #include "../resources/fileLoader.h"
 
 
+
 namespace Lengine {
 	class SceneRenderer {
 	public:
-		SceneRenderer(Camera3d& cam, Scene& scn, AssetManager& assetmgr) :
-			camera(cam), scene(scn), assetManager(assetmgr),
-			gizmoRenderer(assetmgr, scn, cam) {
+		SceneRenderer(
+			Camera3d& cam,
+			SceneManager& scnMgr,
+			AssetManager& assetmgr
+		) :
+			camera(cam),
+			sceneManager(scnMgr),
+			assetManager(assetmgr),
+			gizmoRenderer(assetmgr,scnMgr, cam)
+			
+		{
 		}
 
 		void init();
@@ -24,14 +33,13 @@ namespace Lengine {
 
 	private:
 		Camera3d& camera;
-		Scene& scene;
+		SceneManager& sceneManager;
 		AssetManager& assetManager;
 		GizmoRenderer gizmoRenderer;
 
-		std::vector<GLSLProgram> shaders;
-		GLSLProgram defaultShader;
-		Model defaultModel;
-
+		
+		Scene* activeScene;
+		
 
 	};
 }

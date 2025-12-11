@@ -3,14 +3,13 @@
 namespace Lengine {
 
 	GraphicsEngine::GraphicsEngine() :
-		sceneRenderer(camera, scene, assetManager),
-		inputHandler(camera, inputManager, scene, window, isRunning),
-		UI(assetManager, scene, sceneRenderer.renderer),
+		sceneRenderer(camera,  sceneManager, assetManager),
+		inputHandler(camera, inputManager,  window, isRunning),
 		imguiLayer(inputManager, isRunning),
 		assetManager(settings)
 		
 	{
-
+		
 	}
 	void GraphicsEngine::initSettings() {
 		settings.loadSettings();
@@ -36,7 +35,7 @@ namespace Lengine {
 		redirect = new OutputRedirect(logBuffer);
 		editorLayer = new EditorLayer(
 			logBuffer,
-			scene,
+			sceneManager,
 			camera,
 			inputManager,
 			assetManager,

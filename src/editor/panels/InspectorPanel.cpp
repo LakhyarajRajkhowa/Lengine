@@ -2,8 +2,12 @@
 #include "../graphics/renderer/Renderer.h"
 using namespace Lengine;
 
-InspectorPanel::InspectorPanel(Scene& scn, AssetManager& asstMgr, Renderer& rndr) :
-    scene(scn),
+InspectorPanel::InspectorPanel(
+    SceneManager& scnMgr,
+    AssetManager& asstMgr,
+    Renderer& rndr
+) :
+    sceneManager(scnMgr),
     assetManager(asstMgr),
     renderer(rndr)
 {
@@ -14,7 +18,7 @@ void InspectorPanel::OnImGuiRender() {
 
     ImGui::Separator();
 
-    for (auto& entity : scene.getEntities()) {
+    for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
         if (entity->isSelected) {
             selectedEntity = entity.get();
             break;

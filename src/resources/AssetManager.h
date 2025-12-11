@@ -46,6 +46,9 @@ namespace Lengine {
 		Material* getMaterial(const UUID& id);
 
 		void saveScene(const Scene& scene, const std::string& filePath);
+		Scene* createScene(const std::string& name,  const std::string& folderPath);
+		Scene* AssetManager::loadScene(const std::string& filePath);
+
 		void saveModelFile(const UUID& meshUUID);
 
 		GLTexture* getTexture(const std::string& name);

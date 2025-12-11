@@ -2,11 +2,18 @@
 
 #include "../resources/AssetManager.h"
 #include "../scene/Scene.h"
+#include "../scene/SceneManager.h"
 namespace Lengine {
 	class GizmoRenderer {
 	public:
-		GizmoRenderer(AssetManager& asstmgr, Scene& scn, Camera3d& cam) :
-			assetManager(asstmgr), scene(scn), camera(cam)
+		GizmoRenderer(
+			AssetManager& asstmgr,
+			SceneManager& scnMgr,
+			Camera3d& cam
+		) :
+			assetManager(asstmgr),
+			sceneManager(scnMgr),
+			camera(cam)
 		{
 			
 		}
@@ -19,7 +26,7 @@ namespace Lengine {
 
 	private:
 		AssetManager& assetManager;
-		Scene& scene;
+		SceneManager& sceneManager;
 		Camera3d& camera;
 
 		Mesh* gizmoSphere = nullptr;

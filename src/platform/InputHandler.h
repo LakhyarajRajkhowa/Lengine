@@ -16,8 +16,8 @@
 namespace Lengine {
 	class InputHandler {
 	public:
-		InputHandler(Camera3d& cam, InputManager& inputmgr, Scene& scn, Window& win, bool& running) :
-			camera(cam), inputManager(inputmgr), scene(scn), window(win), isRunning(running)
+		InputHandler(Camera3d& cam, InputManager& inputmgr, Window& win, bool& running) :
+			camera(cam), inputManager(inputmgr), window(win), isRunning(running)
 		{
 			fixCam = false;
 			moveMode = false;
@@ -27,7 +27,7 @@ namespace Lengine {
 	
 		Camera3d& camera;
 		InputManager& inputManager;
-		Scene& scene;
+		
 		Window& window;
 		bool& isRunning;
 		bool fixCam;

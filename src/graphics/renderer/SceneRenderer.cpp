@@ -19,18 +19,13 @@ namespace Lengine {
     }
 
     void SceneRenderer::initScene() {
-       
-        scene.createEntity("cube",
-            UUID(3190633498160195690) // uuid of cube
-        );
-        
-        scene.createEntity("sun",
-          UUID(9343755805681254094) // uuid of sphere
-        );
-        
-        scene.getEntityByName("sun")->getTransform().position += glm::vec3(20.0f);
-        
- 
+        activeScene = assetManager.loadScene( "../defaults/scenes/defaultScene.json");
+        sceneManager.getScenes().insert(activeScene);
+        sceneManager.getScenes().insert(assetManager.loadScene("../TestGameFolder/scenes/scene1.json"));
+
+        // temporary active scene logic
+        sceneManager.setActiveScene(activeScene);
+
     }
     void SceneRenderer::renderScene() {
         double ms = ImGui::GetTime();
@@ -42,7 +37,7 @@ namespace Lengine {
         }       
 
         gizmoRenderer.drawGizmoGrid();
-        renderer.renderScene(scene, camera, assetManager);
+        renderer.renderScene(*sceneManager.getActiveScene(), camera, assetManager);
         gizmoRenderer.drawGizmoSpheres();
 
     }

@@ -4,7 +4,7 @@ namespace Lengine {
 
     EditorLayer::EditorLayer(
         LogBuffer& buffer,
-        Scene& scn,
+        SceneManager& scnMgr,
         Camera3d& cam,
         InputManager& inputMgr,
         AssetManager& assetMgr,
@@ -12,14 +12,14 @@ namespace Lengine {
         Renderer& rndr
     )
         :camera(cam),
-        scene(scn),
+        sceneManager(scnMgr),
         inputManager(inputMgr),
         assetManager(assetMgr),
         window(win),
         renderer(rndr),
         viewportPanel(cam),     
-        hierarchyPanel(cam, scn, assetMgr, selectedEntity),
-        inspectorPanel(scn, assetMgr, rndr),
+        hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
+        inspectorPanel(scnMgr, assetMgr, rndr),
         consolePanel(buffer),
         assetPanel("../TestGameFolder/assets", assetMgr)
         
@@ -63,7 +63,7 @@ namespace Lengine {
     void EditorLayer::checkForHoveredEntity(const glm::vec3& rayDir, const glm::vec3& rayOrigin) {
         hoveredEntity = nullptr;
 
-        const auto& entities = scene.getEntities();
+        const auto& entities = sceneManager.getActiveScene()->getEntities();
             float closest = 999999.0f;
 
             for (auto& e : entities) {
@@ -141,13 +141,13 @@ namespace Lengine {
 
         checkForHoveredEntity(rayDir, rayOrigin);
         if (hoveredEntity == nullptr) {
-            for (auto& entity : scene.getEntities()) {
+            for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
                 entity->isSelected = false;
             }
             selectedEntity = nullptr;        
             return;
         }
-        for (auto& other : scene.getEntities()) {
+        for (auto& other : sceneManager.getActiveScene()->getEntities()) {
             other->isSelected = false;
         }
         selectedEntity = hoveredEntity;
@@ -211,6 +211,7 @@ namespace Lengine {
 
 
     void EditorLayer::HandleKeyboardShortcuts(const SDL_Keycode& key) {
+      
 
         if (!selectedEntity) return;
         auto& pos = selectedEntity->getTransform().position;
@@ -229,7 +230,7 @@ namespace Lengine {
         if (inputManager.isKeyPressed(key)) {
             switch (key) {
             case SDLK_x:
-                scene.removeEntity(selectedEntity->getName());
+                sceneManager.getActiveScene()->removeEntity(selectedEntity->getName());
                 selectedEntity = nullptr;
                 break;
             

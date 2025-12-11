@@ -32,9 +32,8 @@ namespace Lengine {
 		Lengine::InputManager inputManager;
 		Lengine::InputHandler inputHandler;
 		Lengine::AssetManager assetManager;
-		Lengine::Scene scene;
+		Lengine::SceneManager sceneManager;
 		Lengine::SceneRenderer sceneRenderer;
-		Lengine::UIRenderer UI;
 
 		ImGuiLayer imguiLayer;
 		EditorLayer* editorLayer = nullptr;

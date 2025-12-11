@@ -8,12 +8,16 @@ namespace Lengine {
 
     class InspectorPanel {
     public:
-        InspectorPanel(Scene& scene, AssetManager& assetManager, Renderer& renderer);
+        InspectorPanel(
+            SceneManager& sceneManager,
+            AssetManager& assetManager,
+            Renderer& renderer
+        );
 
         void OnImGuiRender();
         void DrawEntityInspector(Entity* entity, AssetManager& assets);
     private:
-        Scene& scene;
+        SceneManager& sceneManager;
         AssetManager& assetManager;
         Renderer& renderer;
         Entity* selectedEntity = nullptr;

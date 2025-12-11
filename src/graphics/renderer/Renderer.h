@@ -1,5 +1,6 @@
 #pragma once
 #include "../scene/Scene.h"
+#include "../scene/SceneManager.h"
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/camera/Camera3d.h"
 #include "../resources/TextureCache.h"

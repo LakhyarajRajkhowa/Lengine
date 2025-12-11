@@ -36,7 +36,7 @@ void GizmoRenderer::drawGizmoSpheres() {
     gizmoSphereShader.setMat4("projection", camera.getProjectionMatrix());
     gizmoSphereShader.setVec4("color", glm::vec4(1, 1, 1, 0.1));
 
-    for (auto& e : scene.getEntities()) {
+    for (auto& e : sceneManager.getActiveScene()->getEntities()) {
         // only selected entity will show gizmo sphere
         if(e->isSelected && e->getMeshID())
             for (auto& sm : assetManager.getMesh(e->getMeshID())->subMeshes) {

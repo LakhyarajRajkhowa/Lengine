@@ -6,6 +6,8 @@
 #include "imgui_internal.h"
 
 #include "../scene/Scene.h"
+#include "../scene/SceneManager.h"
+
 #include "../platform/Window.h"
 #include "../editor/panels/ViewportPanel.h"
 #include "../editor/panels/SceneHeirarchyPanel.h"
@@ -23,12 +25,13 @@ namespace Lengine {
     public:
         EditorLayer(
             LogBuffer& buffer,
-            Scene& scene,
+            SceneManager& sceneManager,
             Camera3d& camera,
             InputManager& inputManager,
             AssetManager& assetManager,
             Window& window,
-            Renderer& renderer);
+            Renderer& renderer            
+            );
         ~EditorLayer() = default;
 
         void OnAttach();
@@ -77,7 +80,7 @@ namespace Lengine {
         PerformancePanel performancePanel;
 
         // External engine systems (not owned)
-        Scene& scene;
+        SceneManager& sceneManager;
         Camera3d& camera;
         InputManager& inputManager;
         AssetManager& assetManager;

@@ -217,6 +217,41 @@ void AssetManager::saveModelFile(const UUID& meshUUID)
 
 
 }
+Scene* AssetManager::createScene(const std::string& name, const std::string& folderPath)
+{
+    namespace fs = std::filesystem;
+
+    // Create a new scene with UUID
+    UUID sID;
+    Scene* scene = new Scene(name, sID);
+
+    fs::path dir(folderPath);
+
+    // Ensure folder exists
+    if (!fs::exists(dir))
+        fs::create_directories(dir);
+
+    // File name generation
+    std::string fileName = name + ".json";
+    fs::path finalPath = dir / fileName;
+
+    // --- JSON BUILDING ---
+    json jScene;
+
+    // Order: UUID → Name → Entities
+    jScene["uuid"] = scene->getUUID().toUint64();
+    jScene["name"] = name;
+    jScene["entities"] = json::array();   // empty at creation
+
+    // --- WRITE FILE ---
+    std::ofstream file(finalPath);
+    file << jScene.dump(4);
+
+    std::cout << "Scene \"" << name << "\" created successfully at: "
+        << finalPath.string() << std::endl;
+
+    return scene;
+}
 
 void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 {
@@ -234,6 +269,9 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 
     // --- JSON BUILDING ---
     json jScene;
+    // Add scene UUID
+    jScene["uuid"] = scene.getUUID().toUint64();
+    jScene["name"] = sceneName;
     jScene["entities"] = json::array();
 
     const auto& entities = scene.getEntities();
@@ -265,4 +303,60 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
     // --- SUCCESS MESSAGE ---
     std::cout << "Saved \"" << sceneName << "\" successfully at: "
         << finalPath.string() << std::endl;
+}
+
+Scene* AssetManager::loadScene(const std::string& filePath)
+{
+    namespace fs = std::filesystem;
+
+    if (!fs::exists(filePath)) {
+        std::cerr << "Scene file not found: " << filePath << std::endl;
+        return nullptr;
+    }
+
+    // --- READ FILE ---
+    std::ifstream file(filePath);
+    json jScene;
+    file >> jScene;
+
+    // --- EXTRACT SCENE DATA ---
+   
+
+    std::string sceneName = jScene["name"].get<std::string>();
+    uint64_t sceneUUID = jScene["uuid"].get<uint64_t>();
+
+    Scene* scene = new Scene(sceneName, UUID(sceneUUID));
+
+    // --- LOAD ENTITIES ---
+    auto jEntities = jScene["entities"];
+
+    for (auto& jEntity : jEntities)
+    {
+        std::string entityName = jEntity["name"].get<std::string>();
+
+        // Create entity
+        uint64_t meshID = jEntity["modelID"].get<uint64_t>();
+        Entity* entity = scene->createEntity(entityName, UUID(meshID));
+
+        // Load Transform
+        auto t = jEntity["transform"];
+
+        auto pos = t["position"];
+        auto rot = t["rotation"];
+        auto scl = t["scale"];
+
+        Transform transform;
+        transform.position = { pos[0], pos[1], pos[2] };
+        transform.rotation = { rot[0], rot[1], rot[2] };
+        transform.scale = { scl[0], scl[1], scl[2] };
+
+        entity->setTransform(transform);
+
+       
+    }
+
+    std::cout << "Loaded scene \"" << sceneName
+        << "\" from: " << filePath << std::endl;
+
+    return scene;
 }

@@ -23,7 +23,7 @@ namespace Lengine {
 		UUID getMeshID() const { return meshID; }
 		void setMeshID(const UUID& id) { meshID = id; }
 
-		
+		void setTransform(const Transform& t) { transform = t;  }
 		Transform& getTransform() {
 			return transform;
 		}
