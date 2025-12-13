@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+#include "../logging/LogBuffer.h"
 using namespace Lengine;
 
 
@@ -24,13 +25,13 @@ void Renderer::renderScene(const Scene& scene, Camera3d& camera, AssetManager& a
             Material* material = nullptr;
             GLSLProgram* shader = nullptr;
             
-                material = sm.getMaterial();
+                material = assetManager.getMaterial(entity->getMaterialIDs()[sm.getName()]);
                 shader = material->getShader();
-            
-           
+                                       
             if (!material || !shader) continue;
             shader->use();
 
+            
             // transforms
            
             shader->setMat4("model", model);

@@ -39,10 +39,21 @@ namespace Lengine {
 		UUID importAndLoadMesh(const std::string& name, const std::string& path);
 		Mesh* getMesh(const UUID& id);
 
-		void loadMaterial(const UUID& uuid, const std::string& path);
+		void loadMaterial(
+			const UUID& uuid,
+			const std::string& path,
+			const std::string& vertexShaderPath,
+			const std::string& fragmentShaderPath
+		);
 		UUID getMaterialUUID(const std::string& name);
-		UUID importMaterial(const std::string& path);
-		UUID importAndLoadMaterial(const std::string& name, const std::string& path);
+		UUID importMaterial(
+			const std::string& path);
+		UUID importAndLoadMaterial(
+			const std::string& name,
+			const std::string& path,
+			const std::string& vertexShaderPath,
+			const std::string& fragmentShaderPath
+		);
 		Material* getMaterial(const UUID& id);
 
 		void saveScene(const Scene& scene, const std::string& filePath);
@@ -54,6 +65,7 @@ namespace Lengine {
 		GLTexture* getTexture(const std::string& name);
 		GLTexture* loadTexture(const std::string& name, const std::string& path);
 
+		void linkMaterials(Entity* entity);
 
         GLSLProgram* loadShader(const std::string& name,
             const std::string& vertPath,

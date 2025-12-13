@@ -9,12 +9,15 @@ namespace Lengine {
     public:
         
         Scene(const std::string& n, UUID sID)
-            : name(n), sceneID(sID) {
+            : name(n), sceneID(sID) 
+        {
         }
   
         Entity* createEntity(
             const std::string& name,
-            UUID meshID
+            UUID meshID,
+            UUID entityID = UUID(),
+            EntityType type = EntityType::DefaultObject
         );
 
         const  Entity* getEntityByName(const std::string& name) const;
@@ -24,7 +27,7 @@ namespace Lengine {
         std::vector<std::unique_ptr<Entity>>& Scene::getEntities() {
             return entities;
         }
-        void removeEntity(const std::string& name);
+        void removeEntity(const UUID);
        
 
         bool showBoundingSphere = false;

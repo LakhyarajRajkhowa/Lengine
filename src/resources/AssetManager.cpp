@@ -4,7 +4,18 @@ using namespace Lengine;
 
 void AssetManager::LoadAllMetaFiles(const fs::path& root)
 {
-    loadMaterial(UUID(5485914302357758172), "../assets/Materials/defaultMaterial.mtl");
+    loadMaterial(
+        UUID(5485914302357758172),
+        "../assets/Materials/defaultMaterial.mtl",
+        "../assets/shaders/defaultShader.vert",
+        "../assets/shaders/defaultShader.frag"
+        );
+    loadMaterial(
+        UUID(3324154689191414962),
+        "../assets/Materials/lightSourceMaterial.mtl",
+        "../assets/shaders/lightSource.vert",
+        "../assets/shaders/lightSource.frag"
+    );
 
     if (!fs::exists(root))
         return;
@@ -27,16 +38,19 @@ void AssetManager::LoadAllMetaFiles(const fs::path& root)
         if (assetPath.extension() == ".obj") {
             loadMesh(meta.uuid, assetPath.string());
         }
-        if (assetPath.extension() == ".mtl") {
-            loadMaterial(meta.uuid, assetPath.string());
-        }
+        
     }
 }
 
 
 Mesh* AssetManager::getMesh(const UUID& id) {
-    return meshes[id].get();
+    auto it = meshes.find(id);
+    if (it == meshes.end())
+        return nullptr; 
+
+    return it->second.get();
 }
+
 
 Material* AssetManager::getMaterial(const UUID& id) {
     return materials[id].get();
@@ -69,23 +83,25 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
     Model model;
     model.loadModel(meshName, newPath, ptr);
 
-    
-    for (auto& sm : ptr.get()->subMeshes) {
-        if (!sm.material) {
-            sm.material = getMaterial(UUID(5485914302357758172)); // defaultMaterial UUID
-            
-        }
-    }
+ 
     
     meshes[uuid] = ptr;
 }
-void AssetManager::loadMaterial(const UUID& uuid, const std::string& path)
+
+// put shaders to the material
+void AssetManager::loadMaterial(
+    const UUID& uuid,
+    const std::string& path,
+    const std::string& vertexShaderPath,
+    const std::string& fragmentShaderPath
+)
 {
     std::string materialName = ExtractNameFromPath(path);
+    std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
     UUID id = uuid;
     std::shared_ptr<Material> materialPtr;
-    GLSLProgram* shader = loadShader("default", "../assets/Shaders/defaultShader.vert", "../assets/Shaders/defaultShader.frag");
-    materialPtr = std::make_shared<Material>(shader);
+    GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
+    materialPtr = std::make_shared<Material>(materialName, shader);
     materials[uuid] = materialPtr;
 
    
@@ -127,10 +143,15 @@ UUID AssetManager::importAndLoadMesh(const std::string& name, const std::string&
     loadMesh(id, path);
     return id;
 }
-UUID AssetManager::importAndLoadMaterial(const std::string& name, const std::string& path) {
+UUID AssetManager::importAndLoadMaterial(
+    const std::string& name,
+    const std::string& path,
+    const std::string& vertexShaderPath,
+    const std::string& fragmentShaderPath
+) {
     
     UUID id = importMaterial(path);
-    loadMaterial(id, path);
+    loadMaterial(id, path, vertexShaderPath, fragmentShaderPath);
     return id;
 }
 
@@ -175,7 +196,34 @@ GLTexture* AssetManager::loadTexture(const std::string& name , const std::string
  
 }
 
+// Fill/Initialize the materialsIDs map with { submeshName, UUID(0) }
+void AssetManager::linkMaterials(Entity* entity) {
+    Mesh* m = getMesh(entity->getMeshID());
+    switch (entity->getType()) {
+        case EntityType::DefaultObject:
+            for (auto& sm : m->subMeshes) {
+                // default material
+                entity->getMaterialIDs()[sm.getName()] = UUID(5485914302357758172) ;
+            }
+            break;
+        case EntityType::Light:
+            for (auto& sm : m->subMeshes) {
+                // lightSource material
+                entity->getMaterialIDs()[sm.getName()] = UUID(3324154689191414962) ;
+            }
+            break;
+        case EntityType::Camera:
+            for (auto& sm : m->subMeshes) {
+                // default material
+                entity->getMaterialIDs()[sm.getName()] = UUID(5485914302357758172) ;
+            }
+            break;
 
+    }
+
+    
+
+}
 void AssetManager::saveModelFile(const UUID& meshUUID)
 {
     auto it = meshes.find(meshUUID);
@@ -199,12 +247,6 @@ void AssetManager::saveModelFile(const UUID& meshUUID)
     {
         ModelSubmeshInfo info;
         info.name = sm.getName();
-
-        if (sm.material)
-            info.materialUUID = getMaterialUUID(sm.material->name);
-        else
-            info.materialUUID = UUID::Null;
-
         modelFile.submeshes.push_back(info);
     }
 
@@ -281,8 +323,10 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
         auto entity = entityPtr.get();
         json jEntity;
 
+        jEntity["entityID"] = entity->getID().toUint64();
         jEntity["name"] = entity->getName();
-
+        jEntity["type"] = entity->getType();
+        jEntity["meshID"] = entity->getMeshID().toUint64();
         const auto& transform = entity->getTransform();
 
         jEntity["transform"] = {
@@ -290,8 +334,8 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
             { "rotation", { transform.rotation.x, transform.rotation.y, transform.rotation.z }},
             { "scale",    { transform.scale.x,    transform.scale.y,    transform.scale.z }}
         };
-
-        jEntity["modelID"] = entity->getMeshID().toUint64();
+       
+        
 
         jScene["entities"].push_back(jEntity);
     }
@@ -316,43 +360,84 @@ Scene* AssetManager::loadScene(const std::string& filePath)
 
     // --- READ FILE ---
     std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open scene file: " << filePath << std::endl;
+        return nullptr;
+    }
+
     json jScene;
-    file >> jScene;
+    try {
+        file >> jScene;   // this can throw
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "Failed to parse JSON: " << e.what() << std::endl;
+        return nullptr;
+    }
 
     // --- EXTRACT SCENE DATA ---
-   
+    std::string sceneName;
+    uint64_t sceneUUID = 0;
 
-    std::string sceneName = jScene["name"].get<std::string>();
-    uint64_t sceneUUID = jScene["uuid"].get<uint64_t>();
+    try {
+        sceneName = jScene.at("name").get<std::string>();
+        sceneUUID = jScene.at("uuid").get<uint64_t>();
+    }
+    catch (const json::exception& e) {
+        std::cerr << "Invalid scene format: " << e.what() << std::endl;
+        return nullptr;
+    }
 
     Scene* scene = new Scene(sceneName, UUID(sceneUUID));
 
     // --- LOAD ENTITIES ---
-    auto jEntities = jScene["entities"];
+    try {
+        auto jEntities = jScene.at("entities");
 
-    for (auto& jEntity : jEntities)
-    {
-        std::string entityName = jEntity["name"].get<std::string>();
+        for (auto& jEntity : jEntities)
+        {
+            try {
+                uint64_t entityID = jEntity.at("entityID").get<uint64_t>();
+                std::string entityName = jEntity.at("name").get<std::string>();
+                EntityType entityType = jEntity.at("type");
+                UUID meshUUID;
+                if (jEntity.contains("meshID")) {
+                    meshUUID = UUID(jEntity.at("meshID").get<uint64_t>());
+                }
 
-        // Create entity
-        uint64_t meshID = jEntity["modelID"].get<uint64_t>();
-        Entity* entity = scene->createEntity(entityName, UUID(meshID));
+                Entity* entity = scene->createEntity(entityName, meshUUID, UUID(entityID), entityType);
 
-        // Load Transform
-        auto t = jEntity["transform"];
+                auto t = jEntity.at("transform");
+                auto pos = t.at("position");
+                auto rot = t.at("rotation");
+                auto scl = t.at("scale");
 
-        auto pos = t["position"];
-        auto rot = t["rotation"];
-        auto scl = t["scale"];
+                Transform transform;
+                transform.position = { pos[0], pos[1], pos[2] };
+                transform.rotation = { rot[0], rot[1], rot[2] };
+                transform.scale = { scl[0], scl[1], scl[2] };
 
-        Transform transform;
-        transform.position = { pos[0], pos[1], pos[2] };
-        transform.rotation = { rot[0], rot[1], rot[2] };
-        transform.scale = { scl[0], scl[1], scl[2] };
+                entity->setTransform(transform);
 
-        entity->setTransform(transform);
+                if (meshes[meshUUID])
+                    linkMaterials(entity);
 
-       
+            }
+            catch (const json::exception& e) {
+                std::cerr << "Skipping invalid entity in scene \"" << sceneName
+                    << "\": " << e.what() << std::endl;
+                continue; // skip only this entity
+            }
+            catch (const std::exception& e) {
+                std::cerr << "Error creating entity: " << e.what() << std::endl;
+                continue;
+            }
+        }
+
+    }
+    catch (const json::exception& e) {
+        std::cerr << "Invalid entity data in scene: " << e.what() << std::endl;
+        delete scene;
+        return nullptr;
     }
 
     std::cout << "Loaded scene \"" << sceneName

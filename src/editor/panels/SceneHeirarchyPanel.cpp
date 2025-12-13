@@ -25,6 +25,9 @@ void SceneHierarchyPanel::OnImGuiRender() {
     {
         for (Scene* scene : allScenes)
         {
+            
+            
+            
             // Highlight active scene
             ImGuiTreeNodeFlags flags =
                 (scene == activeScene ? ImGuiTreeNodeFlags_DefaultOpen : 0);
@@ -32,57 +35,86 @@ void SceneHierarchyPanel::OnImGuiRender() {
                 scene->getName().c_str(),
                 flags | ImGuiTreeNodeFlags_OpenOnArrow
             );
-
+            static bool openModelPopup = false;
             // --- RIGHT CLICK MENU FOR SCENE ---
             if (ImGui::BeginPopupContextItem(scene->getName().c_str()))
             {
                 if (ImGui::MenuItem("Set Active"))
                     sceneManager.setActiveScene(scene);
 
-                if (ImGui::MenuItem("Save Scene"))
-                    assetManager.saveScene(*scene, "../TestGameFolder/scenes");
-
-                if (ImGui::MenuItem("Add Entity") && scene == activeScene)
-                    ImGui::OpenPopup("Add New Entity");
-
+                
+                if (scene == activeScene) {
+                    if (ImGui::MenuItem("Save Scene"))
+                        assetManager.saveScene(*scene, "../TestGameFolder/scenes");
+                    if (ImGui::MenuItem("Add Entity")) {
+                        ImGui::OpenPopup("Add New Entity");
+                        openModelPopup = true;
+                    }                       
+                }
                 ImGui::EndPopup();
             }
 
+            // Modal for new entity creation
+            if (openModelPopup) {
+                ImGui::OpenPopup("Add New Entity");
+                openModelPopup = false;
+            }
+            createNewModel();
+
             // --- ENTITIES UNDER THAT SCENE ---
-            if (sceneOpen && scene == activeScene)
+            if (sceneOpen)
             {
+                // Delete Queued Entitities
+                while (!deletedEntityQueue.empty()) {
+                    scene->removeEntity(deletedEntityQueue.front());
+                    deletedEntityQueue.pop();
+                }
+
+                // ----- ENTITIES -----
                 for (auto& entity : scene->getEntities())
                 {
-                    bool isSelected = entity->isSelected;
-
-                    if (ImGui::Selectable(entity->getName().c_str(), isSelected))
+                    if (scene == activeScene)
                     {
-                        // deselect all entities in activeScene
-                        for (auto& e : activeScene->getEntities())
-                            e->isSelected = false;
+                        
 
-                        entity->isSelected = true;
-                    }
-
-                    if (ImGui::BeginPopupContextItem(entity->getName().c_str()))
-                    {
-                        if (ImGui::MenuItem("Delete"))
+                        // SELECTABLE ENTITY
+                        bool isSelected = entity->isSelected;
+                        std::string label = entity->getName() + "##" + std::to_string(entity->getID());
+                        if (ImGui::Selectable(label.c_str(), isSelected))
                         {
-                            deletedEntityQueue.push(entity->getName());
-                            entity->isSelected = false;
+                            // deselect all
+                            for (auto& e : activeScene->getEntities())
+                                e->isSelected = false;
+                            entity->isSelected = true;
                         }
-                        ImGui::EndPopup();
+
+                        // Right-click menu for active scene entities
+                        if (ImGui::BeginPopupContextItem(label.c_str()))
+                        {
+                            if (ImGui::MenuItem("Delete"))
+                            {
+                                deletedEntityQueue.push(entity->getID());
+                                entity->isSelected = false;
+                            }
+                            ImGui::EndPopup();
+                        }
+                    }
+                    else
+                    {
+                        // NON-INTERACTIVE ENTITY NAME
+                        ImGui::Text("%s", entity->getName().c_str());
                     }
                 }
-                ImGui::TreePop();
+
+                ImGui::TreePop();    
             }
+            
         }
 
         ImGui::TreePop();
     }
 
-    // Modal for new entity creation
-    createNewModel();
+   
 
     ImGui::End();
 }
@@ -91,7 +123,11 @@ void SceneHierarchyPanel::OnImGuiRender() {
 
 
 void SceneHierarchyPanel::createNewModel() {
+    Scene* activeScene = sceneManager.getActiveScene();
+
     static char EntityName[128] = "MyEntity";
+    static int entityTypeIndex = 0; // default selected type index
+    const char* entityTypes[] = { "DefaultObject", "Light", "Camera" };
 
     if (ImGui::BeginPopupModal("Add New Entity", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -99,13 +135,23 @@ void SceneHierarchyPanel::createNewModel() {
         ImGui::InputText("##name", EntityName, IM_ARRAYSIZE(EntityName));
         ImGui::Separator();
 
+        // Dropdown to select entity type
+        ImGui::Text("Select Entity Type:");
+        ImGui::Combo("##type", &entityTypeIndex, entityTypes, IM_ARRAYSIZE(entityTypes));
+
+        ImGui::Separator();
+
         if (ImGui::Button("Create"))
         {
             if (strlen(EntityName) > 0) {
+                // Convert index to EntityType enum
+                EntityType selectedType = static_cast<EntityType>(entityTypeIndex);
 
                 activeScene->createEntity(
                     EntityName,
-                    UUID(0)                   
+                    UUID(0),       // meshID
+                    UUID(),        // entityID
+                    selectedType   // type
                 );
 
                 ImGui::CloseCurrentPopup();
@@ -122,3 +168,4 @@ void SceneHierarchyPanel::createNewModel() {
         ImGui::EndPopup();
     }
 }
+

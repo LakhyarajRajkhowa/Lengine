@@ -43,7 +43,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     strcpy(buffer, entity->getName().c_str());
 
     if (ImGui::InputText("Name", buffer, sizeof(buffer))) {
-        entity->setName(buffer);
+        if (!buffer[0] == '\0') {
+            entity->setName(buffer);
+        }     
     }
     ImGui::Spacing();
 
@@ -52,7 +54,31 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     ImGui::Separator();
     ImGui::Spacing();
 
-    Transform& tr = entity->getTransform();   // or however you access the transform
+    Transform& tr = entity->getTransform();   
+
+    // ---------------- ENTITY TYPE ----------------
+    static const char* entityTypeLabels[] = {
+        "DefaultObject",
+        "Light",
+        "Camera"
+    };
+
+    EntityType currentType = entity->getType();
+    int currentTypeIndex = static_cast<int>(currentType);
+
+    if (ImGui::Combo("Entity Type", &currentTypeIndex,
+        entityTypeLabels,
+        static_cast<int>(EntityType::COUNT)))
+    {
+        entity->setType(static_cast<EntityType>(currentTypeIndex));
+        assetManager.linkMaterials(entity);
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Text("Transform");
+    ImGui::Separator();
+    ImGui::Spacing();
 
     // ---------- POSITION ----------
     ImGui::Text("Position");
@@ -132,12 +158,14 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             std::string meshPath = data->path;
 
             Mesh* mesh = assetManager.getMesh(droppedID);
+           
             if (!mesh) {
                 assetManager.loadMesh(droppedID, meshPath);
                 mesh = assetManager.getMesh(droppedID);
             }
 
             entity->setMeshID(droppedID);
+            assetManager.linkMaterials(entity);
         }
         ImGui::EndDragDropTarget();
     }
@@ -181,6 +209,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
     // MATERIALS
     
+    
     ImGui::Separator();
     ImGui::Text("Material");
     ImGui::Separator();
@@ -193,7 +222,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         
             ImGui::Text(sm.getName().c_str());
             ImGui::SameLine();
-            ImGui::ColorEdit3("Light Color: ", glm::value_ptr(sm.getMaterial()->objectColor));
+            //ImGui::ColorEdit3("Light Color: ", glm::value_ptr(sm.getMaterial()->objectColor));
             ImGui::Spacing();
 
         }

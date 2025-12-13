@@ -30,7 +30,7 @@ namespace Lengine {
         AssetManager& assetManager;
     private:
         Entity* m_SelectedEntity;
-        std::queue<std::string> deletedEntityQueue;
+        std::queue<UUID> deletedEntityQueue;
 
         Scene* activeScene;
     };

@@ -28,11 +28,12 @@ namespace Lengine {
 
         glm::vec3 objectColor = glm::vec3(0.54, 0.54, 0.54);
 
-        Material(GLSLProgram* shaderProgram)
-            : shader(shaderProgram) {
+        Material(std::string matName, GLSLProgram* shaderProgram)
+            : name(matName), shader(shaderProgram) {
         }
 
         GLSLProgram* getShader() const { return shader; }
+        const std::string& getName() const { return  name; }
         bool useTexture = false;
 
         void apply() {

@@ -59,62 +59,95 @@ namespace Lengine {
 
     }
 
-    //  ENTITY MANIPULATION
     void EditorLayer::checkForHoveredEntity(const glm::vec3& rayDir, const glm::vec3& rayOrigin) {
         hoveredEntity = nullptr;
 
         const auto& entities = sceneManager.getActiveScene()->getEntities();
-            float closest = 999999.0f;
+        float closest = 999999.0f;
 
-            for (auto& e : entities) {
-                if (!e->getMeshID()) {
-                    float radius = 1.0f;
-                        if (rayIntersectsSphere(rayOrigin, rayDir, e->getTransform().position, radius)) {
-                            float dist = glm::distance(rayOrigin, e->getTransform().position);
-                            if (dist < closest) {
-                                closest = dist;
-                                hoveredEntity = e.get();
-                                dragPlaneNormal = glm::vec3(0, 1, 0);
-                                dragPlaneY = hoveredEntity->getTransform().position.y;
+        for (auto& e : entities) {
 
-                                dragStartPoint = RayPlaneIntersection(
-                                    rayOrigin, rayDir,
-                                    dragPlaneNormal, dragPlaneY
-                                );
+            glm::vec3 pos = e->getTransform().position;
+            glm::vec3 scale = e->getTransform().scale;
 
+            // --------------------------------------------------------
+            // CASE 1: Entity has NO mesh assigned
+            // --------------------------------------------------------
+            if (!e->getMeshID())
+            {
+                float radius = 1.0f; // default sphere
+                if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
+                {
+                    float dist = glm::distance(rayOrigin, pos);
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        hoveredEntity = e.get();
 
-                                dragOffset = hoveredEntity->getTransform().position - dragStartPoint;
+                        dragPlaneNormal = glm::vec3(0, 1, 0);
+                        dragPlaneY = pos.y;
 
-                            }
-                        }
-                }
-                else 
-                for (auto& sm : assetManager.getMesh(e->getMeshID())->subMeshes) {
-                    float radius = sm.getBoundingRadius() * e->getTransform().scale.x;
-                    glm::vec3 centre = e->getTransform().position + sm.getLocalCenter() * e->getTransform().scale;
-                    if (rayIntersectsSphere(rayOrigin, rayDir, centre, radius)) {
-                        float dist = glm::distance(rayOrigin, centre);
-                        if (dist < closest) {
-                            closest = dist;
-                            hoveredEntity = e.get();
-                                dragPlaneNormal = glm::vec3(0, 1, 0);
-                                dragPlaneY = hoveredEntity->getTransform().position.y;
-
-                                dragStartPoint = RayPlaneIntersection(
-                                    rayOrigin, rayDir,
-                                    dragPlaneNormal, dragPlaneY
-                                );
-                               
-
-                                dragOffset = hoveredEntity->getTransform().position - dragStartPoint;
-
-                        }
-                       
+                        dragStartPoint = RayPlaneIntersection(rayOrigin, rayDir, dragPlaneNormal, dragPlaneY);
+                        dragOffset = pos - dragStartPoint;
                     }
-                    
+                }
+                continue;   
+            }
+
+            // --------------------------------------------------------
+            // CASE 2: Entity HAS a mesh ID → try to get mesh
+            // --------------------------------------------------------
+            Mesh* mesh = assetManager.getMesh(e->getMeshID());
+
+            if (!mesh)
+            {
+                
+                float radius = 1.0f;
+                if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
+                {
+                    float dist = glm::distance(rayOrigin, pos);
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        hoveredEntity = e.get();
+
+                        dragPlaneNormal = glm::vec3(0, 1, 0);
+                        dragPlaneY = pos.y;
+
+                        dragStartPoint = RayPlaneIntersection(rayOrigin, rayDir, dragPlaneNormal, dragPlaneY);
+                        dragOffset = pos - dragStartPoint;
+                    }
+                }
+                continue;
+            }
+
+            // --------------------------------------------------------
+            // CASE 3: Mesh exists → test submeshes
+            // --------------------------------------------------------
+            for (auto& sm : mesh->subMeshes)
+            {
+                float r = sm.getBoundingRadius() * scale.x;
+                glm::vec3 centre = pos + sm.getLocalCenter() * scale;
+
+                if (rayIntersectsSphere(rayOrigin, rayDir, centre, r))
+                {
+                    float dist = glm::distance(rayOrigin, centre);
+                    if (dist < closest)
+                    {
+                        closest = dist;
+                        hoveredEntity = e.get();
+
+                        dragPlaneNormal = glm::vec3(0, 1, 0);
+                        dragPlaneY = pos.y;
+
+                        dragStartPoint = RayPlaneIntersection(rayOrigin, rayDir, dragPlaneNormal, dragPlaneY);
+                        dragOffset = pos - dragStartPoint;
+                    }
                 }
             }
+        }
     }
+
 
     void EditorLayer::selectHoveredEntity() {
         ImVec2 mouse = viewportPanel.getMousePosInViewport();
@@ -230,7 +263,7 @@ namespace Lengine {
         if (inputManager.isKeyPressed(key)) {
             switch (key) {
             case SDLK_x:
-                sceneManager.getActiveScene()->removeEntity(selectedEntity->getName());
+                sceneManager.getActiveScene()->removeEntity(selectedEntity->getID());
                 selectedEntity = nullptr;
                 break;
             
