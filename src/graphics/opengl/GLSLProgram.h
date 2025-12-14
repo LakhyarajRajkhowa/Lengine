@@ -31,6 +31,7 @@ namespace Lengine {
         void setVec4(const std::string& name, const glm::vec4& vec);
         void setFloat(const std::string& name, float value);
         void setInt(const std::string& name, int value);
+        void setBool(const std::string& name, bool state);
           
     private:
 

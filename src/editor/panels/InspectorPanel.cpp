@@ -1,4 +1,4 @@
-#include "InspectorPanel.h"
+﻿#include "InspectorPanel.h"
 #include "../graphics/renderer/Renderer.h"
 using namespace Lengine;
 
@@ -62,7 +62,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         "Light",
         "Camera"
     };
-
+    
     EntityType currentType = entity->getType();
     int currentTypeIndex = static_cast<int>(currentType);
 
@@ -71,7 +71,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         static_cast<int>(EntityType::COUNT)))
     {
         entity->setType(static_cast<EntityType>(currentTypeIndex));
-        assetManager.linkMaterials(entity);
+        Mesh* mesh = assetManager.getMesh(entity->getMeshID());
+        sceneManager.getActiveScene()->assignDefaultMaterials(entity, mesh);
+        //assetManager.linkMaterialInstance(sceneManager.getActiveScene(),  entity);
     }
 
     ImGui::Spacing();
@@ -163,9 +165,10 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                 assetManager.loadMesh(droppedID, meshPath);
                 mesh = assetManager.getMesh(droppedID);
             }
-
+            
             entity->setMeshID(droppedID);
-            assetManager.linkMaterials(entity);
+            sceneManager.getActiveScene()->assignDefaultMaterials(entity, mesh);
+            //assetManager.linkMaterialInstance(sceneManager.getActiveScene(),  entity);
         }
         ImGui::EndDragDropTarget();
     }
@@ -180,18 +183,6 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
     ImGui::Spacing();
 
-    ImGui::Text("Ambient Strength");
-    ImGui::SameLine();
-    ImGui::DragFloat("##AmbientStrength", &renderer.ambientStrength, 0.01f, 0.0f, 1.0f);
-
-    ImGui::Spacing();
-
-    ImGui::Text("Specular Strength");
-    ImGui::SameLine();
-    ImGui::DragFloat("##SpecularStrength", &renderer.specularStrength, 0.05f, 0.0f, 5.0f);
-
-    ImGui::Spacing(); 
-
     ImGui::Text("Light Color");
     ImGui::SameLine();
     ImGui::ColorEdit3("Light Color", glm::value_ptr(renderer.lightColor));
@@ -205,27 +196,95 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         }
     }
         
-
-
-    // MATERIALS
     
-    
+     // MATERIALS
+      
     ImGui::Separator();
     ImGui::Text("Material");
     ImGui::Separator();
+    ImGui::Spacing();
+    Mesh* mesh = assetManager.getMesh(entity->getMeshID());
+    if (!mesh) return;
 
-    ImGui::Spacing();
-    ImGui::Text("Albedo");
-    ImGui::Spacing();
-    if (assetManager.getMesh(entity->getMeshID()))
-        for (auto& sm : assetManager.getMesh(entity->getMeshID())->subMeshes) {
+    for (int i = 0; i < mesh->subMeshes.size(); i++)
+    {
+        auto& sm = mesh->subMeshes[i];
+
+        ImGui::PushID(i);  
+
+        ImGuiTreeNodeFlags flags =
+            ImGuiTreeNodeFlags_FramePadding |
+            ImGuiTreeNodeFlags_SpanAvailWidth;
+
+        bool open = ImGui::TreeNodeEx(
+            "##SubMeshNode",  
+            flags,
+            "%s", sm.getName().empty() ? "SubMesh" : sm.getName().c_str()
+        );
+
+        // Hover detection
+        if (ImGui::IsItemHovered()) 
+            sm.isHovered = true;
+        else 
+            sm.isHovered = false;
         
-            ImGui::Text(sm.getName().c_str());
-            ImGui::SameLine();
-            //ImGui::ColorEdit3("Light Color: ", glm::value_ptr(sm.getMaterial()->objectColor));
+        if (open)
+        {
+            sm.isSelected = true;
+
+            // --- Material instance ---
+            UUID instID = entity->getMaterialInstanceUUIDs().at(sm.getName());
+            MaterialInstance& inst =
+                sceneManager.getActiveScene()->getMaterialInstance(instID);
+            const Material* baseMat =
+                assetManager.getMaterial(inst.baseMaterial);
+
+            // ---- Diffuse (Kd) ----
+            glm::vec3 kd = inst.Kd.value_or(baseMat->Kd);
+            if (ImGui::ColorEdit3("Diffuse (Kd)", glm::value_ptr(kd)))
+                inst.Kd = kd; // override only if user edits
+
+            if (inst.Kd.has_value() && ImGui::SmallButton("Reset Kd")) inst.Kd.reset();
             ImGui::Spacing();
 
-        }
+            // ---- Ambient (Ka) ----
+            glm::vec3 ka = inst.Ka.value_or(baseMat->Ka);
+            if (ImGui::ColorEdit3("Ambient (Ka)", glm::value_ptr(ka)))
+                inst.Ka = ka;
+            if (inst.Ka.has_value() && ImGui::SmallButton("Reset Ka")) inst.Ka.reset();
+            ImGui::Spacing();
 
+            // ---- Specular (Ks) ----
+            glm::vec3 ks = inst.Ks.value_or(baseMat->Ks);
+            if (ImGui::ColorEdit3("Specular (Ks)", glm::value_ptr(ks)))
+                inst.Ks = ks;
+            if (inst.Ks.has_value() && ImGui::SmallButton("Reset Ks")) inst.Ks.reset();
+            ImGui::Spacing();
+
+            // ---- Emissive (Ke) ----
+            glm::vec3 ke = inst.Ke.value_or(baseMat->Ke);
+            if (ImGui::ColorEdit3("Emissive (Ke)", glm::value_ptr(ke)))
+                inst.Ke = ke;
+            if (inst.Ke.has_value() && ImGui::SmallButton("Reset Ke")) inst.Ke.reset();
+            ImGui::Spacing();
+
+            // ---- Shininess (Ns) ----
+            float ns = inst.Ns.value_or(baseMat->Ns);
+            if (ImGui::DragFloat("Shininess (Ns)", &ns, 0.1f, 0.0f, 256.0f))
+                inst.Ns = ns;
+            if (inst.Ns.has_value() && ImGui::SmallButton("Reset Ns")) inst.Ns.reset();
+
+            ImGui::Spacing();
+            ImGui::TreePop();
+        }
+        else {
+            sm.isSelected = false;
+            ImGui::PopID();
+            continue;
+        }
+        ImGui::PopID();
+    }    
     
+
+   
 }

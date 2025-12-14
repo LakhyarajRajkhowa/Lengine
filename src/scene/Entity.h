@@ -34,7 +34,7 @@ namespace Lengine {
 		void setType(const EntityType& t) { type = t; }
 		UUID getMeshID() const { return meshID; }
 		void setMeshID(const UUID& id) { meshID = id; }
-		std::unordered_map<std::string, UUID>& getMaterialIDs() { return materialIDs; }
+		std::unordered_map<std::string, UUID>& getMaterialInstanceUUIDs() { return materialInstanceUUID; }
 		void setTransform(const Transform& t) { transform = t;  }
 		Transform& getTransform() {
 			return transform;
@@ -56,7 +56,7 @@ namespace Lengine {
 		EntityType type;
 		Transform transform;
 		UUID meshID;
-		std::unordered_map<std::string, UUID> materialIDs; // < submesh_name, materialUUID >
+		std::unordered_map<std::string, UUID> materialInstanceUUID; // < submesh_name, materialInstanceUUID >
 
 
 	};

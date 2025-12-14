@@ -5,6 +5,7 @@
 
 #include "../graphics/material/Material.h"
 
+#include "../logging/LogBuffer.h"
 struct Vertex {
     glm::vec3 position;
     glm::vec3 normal;
@@ -33,6 +34,7 @@ namespace Lengine {
         SubMesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
         ~SubMesh();
 
+        bool isHovered = false;
         bool isSelected = false;
 
         void draw() const;
@@ -47,8 +49,9 @@ namespace Lengine {
         std::vector<SubMesh> subMeshes;
 
         void draw() const {
-            for (const auto& sm : subMeshes)
+            for (const auto& sm : subMeshes) {
                 sm.draw();
+            }
         }
     
     };

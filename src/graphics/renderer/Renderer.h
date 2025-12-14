@@ -12,8 +12,7 @@ namespace Lengine {
     public:
         glm::vec3 lightColor = glm::vec3(1.0f);
         glm::vec3 lightPos;
-        float ambientStrength = 0.05f;
-        float specularStrength = 3.5f;
+        
         bool changeColor = false;
 
         void renderScene(const Scene& scene, Camera3d& camera, AssetManager& assetManaegr);

@@ -1,4 +1,6 @@
 #include "Scene.h"
+#include <cassert>
+
 
 namespace Lengine {
 
@@ -44,4 +46,81 @@ namespace Lengine {
         }
         return nullptr;
     }
+
+    MaterialInstance& Scene::getMaterialInstance(UUID id)
+    {
+        auto it = materialInstances.find(id);
+        assert(it != materialInstances.end());
+        return it->second;
+    }
+
+    const MaterialInstance& Scene::getMaterialInstance(UUID id) const
+    {
+        auto it = materialInstances.find(id);
+        assert(it != materialInstances.end());
+        return it->second;
+    }
+
+
+    UUID Scene::createMaterialInstance(UUID baseMaterial)
+    {
+        UUID id;
+
+        do {
+            id = UUID();
+        } while (materialInstances.find(id) != materialInstances.end());
+
+        MaterialInstance instance{};
+        instance.baseMaterial = baseMaterial;
+
+        materialInstances.emplace(id, std::move(instance));
+        return id;
+    }
+
+    void Scene::destroyMaterialInstance(UUID id)
+    {
+        auto it = materialInstances.find(id);
+        if (it != materialInstances.end()) {
+            materialInstances.erase(it);
+        }
+    }
+
+    void Scene::assignDefaultMaterials(Entity* entity, Mesh* mesh)
+    {
+        UUID baseMat = MaterialID::Default;
+
+        switch (entity->getType()) {
+            case EntityType::DefaultObject:
+                baseMat = MaterialID::Default;
+                break;
+            case EntityType::Light:
+                baseMat = MaterialID::LightSource;
+                break;
+            case EntityType::Camera:
+                baseMat = MaterialID::Default;
+                break;
+        }
+
+        for (auto& sm : mesh->subMeshes) {
+            UUID instID = createMaterialInstance(baseMat);
+            entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
+            
+        }
+    }
+
+    ResolvedMaterial Scene::getMaterialForSubmesh(
+        Entity* entity,
+        const std::string& submeshName,
+        Material* base
+    )
+    {
+        UUID instID = entity->getMaterialInstanceUUIDs().at(submeshName);
+        MaterialInstance& inst = getMaterialInstance(instID);
+
+        ResolvedMaterial out{};       
+        out.Kd = inst.Kd.value_or(base->Kd);
+
+        return out;
+    }
+
 }

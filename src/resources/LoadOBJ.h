@@ -311,10 +311,10 @@ namespace Lengine {
         if (mesh.subMeshes.empty()) {
             std::cerr << "[FASTOBJ] Warning: no submeshes created for " << path << "\n";
         }
-       
-        
+
+
     }
-    
+
 
     inline SubMesh convertToEngineSubMesh(const aiMesh* mesh) {
         std::vector<Vertex> vertices;
@@ -332,7 +332,7 @@ namespace Lengine {
                 vertex.position = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
             else
                 vertex.position = glm::vec3(0.0f);
-            
+
             // Normal
             if (mesh->HasNormals() && mesh->mNormals)
                 vertex.normal = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
@@ -340,7 +340,7 @@ namespace Lengine {
                 vertex.normal = glm::vec3(0.0f);
 
             // Texture coordinates (only first UV channel)
-            if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0]  && i < mesh->mTextureCoords[0]->Length()) {
+            if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0] && i < mesh->mTextureCoords[0]->Length()) {
                 vertex.texCoord = glm::vec2(
                     mesh->mTextureCoords[0][i].x,
                     mesh->mTextureCoords[0][i].y
@@ -377,7 +377,7 @@ namespace Lengine {
         std::string name = mesh->mName.C_Str();
         // Construct SubMesh
         SubMesh engineSubMesh(name, vertices, indices);
-        
+
         //clear temp memory
         std::vector<Vertex>().swap(vertices);
         std::vector<uint32_t>().swap(indices);
@@ -401,20 +401,20 @@ namespace Lengine {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path,
             aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
-        
+
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
             return -1;
 
         }
 
-        std::cout << "Model loaded successfully! " << path<<std::endl;
+        std::cout << "Model loaded successfully! " << path << std::endl;
 
         if (scene && scene->mRootNode) {
             for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
                 aiMesh* aMesh = scene->mMeshes[i];
                 mesh.subMeshes.push_back(convertToEngineSubMesh(aMesh));
-                
+
             }
         }
 

@@ -1,32 +1,35 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <string>
-
+#include <optional>
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/opengl/GLTexture.h"
+#include "../utils/UUID.h"
 
 namespace Lengine {
     class Material {
-    private:
-        
-        glm::vec3 diffuseColor;   // Kd
-        glm::vec3 ambientColor;   // Ka
-        glm::vec3 specularColor;  // Ks
-        float shininess;          // Ns
-        std::string diffuseMap;   // map_Kd
-        std::string normalMap;    // map_bump
-
-        
-        
-        float metallic = 0.0f;
-        float roughness = 0.0f;
-
     public:
+
+        glm::vec3 Kd = {0.5, 0.5, 0.5};        // DiffuseColor
+        glm::vec3 Ka = { 0.05, 0.05, 0.05 };        // AmbientColor
+        glm::vec3 Ks = { 3.50, 3.50, 3.50 };        // SpecularColor
+        glm::vec3 Ke;        // EmissiveColor
+        float Ns = 50.0f ;            // Shininess
+        float d;             // Opacity
+        float Ni;            // OpticalDensity
+        float Tr;            // Transperancy
+        float Tf;            // TransmissionFilter
+        std::string map_Kd;  // DiffuseMap
+        std::string map_Ka;  // AmbientMap
+        std::string normalMap;    // map_bump
+        float metallic;
+        float roughness;
+
         std::string name;
         GLSLProgram* shader = nullptr;
         GLTexture* albedoTexture{};
 
-        glm::vec3 objectColor = glm::vec3(0.54, 0.54, 0.54);
+        
 
         Material(std::string matName, GLSLProgram* shaderProgram)
             : name(matName), shader(shaderProgram) {
@@ -34,23 +37,40 @@ namespace Lengine {
 
         GLSLProgram* getShader() const { return shader; }
         const std::string& getName() const { return  name; }
-        bool useTexture = false;
-
-        void apply() {
-
-            shader->setFloat("metallic", metallic);
-            shader->setFloat("roughness", roughness);
-            shader->setVec3("objectColor", objectColor);
-            if (useTexture && albedoTexture->id != 0) {
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, albedoTexture->id);
-                shader->setInt("albedoMap", 0);
-                shader->setInt("useTexture", 1);
-            }
-            else {
-                shader->setInt("useTexture", 0);
-            }
-        }
+        bool useTexture = false;      
 
     };
+
+    // MaterialInstance used by a Scene for each entity
+    struct MaterialInstance {
+        UUID baseMaterial;
+
+        // Overrides (only stored if changed)
+        std::optional<glm::vec3> Kd;
+        std::optional<glm::vec3> Ka;
+        std::optional<glm::vec3> Ks;
+        std::optional<glm::vec3> Ke;
+        std::optional<float> Ns;
+
+
+    };
+
+    // Final materiral send to GPU
+    struct ResolvedMaterial {
+        glm::vec3 Kd = { 0.5, 0.5, 0.5 };        // DiffuseColor
+        glm::vec3 Ka = { 0.05, 0.05, 0.05 };        // AmbientColor
+        glm::vec3 Ks = { 3.50, 3.50, 3.50 };        // SpecularColor
+        glm::vec3 Ke;        // EmissiveColor
+        float Ns = 50.0f;            // Shininess
+        float d;             // Opacity
+        float Ni;            // OpticalDensity
+        float Tr;            // Transperancy
+        float Tf;            // TransmissionFilter
+        std::string map_Kd;  // DiffuseMap
+        std::string map_Ka;  // AmbientMap
+        std::string normalMap;    // map_bump
+        float metallic;
+        float roughness;
+    };
+
 }

@@ -171,6 +171,12 @@ namespace Lengine {
     void GLSLProgram::setInt(const std::string& name, int value) {
         GLint location = glGetUniformLocation(_programID, name.c_str());
         glUniform1i(location, value);
+        
+    }
+    void GLSLProgram::setBool(const std::string& name, bool state) {
+        GLint location = glGetUniformLocation(_programID, name.c_str());
+        glUniform1i(location, state);
+
     }
 }
 

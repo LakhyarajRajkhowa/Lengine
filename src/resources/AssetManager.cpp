@@ -4,19 +4,8 @@ using namespace Lengine;
 
 void AssetManager::LoadAllMetaFiles(const fs::path& root)
 {
-    loadMaterial(
-        UUID(5485914302357758172),
-        "../assets/Materials/defaultMaterial.mtl",
-        "../assets/shaders/defaultShader.vert",
-        "../assets/shaders/defaultShader.frag"
-        );
-    loadMaterial(
-        UUID(3324154689191414962),
-        "../assets/Materials/lightSourceMaterial.mtl",
-        "../assets/shaders/lightSource.vert",
-        "../assets/shaders/lightSource.frag"
-    );
-
+    
+    
     if (!fs::exists(root))
         return;
     for (auto& entry : fs::recursive_directory_iterator(root))
@@ -37,6 +26,9 @@ void AssetManager::LoadAllMetaFiles(const fs::path& root)
 
         if (assetPath.extension() == ".obj") {
             loadMesh(meta.uuid, assetPath.string());
+        }
+        if (assetPath.extension() == ".mtl") {
+            loadMaterial(meta.uuid, assetPath.string());
         }
         
     }
@@ -82,9 +74,7 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
     std::shared_ptr<Mesh> ptr;
     Model model;
     model.loadModel(meshName, newPath, ptr);
-
- 
-    
+   
     meshes[uuid] = ptr;
 }
 
@@ -92,8 +82,8 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
 void AssetManager::loadMaterial(
     const UUID& uuid,
     const std::string& path,
-    const std::string& vertexShaderPath,
-    const std::string& fragmentShaderPath
+    const std::string& vertexShaderPath ,
+    const std::string& fragmentShaderPath 
 )
 {
     std::string materialName = ExtractNameFromPath(path);
@@ -109,10 +99,11 @@ void AssetManager::loadMaterial(
 
 UUID AssetManager::importMesh(const std::string& path) {
     MetaFile meta;
+    std::string fileName = ExtractFileNameFromPath(path);
     if (!MetaFileSystem::HasMeta(path)) {
         meta.uuid = UUID();
         meta.type = "mesh";
-        meta.source = NormalizePath(path);
+        meta.source = NormalizePath(Paths::Mesh + fileName);
 
         MetaFileSystem::Save(path, meta);
     }
@@ -124,10 +115,12 @@ UUID AssetManager::importMesh(const std::string& path) {
 }
 UUID AssetManager::importMaterial(const std::string& path) {
     MetaFile meta;
+  
+    std::string fileName = ExtractFileNameFromPath(path);
     if (!MetaFileSystem::HasMeta(path)) {
         meta.uuid = UUID();
         meta.type = "material";
-        meta.source = NormalizePath(path);
+        meta.source = NormalizePath(Paths::Materials + fileName);
 
         MetaFileSystem::Save(path, meta);
     }
@@ -146,8 +139,8 @@ UUID AssetManager::importAndLoadMesh(const std::string& name, const std::string&
 UUID AssetManager::importAndLoadMaterial(
     const std::string& name,
     const std::string& path,
-    const std::string& vertexShaderPath,
-    const std::string& fragmentShaderPath
+    const std::string& vertexShaderPath ,
+    const std::string& fragmentShaderPath 
 ) {
     
     UUID id = importMaterial(path);
@@ -177,10 +170,11 @@ GLSLProgram* AssetManager::getShader(const std::string& name) {
 GLTexture* AssetManager::loadTexture(const std::string& name , const std::string& path) {
     MetaFile meta;
 
+    std::string fileName = ExtractFileNameFromPath(path);
     if (!MetaFileSystem::HasMeta(path)) {
         meta.uuid = UUID();
         meta.type = "texture";
-        meta.source = ExtractFileNameFromPath(path);
+        meta.source = NormalizePath(Paths::Shaders + fileName);
         MetaFileSystem::Save(name, meta);
     }
     else {
@@ -196,26 +190,29 @@ GLTexture* AssetManager::loadTexture(const std::string& name , const std::string
  
 }
 
-// Fill/Initialize the materialsIDs map with { submeshName, UUID(0) }
-void AssetManager::linkMaterials(Entity* entity) {
+// Fill/Initialize the materialsIDs 
+void AssetManager::linkMaterialInstance(Scene* scene, Entity* entity) {
     Mesh* m = getMesh(entity->getMeshID());
     switch (entity->getType()) {
         case EntityType::DefaultObject:
             for (auto& sm : m->subMeshes) {
                 // default material
-                entity->getMaterialIDs()[sm.getName()] = UUID(5485914302357758172) ;
+                UUID instID = scene->createMaterialInstance(MaterialID::Default);
+                entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
             }
             break;
         case EntityType::Light:
             for (auto& sm : m->subMeshes) {
                 // lightSource material
-                entity->getMaterialIDs()[sm.getName()] = UUID(3324154689191414962) ;
+                UUID instID = scene->createMaterialInstance(MaterialID::LightSource);
+                entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
             }
             break;
         case EntityType::Camera:
             for (auto& sm : m->subMeshes) {
                 // default material
-                entity->getMaterialIDs()[sm.getName()] = UUID(5485914302357758172) ;
+                UUID instID = scene->createMaterialInstance(MaterialID::Default);
+                entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
             }
             break;
 
@@ -417,9 +414,13 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 transform.scale = { scl[0], scl[1], scl[2] };
 
                 entity->setTransform(transform);
+                
+                if (meshes[meshUUID]) {
+                    Mesh* mesh = getMesh(entity->getMeshID());
+                    scene->assignDefaultMaterials(entity, mesh);
+                    // linkMaterialInstance(scene,  entity);
 
-                if (meshes[meshUUID])
-                    linkMaterials(entity);
+                }
 
             }
             catch (const json::exception& e) {

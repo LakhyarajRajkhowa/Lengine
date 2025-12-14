@@ -2,11 +2,13 @@
 #include <unordered_map>
 #include <memory>
 #include <filesystem>
-#include "./core/settings.h"
+#include "../core/settings.h"
+#include "../core/paths.h"
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/opengl/GLTexture.h"
 #include "../graphics/geometry/Mesh.h"
 #include "../graphics/geometry/Model.h"
+#include "../assets/MaterialRegistry.h"
 #include "../resources/TextureCache.h"
 #include "../utils/metaFileSystem.h"
 #include "../utils/modelFileSystem.h"
@@ -42,8 +44,8 @@ namespace Lengine {
 		void loadMaterial(
 			const UUID& uuid,
 			const std::string& path,
-			const std::string& vertexShaderPath,
-			const std::string& fragmentShaderPath
+			const std::string& vertexShaderPath = ShaderPath::defaultVertexShaderPath,
+			const std::string& fragmentShaderPath = ShaderPath::defaultFragmentShaderPath
 		);
 		UUID getMaterialUUID(const std::string& name);
 		UUID importMaterial(
@@ -51,8 +53,8 @@ namespace Lengine {
 		UUID importAndLoadMaterial(
 			const std::string& name,
 			const std::string& path,
-			const std::string& vertexShaderPath,
-			const std::string& fragmentShaderPath
+			const std::string& vertexShaderPath = ShaderPath::defaultVertexShaderPath,
+			const std::string& fragmentShaderPath =  ShaderPath::defaultFragmentShaderPath
 		);
 		Material* getMaterial(const UUID& id);
 
@@ -65,7 +67,7 @@ namespace Lengine {
 		GLTexture* getTexture(const std::string& name);
 		GLTexture* loadTexture(const std::string& name, const std::string& path);
 
-		void linkMaterials(Entity* entity);
+		void linkMaterialInstance(Scene* scene, Entity* entity);
 
         GLSLProgram* loadShader(const std::string& name,
             const std::string& vertPath,

@@ -22,15 +22,25 @@ private:
 #include <iostream>
 #include <string>
 #include <filesystem>
+#include <chrono>
 
-inline void DebugLog(const std::string& input,
+inline void DebugLogCooldown(const std::string& input,
     const char* func,
-    const char* file)
+    const char* file,
+    int gapMs)
 {
-    std::string fileName = std::filesystem::path(file).filename().string();
+    using clock = std::chrono::steady_clock;
+    static auto lastTime = clock::now() - std::chrono::milliseconds(gapMs);
 
+    auto now = clock::now();
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count() < gapMs)
+        return;
+
+    lastTime = now;
+
+    std::string fileName = std::filesystem::path(file).filename().string();
     std::cout << "[" << func << "/" << fileName << "] : "
         << input << std::endl;
 }
 
-#define DEBUG_LOG(msg) DebugLog(msg, __FUNCTION__, __FILE__)
+#define DEBUG_LOG_GAP(msg, ms) DebugLogCooldown(msg, __FUNCTION__, __FILE__, ms)
