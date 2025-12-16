@@ -94,7 +94,7 @@ namespace Lengine {
         void sendDataToInspectorPanel();
 
         std::filesystem::path exePath = std::filesystem::current_path();
-        std::filesystem::path assestPath = std::filesystem::absolute(exePath / "../assets");
+        std::filesystem::path assestPath = Paths::Assets;
 
     };
 

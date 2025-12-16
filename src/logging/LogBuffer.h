@@ -44,3 +44,15 @@ inline void DebugLogCooldown(const std::string& input,
 }
 
 #define DEBUG_LOG_GAP(msg, ms) DebugLogCooldown(msg, __FUNCTION__, __FILE__, ms)
+
+inline void DebugLog(const std::string& input,
+    const char* func,
+    const char* file)
+{
+    std::string fileName = std::filesystem::path(file).filename().string();
+
+    std::cout << "[" << func << "/" << fileName << "] : "
+        << input << std::endl;
+}
+
+#define DEBUG_LOG(msg) DebugLog(msg, __FUNCTION__, __FILE__)

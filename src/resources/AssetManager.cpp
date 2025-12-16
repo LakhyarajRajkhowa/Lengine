@@ -219,7 +219,7 @@ void AssetManager::saveModelFile(const UUID& meshUUID)
 
   
     std::string fileName = mesh->name;
-    modelFolderPath = settings.gameFolderPath + "/internal/models";
+    modelFolderPath = Paths::ActiveGameFolder + "/internal/models";
     ModelFileSystem::Save(modelFolderPath + "/" + fileName, modelFile);
 
     std::cout << "Saved model file: " << fileName << ".model" << std::endl;

@@ -3,15 +3,15 @@
 using namespace Lengine;
 
 void GizmoRenderer::initGizmoGrid() {
-    gizmoGrid = assetManager.getMesh(UUID(16567679459741108534)); // uuid of plane
-    gizmoGridShader.compileShaders("../assets/Shaders/grid.vert", "../assets/Shaders/grid.frag");
+    gizmoGrid = assetManager.getMesh(MeshID::Plane); 
+    gizmoGridShader.compileShaders(Paths::Shaders + "grid.vert", Paths::Shaders + "grid.frag");
     gizmoGridShader.linkShaders();
 
 }
 void GizmoRenderer::initGizmoSpheres() {
 
-	gizmoSphere = assetManager.getMesh(UUID(9343755805681254094)); // uuid of sphere
-	gizmoSphereShader.compileShaders("../assets/Shaders/boundingSphere.vert", "../assets/Shaders/boundingSphere.frag");
+	gizmoSphere = assetManager.getMesh(MeshID::Sphere); // uuid of sphere
+	gizmoSphereShader.compileShaders(Paths::Shaders + "boundingSphere.vert", Paths::Shaders + "boundingSphere.frag");
 	gizmoSphereShader.linkShaders();
 
 }

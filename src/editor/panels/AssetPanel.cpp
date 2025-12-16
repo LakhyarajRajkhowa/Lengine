@@ -87,7 +87,7 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         // ============================================================
         if (entry.is_directory())
         {
-            ImTextureID folderIcon = LoadThumbnail("../assets/icons/folder_icon.png");
+            ImTextureID folderIcon = LoadThumbnail(Paths::Icons + "folder_icon.png");
 
             // --- Selectable hitbox wrapping thumbnail + text ---
             ImGui::BeginGroup();
@@ -127,7 +127,7 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         std::string previewImage = actualFile + ".png";
         ImTextureID thumb = fs::exists(previewImage)
             ? LoadThumbnail(previewImage)
-            : LoadThumbnail("../assets/icons/mesh_icon.png");
+            : LoadThumbnail(Paths::Icons + "mesh_icon.png");
 
         // ============================================================
         // SELECTABLE GROUP (fix: thumbnail is selectable)

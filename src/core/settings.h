@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "../core/Errors.h"
+#include "../core/paths.h"
 
 #include "../external/json.hpp"
 
@@ -30,5 +31,6 @@ public:
 	std::string gameFolderPath ;
 
 	const bool loadSettings();
+	const bool saveSettings();
 };
 

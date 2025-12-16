@@ -33,12 +33,52 @@ const bool EngineSettings::loadSettings() {
     }
 
     cameraPosX = j.value("cameraPosX", cameraPosX);
-    cameraPosY = j.value("cameraPosX", cameraPosY);
-    cameraPosZ = j.value("cameraPosX", cameraPosZ);
+    cameraPosY = j.value("cameraPosY", cameraPosY);
+    cameraPosZ = j.value("cameraPosZ", cameraPosZ);
     cameraFov = j.value("cameraFov", cameraFov);
 
     gameFolderPath = j.value("gameFolderPath", gameFolderPath);
+    Lengine::Paths::setGameFolderPath(gameFolderPath);
 
     std::cout << "Loaded settings from " << configPath << "\n";
+    return true;
+}
+
+const bool EngineSettings::saveSettings() 
+{
+    json j;
+
+    // --- Window ---
+    j["windowName"] = windowName;
+    j["windowWidth"] = windowWidth;
+    j["windowHeight"] = windowHeight;
+
+    switch (windowMode)
+    {
+    case BORDERLESS: j["windowMode"] = "borderless"; break;
+    case INVISIBLE:  j["windowMode"] = "invisible";  break;
+    case FULLSCREEN: j["windowMode"] = "fullscreen"; break;
+    }
+
+    // --- Camera ---
+    j["cameraPosX"] = cameraPosX;
+    j["cameraPosY"] = cameraPosY;
+    j["cameraPosZ"] = cameraPosZ;
+    j["cameraFov"] = cameraFov;
+
+    // --- Paths ---
+    j["gameFolderPath"] = gameFolderPath;
+
+    std::ofstream file(configPath);
+    if (!file.is_open())
+    {
+        perror(configPath.c_str());
+        return false;
+    }
+
+    // Pretty print with indentation (engine-quality)
+    file << j.dump(4);
+
+    std::cout << "Saved settings to " << configPath << "\n";
     return true;
 }

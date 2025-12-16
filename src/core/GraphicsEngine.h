@@ -13,8 +13,6 @@
 #include "../platform/InputHandler.h"
 #include "../platform/Window.h"
 
-#include "../ui/UIRenderer.h"
-
 #include "../editor/imgui/ImguiLayer.h"
 #include "../editor/EditorLayer.h"
 

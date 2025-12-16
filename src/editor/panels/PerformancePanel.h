@@ -17,5 +17,8 @@ namespace Lengine {
 		int targetFPS = 144; // my 144 Hz monitor
 		float deltaTime;
 		bool limitFPS = true;
+		float smoothedFPS = 0.0f;
+		float smoothedMs = 0.0f;
+
 	};
 }

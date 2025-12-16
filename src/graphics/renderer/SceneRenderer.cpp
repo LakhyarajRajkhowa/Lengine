@@ -19,9 +19,9 @@ namespace Lengine {
     }
 
     void SceneRenderer::initScene() {
-        activeScene = assetManager.loadScene( "../defaults/scenes/defaultScene.json");
+        activeScene = assetManager.loadScene(Paths::Default_Scenes + "defaultScene.json");
         sceneManager.getScenes().insert(activeScene);
-        sceneManager.getScenes().insert(assetManager.loadScene("../TestGameFolder/scenes/scene1.json"));
+        sceneManager.getScenes().insert(assetManager.loadScene(Paths::GameScenes + "scene1.json"));
 
         // temporary active scene logic
         sceneManager.setActiveScene(activeScene);

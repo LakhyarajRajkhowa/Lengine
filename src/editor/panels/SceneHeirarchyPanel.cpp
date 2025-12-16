@@ -44,8 +44,10 @@ void SceneHierarchyPanel::OnImGuiRender() {
 
                 
                 if (scene == activeScene) {
-                    if (ImGui::MenuItem("Save Scene"))
-                        assetManager.saveScene(*scene, "../TestGameFolder/scenes");
+                    if (ImGui::MenuItem("Save Scene")) {
+                        assetManager.saveScene(*scene, Paths::GameScenes);
+                    }
+
                     if (ImGui::MenuItem("Add Entity")) {
                         ImGui::OpenPopup("Add New Entity");
                         openModelPopup = true;

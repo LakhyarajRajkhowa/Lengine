@@ -21,7 +21,7 @@ namespace Lengine {
         hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
         inspectorPanel(scnMgr, assetMgr, rndr),
         consolePanel(buffer),
-        assetPanel("../TestGameFolder/assets", assetMgr)
+        assetPanel(Paths::ActiveGameFolder, assetMgr)
         
     {
     }

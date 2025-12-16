@@ -31,7 +31,7 @@ namespace Lengine {
 		AssetManager::AssetManager(EngineSettings& set):
 			settings(set)
 		{
-			//LoadAllMetaFiles("../assets");
+			
 		}
 		void LoadAllMetaFiles(const fs::path& root);
 

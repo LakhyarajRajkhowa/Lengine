@@ -1,8 +1,11 @@
 #pragma once
 
+#include "../assets/MeshRegistry.h"
 #include "../resources/AssetManager.h"
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
+
+
 namespace Lengine {
 	class GizmoRenderer {
 	public:
