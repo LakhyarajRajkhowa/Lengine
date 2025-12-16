@@ -168,7 +168,6 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             
             entity->setMeshID(droppedID);
             sceneManager.getActiveScene()->assignDefaultMaterials(entity, mesh);
-            //assetManager.linkMaterialInstance(sceneManager.getActiveScene(),  entity);
         }
         ImGui::EndDragDropTarget();
     }
@@ -199,6 +198,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     
      // MATERIALS
       
+    
     ImGui::Separator();
     ImGui::Text("Material");
     ImGui::Separator();
@@ -206,85 +206,123 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     Mesh* mesh = assetManager.getMesh(entity->getMeshID());
     if (!mesh) return;
 
-    for (int i = 0; i < mesh->subMeshes.size(); i++)
+    for (int i = 0; i < mesh->materialGroups.size(); i++)
     {
-        auto& sm = mesh->subMeshes[i];
 
+        auto& materialGroup = mesh->materialGroups[i];
+        if (materialGroup.empty())
+            continue;
         ImGui::PushID(i);  
 
         ImGuiTreeNodeFlags flags =
             ImGuiTreeNodeFlags_FramePadding |
             ImGuiTreeNodeFlags_SpanAvailWidth;
 
+        unsigned int firstSmIdx = materialGroup.front();
+        SubMesh& firstSm = mesh->subMeshes[firstSmIdx];
+
+
         bool open = ImGui::TreeNodeEx(
-            "##SubMeshNode",  
+            "MaterialNode",  
             flags,
-            "%s", sm.getName().empty() ? "SubMesh" : sm.getName().c_str()
+            "%s", firstSm.getName().empty() ? "Material" : firstSm.getName().c_str()
         );
 
         // Hover detection
-        if (ImGui::IsItemHovered()) 
-            sm.isHovered = true;
-        else 
-            sm.isHovered = false;
+        if (ImGui::IsItemHovered()) {
+            for (auto& smIdx : materialGroup) {
+                mesh->subMeshes[smIdx].isHovered = true;
+            }
+        }
+        else {
+            for (auto& smIdx : materialGroup) {
+                mesh->subMeshes[smIdx].isHovered = false;
+            }
+        }
         
-        if (open)
-        {
-            sm.isSelected = true;
+        if (open) {
+            
+            for (unsigned int i = 0; i < materialGroup.size(); i++) {
+                unsigned int smIdx = materialGroup[i];
+                SubMesh& sm = mesh->subMeshes[smIdx];
 
-            // --- Material instance ---
-            UUID instID = entity->getMaterialInstanceUUIDs().at(sm.getName());
-            MaterialInstance& inst =
-                sceneManager.getActiveScene()->getMaterialInstance(instID);
-            const Material* baseMat =
-                assetManager.getMaterial(inst.baseMaterial);
+                ImGui::PushID(smIdx);
 
-            // ---- Diffuse (Kd) ----
-            glm::vec3 kd = inst.Kd.value_or(baseMat->Kd);
-            if (ImGui::ColorEdit3("Diffuse (Kd)", glm::value_ptr(kd)))
-                inst.Kd = kd; // override only if user edits
+                bool openSubmesh = ImGui::TreeNodeEx(
+                    "SubMeshNode",
+                    flags,
+                    "%s", sm.getName().empty() ? "SubMesh" : sm.getName().c_str()
+                );
 
-            if (inst.Kd.has_value() && ImGui::SmallButton("Reset Kd")) inst.Kd.reset();
-            ImGui::Spacing();
+                if (ImGui::IsItemHovered()) {
+                    sm.isHovered = true;   
+                }
+                else {
+                    sm.isHovered = false;                   
+                }
+                
+                if (openSubmesh) {
+                    sm.isSelected = true;
 
-            // ---- Ambient (Ka) ----
-            glm::vec3 ka = inst.Ka.value_or(baseMat->Ka);
-            if (ImGui::ColorEdit3("Ambient (Ka)", glm::value_ptr(ka)))
-                inst.Ka = ka;
-            if (inst.Ka.has_value() && ImGui::SmallButton("Reset Ka")) inst.Ka.reset();
-            ImGui::Spacing();
+                    UUID instID = entity->getMaterialIndexUUIDs().at(sm.getMatIdx());
+                    MaterialInstance& inst =
+                        sceneManager.getActiveScene()->getMaterialInstance(instID);
+                    const Material* baseMat =
+                        assetManager.getMaterial(inst.baseMaterial);
 
-            // ---- Specular (Ks) ----
-            glm::vec3 ks = inst.Ks.value_or(baseMat->Ks);
-            if (ImGui::ColorEdit3("Specular (Ks)", glm::value_ptr(ks)))
-                inst.Ks = ks;
-            if (inst.Ks.has_value() && ImGui::SmallButton("Reset Ks")) inst.Ks.reset();
-            ImGui::Spacing();
+                    // ---- Diffuse (Kd) ----
+                    glm::vec3 kd = inst.Kd.value_or(baseMat->Kd);
+                    if (ImGui::ColorEdit3("Diffuse (Kd)", glm::value_ptr(kd)))
+                        inst.Kd = kd; // override only if user edits
 
-            // ---- Emissive (Ke) ----
-            glm::vec3 ke = inst.Ke.value_or(baseMat->Ke);
-            if (ImGui::ColorEdit3("Emissive (Ke)", glm::value_ptr(ke)))
-                inst.Ke = ke;
-            if (inst.Ke.has_value() && ImGui::SmallButton("Reset Ke")) inst.Ke.reset();
-            ImGui::Spacing();
+                    if (inst.Kd.has_value() && ImGui::SmallButton("Reset Kd")) inst.Kd.reset();
+                    ImGui::Spacing();
 
-            // ---- Shininess (Ns) ----
-            float ns = inst.Ns.value_or(baseMat->Ns);
-            if (ImGui::DragFloat("Shininess (Ns)", &ns, 0.1f, 0.0f, 256.0f))
-                inst.Ns = ns;
-            if (inst.Ns.has_value() && ImGui::SmallButton("Reset Ns")) inst.Ns.reset();
+                    // ---- Ambient (Ka) ----
+                    glm::vec3 ka = inst.Ka.value_or(baseMat->Ka);
+                    if (ImGui::ColorEdit3("Ambient (Ka)", glm::value_ptr(ka)))
+                        inst.Ka = ka;
+                    if (inst.Ka.has_value() && ImGui::SmallButton("Reset Ka")) inst.Ka.reset();
+                    ImGui::Spacing();
 
-            ImGui::Spacing();
+                    // ---- Specular (Ks) ----
+                    glm::vec3 ks = inst.Ks.value_or(baseMat->Ks);
+                    if (ImGui::ColorEdit3("Specular (Ks)", glm::value_ptr(ks)))
+                        inst.Ks = ks;
+                    if (inst.Ks.has_value() && ImGui::SmallButton("Reset Ks")) inst.Ks.reset();
+                    ImGui::Spacing();
+
+                    // ---- Emissive (Ke) ----
+                    glm::vec3 ke = inst.Ke.value_or(baseMat->Ke);
+                    if (ImGui::ColorEdit3("Emissive (Ke)", glm::value_ptr(ke)))
+                        inst.Ke = ke;
+                    if (inst.Ke.has_value() && ImGui::SmallButton("Reset Ke")) inst.Ke.reset();
+                    ImGui::Spacing();
+
+                    // ---- Shininess (Ns) ----
+                    float ns = inst.Ns.value_or(baseMat->Ns);
+                    if (ImGui::DragFloat("Shininess (Ns)", &ns, 0.1f, 0.0f, 256.0f))
+                        inst.Ns = ns;
+                    if (inst.Ns.has_value() && ImGui::SmallButton("Reset Ns")) inst.Ns.reset();
+
+                    ImGui::Spacing();
+                    ImGui::TreePop();
+                }
+                
+                ImGui::PopID();
+            }
             ImGui::TreePop();
         }
         else {
-            sm.isSelected = false;
+            for (auto& smIdx : materialGroup) {
+                mesh->subMeshes[smIdx].isSelected = false;
+
+            }           
             ImGui::PopID();
             continue;
         }
         ImGui::PopID();
-    }    
+}    
     
-
-   
+    
 }

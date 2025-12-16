@@ -54,7 +54,10 @@ namespace Lengine {
                 if (inputManager.getScrollY()) {
                     editorLayer.HandleMouseWheel(inputManager.getScrollY());
                 }
-            } 
+            }
+            else {
+                editorLayer.deselectAllEntities();
+            }
         }
         // reset each frame otherwise the scroll activates in next frame
         inputManager.resetScroll();

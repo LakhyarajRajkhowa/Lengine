@@ -147,12 +147,14 @@ void SceneHierarchyPanel::createNewModel() {
                 // Convert index to EntityType enum
                 EntityType selectedType = static_cast<EntityType>(entityTypeIndex);
 
-                activeScene->createEntity(
+                Entity* newEntity = activeScene->createEntity(
                     EntityName,
-                    UUID(0),       // meshID
+                    UUID(),       // meshID
                     UUID(),        // entityID
                     selectedType   // type
                 );
+                
+               
 
                 ImGui::CloseCurrentPopup();
             }

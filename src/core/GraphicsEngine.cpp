@@ -6,7 +6,8 @@ namespace Lengine {
 		sceneRenderer(camera,  sceneManager, assetManager),
 		inputHandler(camera, inputManager,  window, isRunning),
 		imguiLayer(inputManager, isRunning),
-		assetManager(settings)
+		assetManager(settings),
+		sceneManager(assetManager)
 		
 	{
 		

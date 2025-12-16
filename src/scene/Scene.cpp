@@ -101,26 +101,12 @@ namespace Lengine {
                 break;
         }
 
-        for (auto& sm : mesh->subMeshes) {
+        for (size_t i = 0; i < mesh->subMeshes.size(); i++) {
             UUID instID = createMaterialInstance(baseMat);
-            entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
+            entity->getMaterialIndexUUIDs()[i] = instID;
             
         }
     }
 
-    ResolvedMaterial Scene::getMaterialForSubmesh(
-        Entity* entity,
-        const std::string& submeshName,
-        Material* base
-    )
-    {
-        UUID instID = entity->getMaterialInstanceUUIDs().at(submeshName);
-        MaterialInstance& inst = getMaterialInstance(instID);
-
-        ResolvedMaterial out{};       
-        out.Kd = inst.Kd.value_or(base->Kd);
-
-        return out;
-    }
 
 }

@@ -7,7 +7,7 @@ namespace Lengine {
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
 
-        assetManager.LoadAllMetaFiles("../assets");
+        assetManager.LoadAllMetaFiles(Paths::Assets);
 
         gizmoRenderer.initGizmo();
         

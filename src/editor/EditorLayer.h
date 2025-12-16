@@ -45,6 +45,7 @@ namespace Lengine {
         // Editor manipulation
         void checkForHoveredEntity(const glm::vec3& rayDir, const glm::vec3& rayOrigin);
         void selectHoveredEntity();
+        void deselectAllEntities();
         void HandleDrag();
         void HandleMouseWheel(const int& mousewheelY);
         void HandleKeyboardShortcuts(const SDL_Keycode& key);

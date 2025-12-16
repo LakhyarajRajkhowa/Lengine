@@ -188,6 +188,9 @@ namespace Lengine {
 
         
     }
+    void EditorLayer::deselectAllEntities() {
+        selectedEntity = nullptr;
+    }
     void EditorLayer::HandleDrag() {
 
         ImVec2 mouse = viewportPanel.getMousePosInViewport();
@@ -203,7 +206,7 @@ namespace Lengine {
             projection
         );
         glm::vec3 rayOrigin = camera.getCameraPosition();
-            if (selectedEntity != nullptr) {
+            if (selectedEntity != nullptr && selectedEntity->isSelected) {
                 glm::vec3 currentHit = RayPlaneIntersection(
                     rayOrigin, rayDir,
                     dragPlaneNormal, dragPlaneY

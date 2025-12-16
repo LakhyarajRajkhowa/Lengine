@@ -34,7 +34,9 @@ namespace Lengine {
 		void setType(const EntityType& t) { type = t; }
 		UUID getMeshID() const { return meshID; }
 		void setMeshID(const UUID& id) { meshID = id; }
-		std::unordered_map<std::string, UUID>& getMaterialInstanceUUIDs() { return materialInstanceUUID; }
+		std::unordered_map<unsigned int, UUID>& getMaterialIndexUUIDs() { return materialIndexToUUID; }
+
+
 		void setTransform(const Transform& t) { transform = t;  }
 		Transform& getTransform() {
 			return transform;
@@ -45,10 +47,9 @@ namespace Lengine {
 		const glm::mat4& getTransformMatrix() const { return transform.getMatrix(); }
 		
 		bool isSelected = false;
+		bool isDragged = false;
 		bool isMovable = true;
 
-		void applyMaterialsToAllSubmeshes(UUID matID = UUID(5485914302357758172));
-		void applyMaterialToSubmesh(std::string submeshName, UUID);
 	private:
 		
 		UUID ID;
@@ -56,7 +57,7 @@ namespace Lengine {
 		EntityType type;
 		Transform transform;
 		UUID meshID;
-		std::unordered_map<std::string, UUID> materialInstanceUUID; // < submesh_name, materialInstanceUUID >
+		std::unordered_map<unsigned int, UUID> materialIndexToUUID;
 
 
 	};

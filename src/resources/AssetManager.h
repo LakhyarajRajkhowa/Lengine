@@ -67,7 +67,6 @@ namespace Lengine {
 		GLTexture* getTexture(const std::string& name);
 		GLTexture* loadTexture(const std::string& name, const std::string& path);
 
-		void linkMaterialInstance(Scene* scene, Entity* entity);
 
         GLSLProgram* loadShader(const std::string& name,
             const std::string& vertPath,

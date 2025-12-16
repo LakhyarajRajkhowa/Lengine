@@ -190,37 +190,7 @@ GLTexture* AssetManager::loadTexture(const std::string& name , const std::string
  
 }
 
-// Fill/Initialize the materialsIDs 
-void AssetManager::linkMaterialInstance(Scene* scene, Entity* entity) {
-    Mesh* m = getMesh(entity->getMeshID());
-    switch (entity->getType()) {
-        case EntityType::DefaultObject:
-            for (auto& sm : m->subMeshes) {
-                // default material
-                UUID instID = scene->createMaterialInstance(MaterialID::Default);
-                entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
-            }
-            break;
-        case EntityType::Light:
-            for (auto& sm : m->subMeshes) {
-                // lightSource material
-                UUID instID = scene->createMaterialInstance(MaterialID::LightSource);
-                entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
-            }
-            break;
-        case EntityType::Camera:
-            for (auto& sm : m->subMeshes) {
-                // default material
-                UUID instID = scene->createMaterialInstance(MaterialID::Default);
-                entity->getMaterialInstanceUUIDs()[sm.getName()] = instID;
-            }
-            break;
 
-    }
-
-    
-
-}
 void AssetManager::saveModelFile(const UUID& meshUUID)
 {
     auto it = meshes.find(meshUUID);
@@ -418,7 +388,6 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 if (meshes[meshUUID]) {
                     Mesh* mesh = getMesh(entity->getMeshID());
                     scene->assignDefaultMaterials(entity, mesh);
-                    // linkMaterialInstance(scene,  entity);
 
                 }
 

@@ -17,6 +17,8 @@
 #include <cstdlib> // strtof/strtol
 #include <sys/stat.h> // optional for file timestamp
 #include <glm/glm.hpp>
+#include <sstream>
+
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -117,203 +119,151 @@ namespace Lengine {
             return;
         }
     }
-
-    inline void loadOBJ(const std::string& path, Mesh& mesh, bool verbose = false) {
-        // Read file into memory
+    inline void loadOBJ(const std::string& path, Mesh& mesh, bool verbose = false)
+    {
+        // --- Read file into memory ---
         std::ifstream ifs(path, std::ios::binary | std::ios::ate);
-        if (!ifs) {
-            std::cerr << "Failed to open OBJ: " << path << "\n";
-            return;
-        }
-        std::streamsize fileSize = ifs.tellg();
+        if (!ifs) { std::cerr << "Failed to open OBJ: " << path << "\n"; return; }
+        std::streamsize size = ifs.tellg();
         ifs.seekg(0, std::ios::beg);
-        std::vector<char> buf;
-        buf.resize((size_t)fileSize + 1);
-        if (!ifs.read(buf.data(), fileSize)) {
-            std::cerr << "Failed to read OBJ: " << path << "\n";
-            return;
-        }
-        buf[fileSize] = '\0';
-        char* data = buf.data();
-        char* end = data + fileSize;
 
-        // Temporary storage
+        std::vector<char> buf(size + 1);
+        if (!ifs.read(buf.data(), size)) { std::cerr << "Failed to read OBJ: " << path << "\n"; return; }
+        buf[size] = '\0';
+        char* data = buf.data();
+        char* end = data + size;
+
+        // --- Temporary storage ---
         std::vector<glm::vec3> positions;
         std::vector<glm::vec2> texcoords;
         std::vector<glm::vec3> normals;
 
-        // Reserve heuristic (helps a lot)
-        size_t approxVerts = (size_t)std::max<int64_t>(1024, (int64_t)(fileSize / 60));
-        positions.reserve(approxVerts);
-        texcoords.reserve(approxVerts / 4);
-        normals.reserve(approxVerts / 4);
+        // material -> SubMeshBuilder
+        struct SubMeshBuilder {
+            std::vector<Vertex> vertices;
+            std::vector<unsigned int> indices;
+            std::unordered_map<VertexKey, unsigned int, VertexKeyHasher> cache;
+        };
+        std::unordered_map<std::string, SubMeshBuilder> materialBuckets;
 
-        std::vector<Vertex> buildVerts;
-        std::vector<unsigned int> buildIndices;
-        buildVerts.reserve(approxVerts);
-        buildIndices.reserve(approxVerts * 3);
+        std::string currentMaterial = "default";
 
-        std::unordered_map<VertexKey, unsigned int, VertexKeyHasher> vertexCache;
-        vertexCache.reserve(approxVerts * 2);
-
-        auto pushCurrentSubMeshIfNotEmpty = [&]() {
-            if (!buildVerts.empty() && !buildIndices.empty()) {
-                mesh.subMeshes.emplace_back("defaultName", buildVerts, buildIndices);
-                if (verbose) {
-                    std::cout << "[FASTOBJ] Pushed submesh (verts=" << buildVerts.size()
-                        << ", indices=" << buildIndices.size() << ")\n";
-                }
-            }
-            else {
-                if (verbose && (!buildVerts.empty() || !buildIndices.empty())) {
-                    std::cout << "[FASTOBJ] WARNING: not pushing partial submesh: verts="
-                        << buildVerts.size() << " indices=" << buildIndices.size() << "\n";
-                }
-            }
-            buildVerts.clear();
-            buildIndices.clear();
-            vertexCache.clear();
-            };
-
-        // iterate lines via pointer
+        // --- Line parsing ---
         char* lineStart = data;
         size_t lineNo = 0;
-        while (lineStart < end) {
+
+        while (lineStart < end)
+        {
             ++lineNo;
-            // find end of line
             char* lineEnd = (char*)memchr(lineStart, '\n', end - lineStart);
             if (!lineEnd) lineEnd = end;
-            // skip leading spaces
+
             char* p = lineStart;
             while (p < lineEnd && (*p == ' ' || *p == '\t' || *p == '\r')) ++p;
             if (p >= lineEnd) { lineStart = lineEnd + 1; continue; }
 
             char c = *p;
-            if (c == '#') { lineStart = lineEnd + 1; continue; } // comment
 
-            // Vertex position 'v '
+            // ---------------- COMMENT ----------------
+            if (c == '#') { lineStart = lineEnd + 1; continue; }
+
+            // ---------------- VERTEX ----------------
             if (c == 'v' && (p + 1 < lineEnd) && (p[1] == ' ' || p[1] == '\t')) {
-                p += 1; // skip 'v'
-                p = skipSpaces(p + 1, lineEnd);
-                // parse three floats
+                p += 1; p = skipSpaces(p, lineEnd);
                 float x = parseFloat(p, lineEnd);
-                p = skipSpaces(p, lineEnd);
-                float y = parseFloat(p, lineEnd);
-                p = skipSpaces(p, lineEnd);
-                float z = parseFloat(p, lineEnd);
+                p = skipSpaces(p, lineEnd); float y = parseFloat(p, lineEnd);
+                p = skipSpaces(p, lineEnd); float z = parseFloat(p, lineEnd);
                 positions.emplace_back(x, y, z);
             }
-            // Texture coord 'vt'
-            else if (c == 'v' && (p + 2 < lineEnd) && p[1] == 't' && (p[2] == ' ' || p[2] == '\t')) {
-                p += 2;
-                p = skipSpaces(p + 1, lineEnd);
-                float u = parseFloat(p, lineEnd);
-                p = skipSpaces(p, lineEnd);
+            else if (c == 'v' && (p + 2 < lineEnd) && p[1] == 't') {
+                p += 2; p = skipSpaces(p, lineEnd);
+                float u = parseFloat(p, lineEnd); p = skipSpaces(p, lineEnd);
                 float v = parseFloat(p, lineEnd);
                 texcoords.emplace_back(u, v);
             }
-            // Normal 'vn'
-            else if (c == 'v' && (p + 2 < lineEnd) && p[1] == 'n' && (p[2] == ' ' || p[2] == '\t')) {
-                p += 2;
-                p = skipSpaces(p + 1, lineEnd);
-                float nx = parseFloat(p, lineEnd);
-                p = skipSpaces(p, lineEnd);
-                float ny = parseFloat(p, lineEnd);
-                p = skipSpaces(p, lineEnd);
+            else if (c == 'v' && (p + 2 < lineEnd) && p[1] == 'n') {
+                p += 2; p = skipSpaces(p, lineEnd);
+                float nx = parseFloat(p, lineEnd); p = skipSpaces(p, lineEnd);
+                float ny = parseFloat(p, lineEnd); p = skipSpaces(p, lineEnd);
                 float nz = parseFloat(p, lineEnd);
                 normals.emplace_back(nx, ny, nz);
             }
-            // new material start -> push submesh
-            else if (c == 'u' && (p + 5 < lineEnd) && strncmp(p, "usemtl", 6) == 0) {
-                pushCurrentSubMeshIfNotEmpty();
-            }
-            // group -> push
-            else if (c == 'g' && (p + 1 < lineEnd) && (p[1] == ' ' || p[1] == '\t')) {
-                pushCurrentSubMeshIfNotEmpty();
-            }
-            // faces
-            else if (c == 'f' && (p + 1 < lineEnd) && (p[1] == ' ' || p[1] == '\t')) {
-                p += 1;
-                p = skipSpaces(p + 1, lineEnd);
 
-                std::vector<unsigned int> faceIdxs;
-                faceIdxs.reserve(8);
+            // ---------------- MATERIAL ----------------
+            else if (c == 'u' && strncmp(p, "usemtl", 6) == 0) {
+                p += 6; p = skipSpaces(p, lineEnd);
+                char* nameStart = p;
+                while (p < lineEnd && *p != ' ' && *p != '\t' && *p != '\r') ++p;
+                currentMaterial = std::string(nameStart, p);
+                if (currentMaterial.empty()) currentMaterial = "default";
+            }
+
+            // ---------------- FACE ----------------
+            else if (c == 'f' && (p + 1 < lineEnd)) {
+                p += 1; p = skipSpaces(p, lineEnd);
+                auto& bucket = materialBuckets[currentMaterial];
+                std::vector<unsigned int> faceIndices;
 
                 while (p < lineEnd) {
-                    // skip spaces
                     p = skipSpaces(p, lineEnd);
                     if (p >= lineEnd) break;
-                    // token start
-                    char* tokStart = p;
-                    // find token end
-                    while (p < lineEnd && *p != ' ' && *p != '\t' && *p != '\r') ++p;
+
                     char* tokEnd = p;
+                    while (tokEnd < lineEnd && *tokEnd != ' ' && *tokEnd != '\t' && *tokEnd != '\r') ++tokEnd;
 
                     int vi = 0, vti = 0, vni = 0;
-                    parseFaceToken(tokStart, tokEnd, vi, vti, vni);
+                    parseFaceToken(p, tokEnd, vi, vti, vni);
 
-                    // resolve negative indices
-                    auto resolveIndex = [&](int idx, size_t containerSize) -> int {
-                        if (idx > 0) return idx;
-                        if (idx < 0) return (int)containerSize + idx + 1;
-                        return 0;
-                        };
+                    auto resolve = [&](int idx, size_t sz) { return (idx > 0) ? idx - 1 : (int)sz + idx; };
+                    VertexKey key{ resolve(vi, positions.size()), resolve(vti, texcoords.size()), resolve(vni, normals.size()) };
 
-                    int rv = resolveIndex(vi, positions.size());
-                    int rvt = resolveIndex(vti, texcoords.size());
-                    int rvn = resolveIndex(vni, normals.size());
-
-                    if (rv <= 0 || rv > (int)positions.size()) {
-                        std::cerr << "[FASTOBJ][Error] Line " << lineNo << " vertex index out of range v=" << vi << "\n";
-                        // skip this face token
-                        continue;
-                    }
-                    // build key
-                    VertexKey key{ rv, rvt, rvn };
-                    auto it = vertexCache.find(key);
-                    if (it != vertexCache.end()) {
-                        faceIdxs.push_back(it->second);
-                    }
+                    auto it = bucket.cache.find(key);
+                    if (it != bucket.cache.end())
+                        faceIndices.push_back(it->second);
                     else {
-                        Vertex vert{};
-                        vert.position = positions[rv - 1];
-                        vert.texCoord = (rvt > 0) ? texcoords[rvt - 1] : glm::vec2(0.0f);
-                        vert.normal = (rvn > 0) ? normals[rvn - 1] : glm::vec3(0.0f, 1.0f, 0.0f);
-                        vert.tangent = glm::vec3(0.0f);
-                        vert.bitangent = glm::vec3(0.0f);
+                        Vertex v{};
+                        v.position = positions[key.v];
+                        if (key.vt >= 0) v.texCoord = texcoords[key.vt];
+                        if (key.vn >= 0) v.normal = normals[key.vn];
 
-                        buildVerts.push_back(vert);
-                        unsigned int idx = (unsigned int)buildVerts.size() - 1;
-                        vertexCache.emplace(key, idx);
-                        faceIdxs.push_back(idx);
+                        bucket.vertices.push_back(v);
+                        unsigned int idx = (unsigned int)bucket.vertices.size() - 1;
+                        bucket.cache[key] = idx;
+                        faceIndices.push_back(idx);
                     }
-                } // end face tokens
 
-                if (faceIdxs.size() >= 3) {
-                    for (size_t i = 1; i < faceIdxs.size() - 1; ++i) {
-                        buildIndices.push_back(faceIdxs[0]);
-                        buildIndices.push_back(faceIdxs[i]);
-                        buildIndices.push_back(faceIdxs[i + 1]);
-                    }
+                    p = tokEnd;
                 }
-                else {
-                    if (verbose) std::cerr << "[FASTOBJ] face with <3 verts at line " << lineNo << "\n";
+
+                // triangulate polygon
+                for (size_t i = 1; i + 1 < faceIndices.size(); i++) {
+                    bucket.indices.push_back(faceIndices[0]);
+                    bucket.indices.push_back(faceIndices[i]);
+                    bucket.indices.push_back(faceIndices[i + 1]);
                 }
             }
 
-            // advance to next line
+            // ---------------- NEXT LINE ----------------
             lineStart = (lineEnd >= end) ? end : (lineEnd + 1);
-        } // end while lines
-
-        // push final submesh
-        pushCurrentSubMeshIfNotEmpty();
-
-        if (mesh.subMeshes.empty()) {
-            std::cerr << "[FASTOBJ] Warning: no submeshes created for " << path << "\n";
         }
 
+        // ---------------- BUILD SUBMESHES ----------------
+        for (auto& [matName, builder] : materialBuckets) {
+            
+            if (builder.vertices.empty() || builder.indices.empty()) continue;
+            SubMesh sm(matName, builder.vertices, builder.indices);
+            mesh.subMeshes.push_back(std::move(sm));
+            std::cout << matName << std::endl;
+            builder.vertices.clear();
+            builder.indices.clear();
+            builder.cache.clear();
+        }
 
+        if (verbose) {
+            std::cout << "[FASTOBJ] Loaded " << mesh.subMeshes.size() << " submeshes from " << path << "\n";
+        }
     }
+
 
 
     inline SubMesh convertToEngineSubMesh(const aiMesh* mesh) {
@@ -383,41 +333,33 @@ namespace Lengine {
         std::vector<uint32_t>().swap(indices);
         // print mesh size 
 
-       /* std::cout << mesh->mName.C_Str() << " -" << std::endl;
-        std::cout << "Size of Vertices: "
-            << (vertices.size() * sizeof(vertices[0])) / (1024.0 * 1024.0)
-            << " MB\n";
-
-        std::cout << "Size of Indices: "
-            << (indices.size() * sizeof(indices[0])) / (1024.0 * 1024.0)
-            << " MB\n";
-        std::cout << std::endl;
-        */
+      
 
         return engineSubMesh;
     }
 
-    inline int assimpLoader(const std::string& path, Mesh& mesh) {
+    inline void assimpLoader(const std::string& path, Mesh& mesh) {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path,
             aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
-            return -1;
-
+            return;
         }
 
         std::cout << "Model loaded successfully! " << path << std::endl;
 
-        if (scene && scene->mRootNode) {
-            for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
-                aiMesh* aMesh = scene->mMeshes[i];
-                mesh.subMeshes.push_back(convertToEngineSubMesh(aMesh));
-
-            }
+        for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
+            aiMesh* aMesh = scene->mMeshes[i];
+            SubMesh submesh = convertToEngineSubMesh(aMesh);
+            submesh.setMatIdx(aMesh->mMaterialIndex);
+            submesh.setId(i);
+            mesh.subMeshes.push_back(std::move(submesh));
+            mesh.materialGroups[aMesh->mMaterialIndex].push_back(submesh.getID());
+            std::cout << aMesh->mMaterialIndex << " , " << submesh.getID() << std::endl;
         }
-
     }
+
 
 } // namespace Lengine
