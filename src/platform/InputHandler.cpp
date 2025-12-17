@@ -31,7 +31,8 @@ namespace Lengine {
         {
             if (viewportHovered)
             {
-                for (SDL_Keycode key : { SDLK_UP, SDLK_DOWN, SDLK_x}) {
+                for (SDL_Keycode key : EditorKeys::All)
+                {
                     editorLayer.HandleKeyboardShortcuts(key);
                 }
                 for ( Uint8 button : { SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE}) {

@@ -101,7 +101,7 @@ namespace Lengine {
 
             if (!mesh)
             {
-                
+              
                 float radius = 1.0f;
                 if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
                 {
@@ -153,12 +153,10 @@ namespace Lengine {
         ImVec2 mouse = viewportPanel.getMousePosInViewport();
         ImVec2 mouse2 = viewportPanel.getMousePosInImage();
         ImVec2 vpSize = viewportPanel.GetViewportSize();
-       
-        
+             
         glm::mat4 view = camera.getViewMatrix();
         glm::mat4 projection = camera.getProjectionMatrix();
       
-
         glm::vec3 rayDir = ComputeRayDirection(
             mouse.x,
             mouse.y,
@@ -169,9 +167,7 @@ namespace Lengine {
         );
 
         glm::vec3 rayOrigin = camera.getCameraPosition();
-        
-            
-
+               
         checkForHoveredEntity(rayDir, rayOrigin);
         if (hoveredEntity == nullptr) {
             for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
@@ -184,9 +180,7 @@ namespace Lengine {
             other->isSelected = false;
         }
         selectedEntity = hoveredEntity;
-        selectedEntity->isSelected = true;
-
-        
+        selectedEntity->isSelected = true;       
     }
     void EditorLayer::deselectAllEntities() {
         selectedEntity = nullptr;
@@ -211,18 +205,11 @@ namespace Lengine {
                     rayOrigin, rayDir,
                     dragPlaneNormal, dragPlaneY
                 );
-
                     selectedEntity->getTransform().position = currentHit + dragOffset;
-
-
             }
             else {
                 checkForHoveredEntity(rayDir, rayOrigin);
-            }
-        
-
-
-        
+            }     
     }
 
     void EditorLayer::HandleMouseWheel(const int& mouseWheelY) {
@@ -246,36 +233,63 @@ namespace Lengine {
     }
 
 
-    void EditorLayer::HandleKeyboardShortcuts(const SDL_Keycode& key) {
-      
-
+    void EditorLayer::HandleKeyboardShortcuts(const SDL_Keycode& key)
+    {
         if (!selectedEntity) return;
+
         auto& pos = selectedEntity->getTransform().position;
-        
-        if (inputManager.isKeyDown(key)) {
-            switch (key) {
-            case SDLK_UP:
-                pos.y += 0.01f;
+
+        float speed = movementSpeed *
+            (inputManager.isKeyDown(EditorKeys::FastMove) ? 5.0f : 1.0f);
+
+        glm::vec3 camForward = camera.getForward();
+        camForward.y = 0.0f;
+        camForward = glm::normalize(camForward);
+
+        glm::vec3 camRight = camera.getRight();
+        camRight.y = 0.0f;
+        camRight = glm::normalize(camRight);
+
+        if (inputManager.isKeyDown(key))
+        {
+            switch (key)
+            {
+            case EditorKeys::MovePosZ: 
+                pos += camForward * speed;
                 break;
-            case SDLK_DOWN:
-                pos.y -= 0.01f;
+
+            case EditorKeys::MoveNegZ:
+                pos -= camForward * speed;
+                break;
+
+            case EditorKeys::MovePosX: 
+                pos += camRight * speed;
+                break;
+
+            case EditorKeys::MoveNegX: 
+                pos -= camRight * speed;
+                break;
+            case EditorKeys::MovePosY:
+                pos.y += movementSpeedMultiplier * speed;
+                break;
+
+            case EditorKeys::MoveNegY: 
+                pos.y -= movementSpeedMultiplier * speed;
                 break;
             }
-            
         }
-        if (inputManager.isKeyPressed(key)) {
-            switch (key) {
-            case SDLK_x:
+        if (inputManager.isKeyPressed(key))
+        {
+            switch (key)
+            {
+            case EditorKeys::Delete:
                 sceneManager.getActiveScene()->removeEntity(selectedEntity->getID());
                 selectedEntity = nullptr;
                 break;
-            
             }
-
-        }   
+        }
     }
 
-   
 
     // Dockspace
     void EditorLayer::BeginDockspace() {

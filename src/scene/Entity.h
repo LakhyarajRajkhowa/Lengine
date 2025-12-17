@@ -19,6 +19,7 @@ namespace Lengine {
 		COUNT
 	};
 
+	
 	class Entity {
 	public:
 		Entity(UUID eID, const std::string& n, EntityType t, UUID mID)
@@ -28,6 +29,8 @@ namespace Lengine {
 		}
 		UUID getID() const { return ID; }
 		void setID(const UUID& id) { ID = id; }
+		uint32_t getIndex()  const { return index; }
+		void setIndex(const uint32_t& idx) { index = idx; }
 		const std::string& getName() const { return name; }
 		void setName(const std::string& newName) { name = newName; }
 		const EntityType& getType() const { return type; }
@@ -49,16 +52,25 @@ namespace Lengine {
 		bool isSelected = false;
 		bool isDragged = false;
 		bool isMovable = true;
+		bool isVisible = true;
 
+		std::unordered_set<uint32_t> hoveredSubMeshes;
+		std::unordered_set<uint32_t> selectedSubMeshes;
+
+		
 	private:
 		
 		UUID ID;
+		uint32_t index;
 		std::string name;
 		EntityType type;
 		Transform transform;
+
 		UUID meshID;
 		std::unordered_map<unsigned int, UUID> materialIndexToUUID;
 
+
+		
 
 	};
 }

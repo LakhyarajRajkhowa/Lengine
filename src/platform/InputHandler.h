@@ -6,6 +6,7 @@
 
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/geometry/ray.h"
+#include "../platform/KeyBindings.h"
 #include "../platform/InputManager.h"
 #include "../platform/Window.h"
 #include "../scene/Scene.h"
@@ -53,6 +54,8 @@ namespace Lengine {
 		Entity* selectedEntity = nullptr;
 		int lastMouseX = 0;
 		int lastMouseY = 0;
+
+
 
 	private:
 		

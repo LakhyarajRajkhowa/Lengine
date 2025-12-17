@@ -19,12 +19,15 @@ struct Vertex {
 namespace Lengine {
     class SubMesh {
     private:
-        unsigned int id;
+        unsigned int index;
         std::string name;
-        unsigned int materialIndex;
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
         GLuint VAO, VBO, EBO;
+
+        unsigned int materialIndex;
+
+        
 
         
         glm::vec3 localCenter;
@@ -39,16 +42,17 @@ namespace Lengine {
 
         bool isHovered = false;
         bool isSelected = false;
+        bool isVisible = true;
 
         void draw() const;
         const glm::vec3& getLocalCenter() { return localCenter; }
         float& getBoundingRadius() { return boundingRadius; }
         void setupMesh();
         const std::string& getName() { return name; }
-        const unsigned int& getID() { return id; }
+        const unsigned int& getIndex() { return index; }
 
         void setMatIdx(unsigned int idx) { materialIndex = idx; }
-        void setId(unsigned int ID) { id = ID; }
+        void setIndex(unsigned int ID) { index = ID; }
 
         const unsigned int& getMatIdx() { return  materialIndex; }
 
@@ -59,10 +63,10 @@ namespace Lengine {
         std::unordered_map<unsigned int, std::vector<unsigned int>> materialGroups;
         std::vector<SubMesh> subMeshes;
 
-
-        SubMesh* Mesh::getSubMeshByID(const unsigned int& id) {
+        std::vector<bool> visibleMaterialGroups ;
+        SubMesh* Mesh::getSubMeshByIndex(const unsigned int& id) {
             for (auto& sm : subMeshes) {
-                if (sm.getID() == id)
+                if (sm.getIndex() == id)
                     return &sm;
             }
             return nullptr;

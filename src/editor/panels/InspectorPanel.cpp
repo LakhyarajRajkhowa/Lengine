@@ -162,6 +162,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             Mesh* mesh = assetManager.getMesh(droppedID);
            
             if (!mesh) {
+                
                 assetManager.loadMesh(droppedID, meshPath);
                 mesh = assetManager.getMesh(droppedID);
             }
@@ -197,8 +198,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         
     
      // MATERIALS
-      
-    
+       
     ImGui::Separator();
     ImGui::Text("Material");
     ImGui::Separator();
@@ -221,9 +221,8 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         unsigned int firstSmIdx = materialGroup.front();
         SubMesh& firstSm = mesh->subMeshes[firstSmIdx];
 
-
         bool open = ImGui::TreeNodeEx(
-            "MaterialNode",  
+            "MaterialNode",
             flags,
             "%s", firstSm.getName().empty() ? "Material" : firstSm.getName().c_str()
         );
@@ -231,12 +230,14 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         // Hover detection
         if (ImGui::IsItemHovered()) {
             for (auto& smIdx : materialGroup) {
-                mesh->subMeshes[smIdx].isHovered = true;
+                entity->hoveredSubMeshes.insert(smIdx);
+              //  mesh->subMeshes[smIdx].isHovered = true;
             }
         }
         else {
             for (auto& smIdx : materialGroup) {
-                mesh->subMeshes[smIdx].isHovered = false;
+                entity->hoveredSubMeshes.erase(smIdx);
+               // mesh->subMeshes[smIdx].isHovered = false;
             }
         }
         
@@ -245,15 +246,26 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             for (unsigned int i = 0; i < materialGroup.size(); i++) {
                 unsigned int smIdx = materialGroup[i];
                 SubMesh& sm = mesh->subMeshes[smIdx];
-
                 ImGui::PushID(smIdx);
+
+                bool submeshVisible = sm.isVisible;
+                if (ImGui::Checkbox("##Visible", &submeshVisible)) {
+                    sm.isVisible = submeshVisible;
+                }
+
+                ImGui::SameLine();
 
                 bool openSubmesh = ImGui::TreeNodeEx(
                     "SubMeshNode",
                     flags,
                     "%s", sm.getName().empty() ? "SubMesh" : sm.getName().c_str()
                 );
-
+                if (ImGui::IsItemHovered()) {
+                    entity->hoveredSubMeshes.insert(smIdx);
+                }
+                else {
+                    entity->hoveredSubMeshes.erase(smIdx);
+                }
                 if (ImGui::IsItemHovered()) {
                     sm.isHovered = true;   
                 }

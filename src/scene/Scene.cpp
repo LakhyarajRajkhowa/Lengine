@@ -9,7 +9,10 @@ namespace Lengine {
     Entity* Scene::createEntity (const std::string& name, UUID meshID, UUID entityID, EntityType type) {
         auto entity = std::make_unique<Entity>(entityID, name, type, meshID);
         Entity* entityPtr = entity.get();
+
+        uint32_t index = entities.size();
         entities.push_back(std::move(entity));
+        entities.back()->setIndex(index);
 
         return entityPtr;
     }
@@ -47,6 +50,23 @@ namespace Lengine {
         return nullptr;
     }
 
+    const Entity* Scene::getEntityByID(const UUID& id) const {
+        for (auto& entity : entities) {
+            if (entity->getID() == id) {
+                return entity.get();
+            }
+        }
+        return nullptr;
+    }
+    Entity* Scene::getEntityByID(const UUID& id) {
+        for (auto& entity : entities) {
+            if (entity->getID() == id) {
+                return entity.get();
+            }
+        }
+        return nullptr;
+    }
+
     MaterialInstance& Scene::getMaterialInstance(UUID id)
     {
         auto it = materialInstances.find(id);
@@ -77,6 +97,8 @@ namespace Lengine {
         return id;
     }
 
+
+
     void Scene::destroyMaterialInstance(UUID id)
     {
         auto it = materialInstances.find(id);
@@ -85,7 +107,7 @@ namespace Lengine {
         }
     }
 
-    void Scene::assignDefaultMaterials(Entity* entity, Mesh* mesh)
+    void Scene::assignDefaultMaterials(Entity* entity, Mesh* mesh) 
     {
         UUID baseMat = MaterialID::Default;
 
@@ -108,5 +130,7 @@ namespace Lengine {
         }
     }
 
-
 }
+
+
+

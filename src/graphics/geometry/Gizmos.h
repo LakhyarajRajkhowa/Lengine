@@ -7,6 +7,13 @@
 
 
 namespace Lengine {
+	struct GizmoArrows {
+		Mesh* gizmoArrow = nullptr;
+		GLSLProgram gizmoArrowShader;
+		glm::vec3 axis;
+		glm::vec4 color;
+	};
+
 	class GizmoRenderer {
 	public:
 		GizmoRenderer(
@@ -20,12 +27,21 @@ namespace Lengine {
 		{
 			
 		}
+		void GizmoRenderer::drawSingleArrow(
+			GizmoArrows& arrow,
+			const glm::vec3& position,
+			float size
+		);
+
+		void drawGizmoSpheres();
+		void drawGizmoGrid();
+		void drawGizmoArrows();
+
 		void initGizmo() {
 			initGizmoGrid();
 			initGizmoSpheres();
+			initGizmoArrows();
 		}
-		void drawGizmoSpheres();
-		void drawGizmoGrid();	
 
 	private:
 		AssetManager& assetManager;
@@ -38,8 +54,14 @@ namespace Lengine {
 		Mesh* gizmoGrid = nullptr;
 		GLSLProgram gizmoGridShader;
 
-
+		
+		
+		GizmoArrows arrowX;
+		GizmoArrows arrowY;
+		GizmoArrows arrowZ;
+		
 		void initGizmoSpheres();
 		void initGizmoGrid();
+		void initGizmoArrows();
 	};
 }

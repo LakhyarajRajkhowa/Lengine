@@ -15,10 +15,17 @@
 
 #include "../graphics/geometry/Mesh.h"
 
+#include "../scene/EntityComponentSystem.h"
+
 
 namespace Lengine {
 
+    struct MeshProperties {
+        bool hasMaterials = false;
+        bool hasAnimations = false;
+        bool hasCamera = false;
 
+    };
 
 
     inline SubMesh convertToEngineSubMesh(const aiMesh* mesh) {
@@ -93,28 +100,44 @@ namespace Lengine {
         return engineSubMesh;
     }
 
-    inline void assimpLoader(const std::string& path, Mesh& mesh) {
+    inline MeshProperties assimpLoader(
+        const std::string& path,
+        Mesh& mesh
+        ) {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path,
             aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
+        MeshProperties properties;
+
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
-            return;
+            return properties;
         }
 
         std::cout << "Model loaded successfully! " << path << std::endl;
+       
+        // additional info in the mesh file
+        properties.hasMaterials = scene->HasMaterials();
+
+        
 
         for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
             aiMesh* aMesh = scene->mMeshes[i];
             SubMesh submesh = convertToEngineSubMesh(aMesh);
-            submesh.setMatIdx(aMesh->mMaterialIndex);
-            submesh.setId(i);
-            mesh.subMeshes.push_back(std::move(submesh));
-            mesh.materialGroups[aMesh->mMaterialIndex].push_back(submesh.getID());
-            std::cout << aMesh->mMaterialIndex << " , " << submesh.getID() << std::endl;
+
+            if (properties.hasMaterials) {
+                submesh.setMatIdx(aMesh->mMaterialIndex);
+                submesh.setIndex(i);
+                mesh.subMeshes.push_back(std::move(submesh));
+                
+                mesh.materialGroups[aMesh->mMaterialIndex].push_back(submesh.getIndex());
+                mesh.visibleMaterialGroups.push_back(true);
+            }         
         }
+
+        return properties;
+
     }
-
-
+    
 } 

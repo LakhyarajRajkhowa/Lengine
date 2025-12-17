@@ -49,7 +49,8 @@ namespace Lengine {
    
     void Camera3d::update(const float& deltaTime, const glm::vec2& mouseCoords){
 
-            const float speed =  deltaTime * speedFactor;
+            speedMultiplier = _inputManager->isKeyDown(SDLK_LCTRL) ? 5.0f : 1.0f;
+            const float speed =  deltaTime * speedFactor * speedMultiplier;
 
             moveMouse(mouseCoords.x, mouseCoords.y);
             moveKeyboard(speed);
@@ -79,11 +80,12 @@ namespace Lengine {
 
     void Camera3d::moveKeyboard(const float& speed) {
         for (SDL_Keycode key : { SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_SPACE, SDLK_LSHIFT,SDLK_ESCAPE}) {
+            
             if (_inputManager->isKeyDown(key)) {
                 switch (key) {
                 
                 case SDLK_w:
-                    position += glm::normalize(front) * speed;
+                    position += glm::normalize(front) * speed ;
                     break;
                 case SDLK_s:
                     position -= glm::normalize(front) * speed;
@@ -116,4 +118,15 @@ namespace Lengine {
 
     }
 
+    glm::vec3 Camera3d::getForward() const {
+        return glm::normalize(front);   // or -view[2]
+    }
+
+    glm::vec3 Camera3d::getRight() const {
+        return glm::normalize(glm::cross(getForward(), up));
+    }
+
+    glm::vec3 Camera3d::getUp() const {
+        return glm::normalize(glm::cross(getRight(), getForward()));
+    }
 }

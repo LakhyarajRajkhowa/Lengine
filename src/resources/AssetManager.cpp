@@ -72,10 +72,13 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
     std::string newPath = StripQuotes(path);
 
     std::shared_ptr<Mesh> ptr;
+    MeshRendererComponent mrc;
     Model model;
-    model.loadModel(meshName, newPath, ptr);
+    MeshProperties prop = model.loadModel(meshName, newPath, ptr);
    
     meshes[uuid] = ptr;
+    
+    
 }
 
 // put shaders to the material
@@ -103,7 +106,7 @@ UUID AssetManager::importMesh(const std::string& path) {
     if (!MetaFileSystem::HasMeta(path)) {
         meta.uuid = UUID();
         meta.type = "mesh";
-        meta.source = NormalizePath(Paths::Mesh + fileName);
+        meta.source = NormalizePath(path);
 
         MetaFileSystem::Save(path, meta);
     }
@@ -372,7 +375,6 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 }
 
                 Entity* entity = scene->createEntity(entityName, meshUUID, UUID(entityID), entityType);
-
                 auto t = jEntity.at("transform");
                 auto pos = t.at("position");
                 auto rot = t.at("rotation");
@@ -390,7 +392,6 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                     scene->assignDefaultMaterials(entity, mesh);
 
                 }
-
             }
             catch (const json::exception& e) {
                 std::cerr << "Skipping invalid entity in scene \"" << sceneName

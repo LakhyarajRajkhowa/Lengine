@@ -39,6 +39,7 @@ namespace Lengine {
         gizmoRenderer.drawGizmoGrid();
         renderer.renderScene(*sceneManager.getActiveScene(), camera, assetManager);
       //  gizmoRenderer.drawGizmoSpheres();
+      //  gizmoRenderer.drawGizmoArrows();
 
     }
 

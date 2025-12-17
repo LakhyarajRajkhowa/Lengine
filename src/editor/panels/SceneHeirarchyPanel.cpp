@@ -77,11 +77,19 @@ void SceneHierarchyPanel::OnImGuiRender() {
                 {
                     if (scene == activeScene)
                     {
-                        
+                        ImGui::PushID(entity->getID());
 
                         // SELECTABLE ENTITY
                         bool isSelected = entity->isSelected;
                         std::string label = entity->getName() + "##" + std::to_string(entity->getID());
+                       
+                        bool entityVisible = entity->isVisible;
+                        if (ImGui::Checkbox("##Visible", &entityVisible)) {
+                            entity->isVisible = entityVisible;
+                        }
+
+                        ImGui::SameLine();
+                        
                         if (ImGui::Selectable(label.c_str(), isSelected))
                         {
                             // deselect all
@@ -100,6 +108,8 @@ void SceneHierarchyPanel::OnImGuiRender() {
                             }
                             ImGui::EndPopup();
                         }
+
+                        ImGui::PopID();
                     }
                     else
                     {
@@ -155,8 +165,6 @@ void SceneHierarchyPanel::createNewModel() {
                     UUID(),        // entityID
                     selectedType   // type
                 );
-                
-               
 
                 ImGui::CloseCurrentPopup();
             }

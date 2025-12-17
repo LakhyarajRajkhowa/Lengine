@@ -27,6 +27,9 @@ namespace Lengine {
 
         bool isFixed = true;
 
+        glm::vec3 Camera3d::getForward() const;
+        glm::vec3 Camera3d::getRight() const;
+        glm::vec3 Camera3d::getUp() const;
     private:
         glm::vec3 position;
         glm::vec3 front;
@@ -44,6 +47,7 @@ namespace Lengine {
         bool _applyGravity;
 
         float speedFactor = 10.0f;
+        float speedMultiplier = 1.0f;
 
     };
 

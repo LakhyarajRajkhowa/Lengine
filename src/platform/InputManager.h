@@ -6,6 +6,8 @@
 
 
 namespace Lengine {
+
+
 	class InputManager
 	{
 	public:

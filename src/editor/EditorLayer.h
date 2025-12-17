@@ -7,8 +7,9 @@
 
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
-
+#include "../platform/KeyBindings.h"
 #include "../platform/Window.h"
+
 #include "../editor/panels/ViewportPanel.h"
 #include "../editor/panels/SceneHeirarchyPanel.h"
 #include "../editor/panels/InspectorPanel.h"
@@ -95,7 +96,10 @@ namespace Lengine {
 
         std::filesystem::path exePath = std::filesystem::current_path();
         std::filesystem::path assestPath = Paths::Assets;
-
+    private:
+        // Keyboard 
+        float movementSpeed = 0.01f;
+        float movementSpeedMultiplier = 1.0f;
     };
 
 }
