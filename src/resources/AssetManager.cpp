@@ -100,22 +100,7 @@ void AssetManager::loadMaterial(
    
 }
 
-UUID AssetManager::importMesh(const std::string& path) {
-    MetaFile meta;
-    std::string fileName = ExtractFileNameFromPath(path);
-    if (!MetaFileSystem::HasMeta(path)) {
-        meta.uuid = UUID();
-        meta.type = "mesh";
-        meta.source = NormalizePath(path);
 
-        MetaFileSystem::Save(path, meta);
-    }
-    else {
-        meta = MetaFileSystem::Load(path);
-    }
-
-    return meta.uuid;
-}
 UUID AssetManager::importMaterial(const std::string& path) {
     MetaFile meta;
   
@@ -169,8 +154,65 @@ GLSLProgram* AssetManager::loadShader(const std::string& name,
 GLSLProgram* AssetManager::getShader(const std::string& name) {
     return shaders[name].get();
 }
+UUID AssetManager::importMesh(const std::string& path) {
+    MetaFile meta;
+    std::string fileName = ExtractFileNameFromPath(path);
+    if (!MetaFileSystem::HasMeta(path)) {
+        meta.uuid = UUID();
+        meta.type = "mesh";
+        meta.source = NormalizePath(path);
 
-GLTexture* AssetManager::loadTexture(const std::string& name , const std::string& path) {
+        MetaFileSystem::Save(path, meta);
+    }
+    else {
+        meta = MetaFileSystem::Load(path);
+    }
+
+    return meta.uuid;
+}
+
+UUID AssetManager::importTexture(const std::string& path) {
+    MetaFile meta;
+
+    std::string fileName = ExtractFileNameFromPath(path);
+    if (!MetaFileSystem::HasMeta(path)) {
+        meta.uuid = UUID();
+        meta.type = "texture";
+        meta.source = NormalizePath(path);
+        MetaFileSystem::Save(path, meta);
+    }
+    else {
+        meta = MetaFileSystem::Load(path);
+    }
+    return meta.uuid;
+
+}
+
+void AssetManager::loadTexture(const UUID& uuid, const std::string& path) {
+
+    std::string textureName = ExtractNameFromPath(path);
+    UUID id = uuid;
+    std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
+    std::string newPath = StripQuotes(path);
+    *tex = textureCache.getTexture(newPath);
+
+    if (tex) {
+        std::cout << "Texture Loaded: " << path << std::endl;
+    }
+    else {
+        std::cout << "Failed to load texture: " << path << std::endl;
+        return;
+    }
+
+    tex->name = textureName;
+    textures[id] = tex; 
+     
+}
+GLTexture* AssetManager::getTexture(const UUID& id) {
+    return textures[id].get();
+}
+
+GLTexture* AssetManager::loadImage(const std::string& name, const std::string& path) {
     MetaFile meta;
 
     std::string fileName = ExtractFileNameFromPath(path);
@@ -190,9 +232,8 @@ GLTexture* AssetManager::loadTexture(const std::string& name , const std::string
 
     textures[id] = tex;
     return tex.get();
- 
-}
 
+}
 
 void AssetManager::saveModelFile(const UUID& meshUUID)
 {

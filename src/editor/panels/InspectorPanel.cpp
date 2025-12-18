@@ -183,20 +183,34 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
     ImGui::Spacing();
 
-    ImGui::Text("Light Color");
+    ImGui::Text("Position");
     ImGui::SameLine();
-    ImGui::ColorEdit3("Light Color", glm::value_ptr(renderer.lightColor));
+    ImGui::DragFloat3("##LightPosition", glm::value_ptr(renderer.light.position), 0.05f);
 
     ImGui::Spacing();
 
-    if (ImGui::Button(renderer.changeColor ? "Change Color: ON" : "Change Color: OFF")) {
-        renderer.changeColor = !renderer.changeColor;
-        if (!renderer.changeColor) {
-            renderer.lightColor = glm::vec3(1.0f);
-        }
-    }
-        
-    
+    ImGui::Text("Direction");
+    ImGui::SameLine();
+    ImGui::DragFloat3("##LightDirection", glm::value_ptr(renderer.light.direction), 0.05f);
+
+    ImGui::Spacing();
+
+    ImGui::Text("Ambient");
+    ImGui::SameLine();
+    ImGui::ColorEdit3("Ambient", glm::value_ptr(renderer.light.ambient));
+
+    ImGui::Spacing();
+
+    ImGui::Text("Diffuse");
+    ImGui::SameLine();
+    ImGui::ColorEdit3("Diffuse", glm::value_ptr(renderer.light.diffuse));
+
+    ImGui::Spacing();
+
+    ImGui::Text("Specular");
+    ImGui::SameLine();
+    ImGui::ColorEdit3("Specular", glm::value_ptr(renderer.light.specular));
+
      // MATERIALS
        
     ImGui::Separator();
@@ -282,6 +296,55 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     const Material* baseMat =
                         assetManager.getMaterial(inst.baseMaterial);
 
+                    // Diffuse Map
+                    {
+                        std::string diffuseTexName = "None";
+
+                        if (inst.map_kd.has_value()) {
+                            GLTexture* instTex = assetManager.getTexture(inst.map_kd.value());
+                            diffuseTexName = instTex->name;
+                        }
+                        else if (baseMat->map_Kd) {
+                            GLTexture* baseTex = assetManager.getTexture(baseMat->map_Kd);
+                            diffuseTexName = baseTex->name;
+                        }
+
+                        ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
+                        ImGui::Text("Diffuse Map");
+                        ImGui::Button((diffuseTexName + "##diffuse").c_str(), btnSize);
+
+                        // --- Drag Drop Target ---
+                        if (ImGui::BeginDragDropTarget())
+                        {
+                            if (const ImGuiPayload* payload =
+                                ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
+                            {
+                                const TextureDragPayload* data =
+                                    (const TextureDragPayload*)payload->Data;
+
+                                UUID texID = data->id;
+                                std::string texPath = data->path;
+                                if (!assetManager.getTexture(texID)) {
+                                    assetManager.loadTexture(texID, texPath);
+                                }
+                                inst.map_kd = texID;
+
+                            }
+                            ImGui::EndDragDropTarget();
+                        }
+
+                        // Reset override
+                        if (inst.map_kd.has_value())
+                        {
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("X"))
+                                inst.map_kd.reset();
+                        }
+
+                        ImGui::Spacing();
+                    }
+
+
                     // ---- Diffuse (Kd) ----
                     glm::vec3 kd = inst.Kd.value_or(baseMat->Kd);
                     if (ImGui::ColorEdit3("Diffuse (Kd)", glm::value_ptr(kd)))
@@ -296,6 +359,54 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                         inst.Ka = ka;
                     if (inst.Ka.has_value() && ImGui::SmallButton("Reset Ka")) inst.Ka.reset();
                     ImGui::Spacing();
+
+                    // Specular Map
+                    {
+                        std::string specularTexName = "None";
+
+                        if (inst.map_ks.has_value()) {
+                            GLTexture* instTex = assetManager.getTexture(inst.map_ks.value());
+                            specularTexName = instTex->name;
+                        }
+                        else if (baseMat->map_Ks) {
+                            GLTexture* baseTex = assetManager.getTexture(baseMat->map_Ks);
+                            specularTexName = baseTex->name;
+                        }
+
+                        ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
+                        ImGui::Text("Specular Map");
+                        ImGui::Button((specularTexName + "##specular").c_str(), btnSize);
+
+                        // --- Drag Drop Target ---
+                        if (ImGui::BeginDragDropTarget())
+                        {
+                            if (const ImGuiPayload* payload =
+                                ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
+                            {
+                                const TextureDragPayload* data =
+                                    (const TextureDragPayload*)payload->Data;
+
+                                UUID texID = data->id;
+                                std::string texPath = data->path;
+                                if (!assetManager.getTexture(texID)) {
+                                    assetManager.loadTexture(texID, texPath);
+                                }
+                                inst.map_ks = texID;
+
+                            }
+                            ImGui::EndDragDropTarget();
+                        }
+
+                        // Reset override
+                        if (inst.map_ks.has_value())
+                        {
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("X"))
+                                inst.map_ks.reset();
+                        }
+
+                        ImGui::Spacing();
+                    }
 
                     // ---- Specular (Ks) ----
                     glm::vec3 ks = inst.Ks.value_or(baseMat->Ks);

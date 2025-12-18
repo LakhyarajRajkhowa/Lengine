@@ -64,10 +64,12 @@ namespace Lengine {
 
 		void saveModelFile(const UUID& meshUUID);
 
-		GLTexture* getTexture(const std::string& name);
-		GLTexture* loadTexture(const std::string& name, const std::string& path);
+		UUID importTexture(const std::string& path);
+		GLTexture* getTexture(const UUID& id);
+		void loadTexture(const UUID& uuid, const std::string& path);
 
-
+		GLTexture* loadImage(const std::string& name, const std::string& path);
+		
         GLSLProgram* loadShader(const std::string& name,
             const std::string& vertPath,
             const std::string& fragPath);

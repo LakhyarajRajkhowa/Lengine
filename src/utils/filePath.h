@@ -51,3 +51,15 @@ static std::string StripQuotes(const std::string& s)
     return out;
 }
 
+static bool IsMeshSource(const std::filesystem::path& path)
+{
+    std::string ext = path.extension().string();
+    return ext == ".obj" || ext == ".fbx" || ext == ".dae"
+        || ext == ".gltf" || ext == ".glb";
+}
+
+
+static bool IsTextureSource(const std::filesystem::path& path)
+{
+    return path.extension() == ".png";
+}

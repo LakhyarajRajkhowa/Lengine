@@ -25,6 +25,8 @@ namespace Lengine {
 
         // temporary active scene logic
         sceneManager.setActiveScene(activeScene);
+        std::string path = "C:/Users/llakh/OneDrive/Desktop/Projects/LengineGraphics3D/TestGameFolder/assets/Textures/brick.png";
+        assetManager.loadTexture(UUID(5416132005131648543), path);
 
     }
     void SceneRenderer::renderScene() {

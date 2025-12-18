@@ -19,17 +19,15 @@ namespace Lengine {
         float Ni;            // OpticalDensity
         float Tr;            // Transperancy
         float Tf;            // TransmissionFilter
-        std::string map_Kd;  // DiffuseMap
-        std::string map_Ka;  // AmbientMap
-        std::string normalMap;    // map_bump
+        UUID map_Kd = UUID::Null;  // DiffuseMap
+        UUID map_Ka = UUID::Null;  // AmbientMap
+        UUID map_Ks = UUID::Null;  // SpecularMap
+        UUID normalMap = UUID::Null;    // map_bump
         float metallic;
         float roughness;
 
         std::string name;
         GLSLProgram* shader = nullptr;
-        GLTexture* albedoTexture{};
-
-        
 
         Material(std::string matName, GLSLProgram* shaderProgram)
             : name(matName), shader(shaderProgram) {
@@ -37,7 +35,7 @@ namespace Lengine {
 
         GLSLProgram* getShader() const { return shader; }
         const std::string& getName() const { return  name; }
-        bool useTexture = false;      
+          
 
     };
 
@@ -51,6 +49,10 @@ namespace Lengine {
         std::optional<glm::vec3> Ks;
         std::optional<glm::vec3> Ke;
         std::optional<float> Ns;
+        
+        std::optional<UUID> map_kd;
+        std::optional<UUID> map_ks;
+
 
 
     };
@@ -66,11 +68,13 @@ namespace Lengine {
         float Ni;            // OpticalDensity
         float Tr;            // Transperancy
         float Tf;            // TransmissionFilter
-        std::string map_Kd;  // DiffuseMap
-        std::string map_Ka;  // AmbientMap
-        std::string normalMap;    // map_bump
+        UUID map_Kd;  // DiffuseMap
+        UUID map_Ka;  // AmbientMap
+        UUID map_Ks = UUID::Null;  // SpecularMap
+        UUID normalMap;    // map_bump
         float metallic;
         float roughness;
+
     };
 
 }

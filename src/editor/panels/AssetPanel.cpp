@@ -108,7 +108,7 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         }
 
         // ============================================================
-        //  ONLY .meta files
+        // ONLY .meta FILES (ALL ASSETS)
         // ============================================================
         if (file.extension() != ".meta")
         {
@@ -118,23 +118,43 @@ void AssetPanel::DrawDirectory(const fs::path& path)
 
         std::string actualFile = file.replace_extension("").string();
         MetaFile meta = MetaFileSystem::Load(actualFile);
+
         if (meta.uuid.value() == 0)
         {
             ImGui::PopID();
             continue;
         }
 
-        std::string previewImage = actualFile + ".png";
-        ImTextureID thumb = fs::exists(previewImage)
-            ? LoadThumbnail(previewImage)
-            : LoadThumbnail(Paths::Icons + "mesh_icon.png");
+        fs::path sourcePath = meta.source;
+
+
+        ImTextureID icon = 0;
+
+        if (IsMeshSource(sourcePath))
+        {
+            std::string previewImage = actualFile + ".png";
+            icon = fs::exists(previewImage)
+                ? LoadThumbnail(previewImage)
+                : LoadThumbnail(Paths::Icons + "mesh_icon.png");
+        }
+        else if (IsTextureSource(sourcePath))
+        {
+            icon = LoadThumbnail(Paths::Icons + "texture_icon.png");
+        }
+        else
+        {
+            ImGui::PopID();
+            continue;
+        }
+
 
         // ============================================================
         // SELECTABLE GROUP (fix: thumbnail is selectable)
         // ============================================================
         ImGui::BeginGroup();
-        ImGui::Image(thumb, { thumbnailSize, thumbnailSize });
-        bool clicked = ImGui::IsItemClicked();  // thumbnail click
+
+        ImGui::Image(icon, { thumbnailSize, thumbnailSize });
+        bool clicked = ImGui::IsItemClicked();
 
         // Add a selectable for the name (but invisible)
         // So clicking *ANYWHERE* selects it
@@ -148,16 +168,31 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         // ============================================================
         if (ImGui::BeginDragDropSource())
         {
-            MeshDragPayload payload;
-            payload.id = meta.uuid;
+            if (IsMeshSource(sourcePath))
+            {
+                MeshDragPayload payload;
+                payload.id = meta.uuid;
 
-            strncpy(payload.path, meta.source.c_str(), sizeof(payload.path));
-            payload.path[sizeof(payload.path) - 1] = '\0';
+                strncpy(payload.path, meta.source.c_str(), sizeof(payload.path));
+                payload.path[sizeof(payload.path) - 1] = '\0';
 
-            ImGui::SetDragDropPayload("MESH_ASSET", &payload, sizeof(payload));
+                ImGui::SetDragDropPayload("MESH_ASSET", &payload, sizeof(payload));
+            }
+            else if (IsTextureSource(sourcePath))
+            {
+                TextureDragPayload payload;
+                payload.id = meta.uuid;
+
+                strncpy(payload.path, meta.source.c_str(), sizeof(payload.path));
+                payload.path[sizeof(payload.path) - 1] = '\0';
+
+                ImGui::SetDragDropPayload("TEXTURE_ASSET", &payload, sizeof(payload));
+            }
+
             ImGui::Text("%s", ExtractNameFromPath(name).c_str());
             ImGui::EndDragDropSource();
         }
+
 
         ImGui::EndGroup();
         ImGui::NextColumn();
@@ -172,7 +207,17 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         if (ImGui::BeginPopupContextWindow("DirContextMenu", ImGuiPopupFlags_MouseButtonRight))
         {
             if (ImGui::MenuItem("Import Mesh..."))
-                m_OpenImportDialog = true;
+                m_OpenImportMeshDialog = true;
+
+            ImGui::EndPopup();
+        }
+    }
+    else  if (ExtractNameFromPath(m_CurrentPath.string()) == "Textures")
+    {
+        if (ImGui::BeginPopupContextWindow("DirContextMenu", ImGuiPopupFlags_MouseButtonRight))
+        {
+            if (ImGui::MenuItem("Import Texture..."))
+                m_OpenImportTextureDialog = true;
 
             ImGui::EndPopup();
         }
@@ -180,10 +225,14 @@ void AssetPanel::DrawDirectory(const fs::path& path)
 
     ImGui::Columns(1);
 
-    if (m_OpenImportDialog)
+    if (m_OpenImportMeshDialog)
     {
-        m_OpenImportDialog = false;
-        OpenImportDialog();
+        m_OpenImportMeshDialog = false;
+        OpenImportMeshDialog();
+    }
+    else if (m_OpenImportTextureDialog) {
+        m_OpenImportTextureDialog = false;
+        OpenImportTextureDialog();
     }
 }
 
@@ -200,7 +249,7 @@ void AssetPanel::CreateNewFolder(const fs::path& path)
 }
 
 
-void AssetPanel::OpenImportDialog()
+void AssetPanel::OpenImportMeshDialog()
 {
     const char* filters[6] = { "*.obj", "*.fbx", "*.dae", "*.gltf", "*.glb", "*.blend" };
 
@@ -218,13 +267,32 @@ void AssetPanel::OpenImportDialog()
         assetManager.importMesh(filePath);
     }
 }
+void AssetPanel::OpenImportTextureDialog()
+{
+    const char* filters[1] = { "*.png" };
+
+    const char* filePath = tinyfd_openFileDialog(
+        "Import Texture",
+        "",
+        1,
+        filters,
+        "Texture Files",
+        0
+    );
+
+    if (filePath)
+    {
+        assetManager.importTexture(filePath);
+    }
+}
+
 
 ImTextureID AssetPanel::LoadThumbnail(const std::string& file)
 {
     if (thumbnailCache.count(file))
         return thumbnailCache[file];
 
-    GLTexture* tex = assetManager.loadTexture(file, file);
+    GLTexture* tex = assetManager.loadImage(file, file);
     if (!tex)
         return -1;
 

@@ -32,6 +32,7 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
                 Material* baseMaterial = assetManager.getMaterial(inst.baseMaterial);
                 if (!baseMaterial) continue;
 
+
                 GLSLProgram* shader = baseMaterial->getShader();
                 if (!shader) continue;
 
@@ -41,6 +42,8 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
                 finalMat.Ks = inst.Ks.value_or(baseMaterial->Ks);
                 finalMat.Ke = inst.Ke.value_or(baseMaterial->Ke);
                 finalMat.Ns = inst.Ns.value_or(baseMaterial->Ns);
+                finalMat.map_Kd = inst.map_kd.value_or(baseMaterial->map_Kd);
+                finalMat.map_Ks = inst.map_ks.value_or(baseMaterial->map_Ks);
 
                 shader->use();
                 shader->setMat4("model", model);
@@ -49,14 +52,71 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
                 shader->setVec3("cameraPos", camera.getCameraPosition());
                 shader->setVec3("viewPos", camera.getCameraPosition());
 
-                shader->setVec3("lightColor", lightColor);
-                shader->setVec3("lightPos", lightPos);
+
+                shader->setInt("light.type", (int)light.type);
+                shader->setVec3("light.position", light.position);
+                shader->setVec3("light.direction", light.direction);
+                shader->setVec3("light.ambient", light.ambient);
+                shader->setVec3("light.diffuse", light.diffuse);
+                shader->setVec3("light.specular", light.specular);
+
 
                 shader->setVec3("material.Ka", finalMat.Ka);
                 shader->setVec3("material.Kd", finalMat.Kd);
                 shader->setVec3("material.Ks", finalMat.Ks);
                 shader->setVec3("material.Ke", finalMat.Ke);
                 shader->setFloat("material.Ns", finalMat.Ns);
+
+                // Diffuse map
+                bool hasDiffuseMap =
+                    inst.map_kd.has_value() ||
+                    (baseMaterial->map_Kd != UUID::Null);
+                shader->setBool("material.hasDiffuseMap", hasDiffuseMap);
+                if (hasDiffuseMap)
+                {
+                    GLTexture* diffuseTex = nullptr;
+
+                    if (inst.map_kd.has_value())
+                    {
+                        diffuseTex = assetManager.getTexture(inst.map_kd.value());
+                    }
+                    else
+                    {
+                        diffuseTex = assetManager.getTexture(baseMaterial->map_Kd);
+                    }
+                    if (diffuseTex)
+                    {
+                        glActiveTexture(GL_TEXTURE0);
+                        glBindTexture(GL_TEXTURE_2D, diffuseTex->id);
+                        shader->setInt("material.diffuseMap", 0);
+                    }
+                }
+
+                // Specular map
+                bool hasSpecularMap =
+                    inst.map_ks.has_value() ||
+                    (baseMaterial->map_Ks != UUID::Null);
+                shader->setBool("material.hasSpecularMap", hasSpecularMap);
+                if (hasSpecularMap)
+                {
+                    GLTexture* specularTex = nullptr;
+
+                    if (inst.map_ks.has_value())
+                    {
+                        specularTex = assetManager.getTexture(inst.map_ks.value());
+                    }
+                    else
+                    {
+                        specularTex = assetManager.getTexture(baseMaterial->map_Ks);
+                    }
+                    if (specularTex)
+                    {
+                        glActiveTexture(GL_TEXTURE1);
+                        glBindTexture(GL_TEXTURE_2D, specularTex->id);
+                        shader->setInt("material.specularMap", 1);
+                    }
+                }
+
 
                 for (auto& smID : subMeshes) {
                     SubMesh& sm = mesh->subMeshes[smID];

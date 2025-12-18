@@ -1,50 +1,94 @@
 #version 330 core
 
+struct Light {
+    int type;
+    vec3 position;
+    vec3 direction;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+uniform Light light;
 struct Material {
     vec3 Kd;
     vec3 Ka;
     vec3 Ks;
     vec3 Ke;
     float Ns;
+
+    sampler2D diffuseMap;
+    bool hasDiffuseMap;
+
+    sampler2D specularMap;
+    bool hasSpecularMap;
+
+    sampler2D normalMap;
+    bool hasNormalMap;
 };
 
 uniform Material material;
 
 in vec3 FragPos;
-in vec3 Normal;
+in vec2 TexCoord;
+in mat3 TBN;
 
 out vec4 FragColor;
 
-uniform vec3 lightColor;
-uniform vec3 lightPos;
 uniform vec3 viewPos;
-
 uniform bool isHovered;
+
 void main()
 {
-    // Base color
-    vec3 baseColor = material.Kd;
 
-    // Selection state
-     if(isHovered){
-        baseColor += vec3(0.0, 0.0, 0.5);
-     }
+    vec3 diffuseTex = material.Kd;
+
+    if (material.hasDiffuseMap) {
+        diffuseTex *= texture(material.diffuseMap, TexCoord).rgb;
+
+    }
+    float specMask = 1.0;
+    if (material.hasSpecularMap) {
+        specMask = texture(material.specularMap, TexCoord).r;
+    }
+
+    // ---------------- Normal ----------------
+    vec3 normal;
+
+    if (material.hasNormalMap) {
+        vec3 normalTex = texture(material.normalMap, TexCoord).rgb;
+        normalTex = normalTex * 2.0 - 1.0;   // [0,1] → [-1,1]
+        normal = normalize(TBN * normalTex);
+    } else {
+        normal = normalize(TBN[2]); // fallback: vertex normal
+    }
+
+    // ---------------- Lighting ----------------
+    vec3 viewDir  = normalize(viewPos - FragPos);
+    vec3 lightDir;
+    if (light.type == 0) { // directional
+        lightDir = normalize(-light.direction); 
+    } else {
+        lightDir = normalize(light.position - FragPos);
+    }
 
     // Ambient
-    vec3 ambient = material.Ka * lightColor;
+    vec3 ambient = light.ambient * diffuseTex ;
 
     // Diffuse
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * baseColor * lightColor;
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = light.diffuse * diff * diffuseTex ;
 
     // Specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
+    vec3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.Ns);
-    vec3 specular = spec * material.Ks * lightColor;
+    vec3 specular = light.specular * spec * specMask * material.Ks;
 
     vec3 finalColor = ambient + diffuse + specular;
+
+    if(isHovered){
+        finalColor += vec3(0.0, 0.0, 0.2);
+    }
+
     FragColor = vec4(finalColor, 1.0);
 }

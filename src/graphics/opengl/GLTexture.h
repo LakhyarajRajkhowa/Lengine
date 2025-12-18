@@ -1,6 +1,6 @@
 #pragma once
 #include <GL/glew.h>
-
+#include <string>
 namespace Lengine {
 
     struct  GLTexture
@@ -8,5 +8,7 @@ namespace Lengine {
         GLuint id;
         int width;
         int height;
+
+        std::string name;
     };
 }

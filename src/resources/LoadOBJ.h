@@ -52,7 +52,7 @@ namespace Lengine {
                 vertex.normal = glm::vec3(0.0f);
 
             // Texture coordinates (only first UV channel)
-            if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0] && i < mesh->mTextureCoords[0]->Length()) {
+            if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0]) {
                 vertex.texCoord = glm::vec2(
                     mesh->mTextureCoords[0][i].x,
                     mesh->mTextureCoords[0][i].y
@@ -61,6 +61,7 @@ namespace Lengine {
             else {
                 vertex.texCoord = glm::vec2(0.0f);
             }
+
 
 
             // Tangents and Bitangents
@@ -106,7 +107,7 @@ namespace Lengine {
         ) {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path,
-            aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+            aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
 
         MeshProperties properties;
 

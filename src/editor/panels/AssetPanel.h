@@ -13,6 +13,11 @@ namespace Lengine {
         UUID id;
         char path[512];
     };
+    struct TextureDragPayload
+    {
+        UUID id;
+        char path[512];
+    };
 
     class AssetPanel {
     public:
@@ -22,7 +27,8 @@ namespace Lengine {
 
     private:
         void DrawDirectory(const std::filesystem::path& path);
-        void OpenImportDialog();
+        void OpenImportMeshDialog();
+        void OpenImportTextureDialog();
         void CreateNewFolder(const std::filesystem::path& path);
 
     private:
@@ -33,7 +39,9 @@ namespace Lengine {
 
         std::filesystem::path m_RootPath;
         std::filesystem::path m_CurrentPath;
-        bool  m_OpenImportDialog = false;
+        bool  m_OpenImportMeshDialog = false;
+        bool  m_OpenImportTextureDialog = false;
+
 
         char m_FolderNameBuffer[256] = "";
         bool m_ShowCreateFolderPopup = false;
