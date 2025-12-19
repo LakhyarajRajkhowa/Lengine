@@ -25,6 +25,7 @@ struct Material {
 
     sampler2D normalMap;
     bool hasNormalMap;
+    float normalStrength;
 };
 
 uniform Material material;
@@ -57,7 +58,10 @@ void main()
 
     if (material.hasNormalMap) {
         vec3 normalTex = texture(material.normalMap, TexCoord).rgb;
-        normalTex = normalTex * 2.0 - 1.0;   // [0,1] → [-1,1]
+        normalTex = normalTex * 2.0 - 1.0;
+        normalTex.xy *= material.normalStrength;
+        normalTex.z = sqrt(1.0 - clamp(dot(normalTex.xy, normalTex.xy), 0.0, 1.0));
+
         normal = normalize(TBN * normalTex);
     } else {
         normal = normalize(TBN[2]); // fallback: vertex normal

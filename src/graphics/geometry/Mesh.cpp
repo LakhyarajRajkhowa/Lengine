@@ -2,8 +2,15 @@
 #include <iostream>
 
 namespace Lengine {
-    SubMesh::SubMesh(const std::string& nam, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices)
-        :name(nam), vertices(vertices), indices(indices)
+    SubMesh::SubMesh(
+        const std::string& name,
+        std::vector<Vertex>&& verts,
+        std::vector<uint32_t>&& inds
+    )
+        : name(name),
+        vertices(std::move(verts)),
+        indices(std::move(inds))
+   
     {
         computeBounds();
         setupMesh();
@@ -107,6 +114,17 @@ namespace Lengine {
         glBindVertexArray(0);
     }
 
+    void SubMesh::reserve(uint32_t vCount, uint32_t iCount) {
+        vertices.reserve(vCount);
+        indices.reserve(iCount);
+    }
 
+    void SubMesh::addVertex(const Vertex& v) {
+        vertices.push_back(v);
+    }
+
+    void SubMesh::addIndex(uint32_t i) {
+        indices.push_back(i);
+    }
    
 }

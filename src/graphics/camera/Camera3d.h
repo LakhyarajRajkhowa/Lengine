@@ -12,13 +12,19 @@ namespace Lengine {
         Camera3d();
         ~Camera3d();
         void init(float width, float height, InputManager* inputManager, glm::vec3 cameraPos, float FOV);
-         const glm::vec3& getCameraPosition() { return position; }
+         const glm::vec3& getCameraPosition()  { return position; }
          const glm::vec3& getCameraDirection() { return front; }
+         const glm::vec3& getCameraPosition() const { return position; }
+         const glm::vec3& getCameraDirection() const { return front; }
          void setAspectRatio(float aspect);
          float getAspectRatio() const { return aspectRatio; }
          glm::mat4 getViewMatrix();
+         const glm::mat4& getViewMatrix() const;
+
          void setProjectionMatrix(glm::vec4 projection);
          glm::mat4 getProjectionMatrix();
+         const glm::mat4& getProjectionMatrix() const;
+
          glm::vec3 getRightVector();
          glm::vec3 getForwardVector();
         void update(const float& deltaTime, const glm::vec2& mouseCoords);

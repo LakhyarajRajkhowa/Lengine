@@ -3,6 +3,7 @@
 #include "../scene/SceneManager.h"
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/camera/Camera3d.h"
+#include "../graphics/lightning/Light.h"
 #include "../resources/TextureCache.h"
 
 #include "../resources/AssetManager.h"
@@ -58,38 +59,14 @@ namespace Lengine {
     };
     */
 
-    enum class LightType {
-        Directional = 0,
-        Point = 1,
-        Spotlight = 2
-    };
 
-    struct Light {
-        LightType type = LightType::Directional;
-        glm::vec3 position = glm::vec3(10.0f, 10.0f, 10.0f);
-        glm::vec3 direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-
-        glm::vec3 ambient = glm::vec3(1.0f, 1.0f, 1.0f);
-        glm::vec3 diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
-        glm::vec3 specular = glm::vec3(.5f, 0.5f, 0.5f);
-    };
    
 
     class Renderer {
     public:
-        glm::vec3 lightColor = glm::vec3(1.0f);
-        glm::vec3 lightPos = glm::vec3(1000.0f, 1000.0f, 1000.0f);
-        
-        bool changeColor = false;
-
-        void applyMaterialUniforms(GLSLProgram* shader,
-            UUID materialID,
-            AssetManager& assetManager);
-        std::unordered_set<std::string> loadedEntity;
-        void renderScene(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
-
         Light light;
-        
+
+        void renderScene(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
 
        // void collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager);
        // void flushBatches(Scene& scene,
@@ -98,5 +75,45 @@ namespace Lengine {
 
        // void renderSceneECS(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
        // RenderBatcher batcher;
+    private:
+        ResolvedMaterial resolveMaterial(
+            const Material& baseMaterial,
+            const MaterialInstance& inst
+        );
+        void bindCameraUniforms(
+            GLSLProgram& shader,
+            const glm::mat4& model,
+            Camera3d& camera
+            );
+        void bindLightUniforms(
+            GLSLProgram& shader,
+            const Light& light
+        );
+        void bindMaterialUniforms(
+            GLSLProgram& shader,
+            const ResolvedMaterial& mat
+        );
+        void bindTexture(
+            GLSLProgram& shader,
+            AssetManager& assetManager,
+            const UUID& texID,
+            const char* hasUniform,
+            const char* samplerUniform,
+            GLenum textureUnit
+        );
+        void drawSubMesh(
+            SubMesh& sm,
+            GLSLProgram& shader,
+            bool isHovered
+        );
+        void drawSubMeshGroup(
+            Mesh& mesh,
+            const std::vector<uint32_t>& subMeshIDs,
+            GLSLProgram& shader,
+            const std::unordered_set<uint32_t>& hoveredSubMeshes
+        );
+
+
+
     };
 }

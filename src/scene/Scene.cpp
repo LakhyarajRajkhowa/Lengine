@@ -123,11 +123,17 @@ namespace Lengine {
                 break;
         }
 
-        for (size_t i = 0; i < mesh->subMeshes.size(); i++) {
-            UUID instID = createMaterialInstance(baseMat);
-            entity->getMaterialIndexUUIDs()[i] = instID;
-            
+        for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
+            for (auto& sm : subMeshes) {
+                UUID instID;
+
+                instID = createMaterialInstance(baseMat);
+
+                entity->getMaterialIndexUUIDs()[matIndex] = instID;
+
+            }
         }
+            
     }
 
 }

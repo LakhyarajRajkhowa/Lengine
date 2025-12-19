@@ -141,6 +141,10 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         {
             icon = LoadThumbnail(Paths::Icons + "texture_icon.png");
         }
+        else if (IsMaterialSource(sourcePath))
+        {
+            icon = LoadThumbnail(Paths::Icons + "material_icon.png");
+        }
         else
         {
             ImGui::PopID();
@@ -188,6 +192,16 @@ void AssetPanel::DrawDirectory(const fs::path& path)
 
                 ImGui::SetDragDropPayload("TEXTURE_ASSET", &payload, sizeof(payload));
             }
+            else if (IsMaterialSource(sourcePath))
+            {
+                MaterialDragPayload payload;
+                payload.id = meta.uuid;
+
+                strncpy(payload.path, meta.source.c_str(), sizeof(payload.path));
+                payload.path[sizeof(payload.path) - 1] = '\0';
+
+                ImGui::SetDragDropPayload("MATERIAL_ASSET", &payload, sizeof(payload));
+            }
 
             ImGui::Text("%s", ExtractNameFromPath(name).c_str());
             ImGui::EndDragDropSource();
@@ -202,37 +216,36 @@ void AssetPanel::DrawDirectory(const fs::path& path)
     // ============================================================
     // RIGHT-CLICK CONTEXT MENU (Mesh folder only)
     // ============================================================
-    if (ExtractNameFromPath(m_CurrentPath.string()) == "Mesh")
+  
+    if (ImGui::BeginPopupContextWindow("DirContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
-        if (ImGui::BeginPopupContextWindow("DirContextMenu", ImGuiPopupFlags_MouseButtonRight))
-        {
-            if (ImGui::MenuItem("Import Mesh..."))
-                m_OpenImportMeshDialog = true;
+        if (ImGui::MenuItem("Import Mesh..."))
+            m_OpenImportMeshDialog = true;
 
-            ImGui::EndPopup();
-        }
-    }
-    else  if (ExtractNameFromPath(m_CurrentPath.string()) == "Textures")
-    {
-        if (ImGui::BeginPopupContextWindow("DirContextMenu", ImGuiPopupFlags_MouseButtonRight))
-        {
-            if (ImGui::MenuItem("Import Texture..."))
-                m_OpenImportTextureDialog = true;
+        if (ImGui::MenuItem("Import Material..."))
+            m_OpenImportMaterialDialog = true;
 
-            ImGui::EndPopup();
-        }
+        if (ImGui::MenuItem("Import Texture..."))
+            m_OpenImportTextureDialog = true;
+
+        ImGui::EndPopup();
     }
+    
 
     ImGui::Columns(1);
 
     if (m_OpenImportMeshDialog)
     {
         m_OpenImportMeshDialog = false;
-        OpenImportMeshDialog();
+        OpenImportMeshDialog(m_CurrentPath.string());
     }
     else if (m_OpenImportTextureDialog) {
         m_OpenImportTextureDialog = false;
         OpenImportTextureDialog();
+    }
+    else if (m_OpenImportMaterialDialog) {
+        m_OpenImportMaterialDialog = false;
+        OpenImportMaterialDialog();
     }
 }
 
@@ -249,7 +262,7 @@ void AssetPanel::CreateNewFolder(const fs::path& path)
 }
 
 
-void AssetPanel::OpenImportMeshDialog()
+void AssetPanel::OpenImportMeshDialog(std::string folderPath)
 {
     const char* filters[6] = { "*.obj", "*.fbx", "*.dae", "*.gltf", "*.glb", "*.blend" };
 
@@ -283,6 +296,24 @@ void AssetPanel::OpenImportTextureDialog()
     if (filePath)
     {
         assetManager.importTexture(filePath);
+    }
+}
+void AssetPanel::OpenImportMaterialDialog()
+{
+    const char* filters[1] = { "*.mtl" };
+
+    const char* filePath = tinyfd_openFileDialog(
+        "Import Material",
+        "",
+        1,
+        filters,
+        "Material Files",
+        0
+    );
+
+    if (filePath)
+    {
+        assetManager.importMaterial(filePath);
     }
 }
 

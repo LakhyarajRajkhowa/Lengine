@@ -8,6 +8,7 @@
 #include "../graphics/opengl/GLTexture.h"
 #include "../graphics/geometry/Mesh.h"
 #include "../graphics/geometry/Model.h"
+#include "../graphics/material/MTLLoader.h"
 #include "../assets/MaterialRegistry.h"
 #include "../resources/TextureCache.h"
 #include "../utils/metaFileSystem.h"
@@ -41,7 +42,7 @@ namespace Lengine {
 		UUID importAndLoadMesh(const std::string& name, const std::string& path);
 		Mesh* getMesh(const UUID& id);
 
-		void loadMaterial(
+		bool loadMaterial(
 			const UUID& uuid,
 			const std::string& path,
 			const std::string& vertexShaderPath = ShaderPath::defaultVertexShaderPath,

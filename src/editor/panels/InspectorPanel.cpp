@@ -260,6 +260,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             for (unsigned int i = 0; i < materialGroup.size(); i++) {
                 unsigned int smIdx = materialGroup[i];
                 SubMesh& sm = mesh->subMeshes[smIdx];
+
                 ImGui::PushID(smIdx);
 
                 bool submeshVisible = sm.isVisible;
@@ -295,6 +296,37 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                         sceneManager.getActiveScene()->getMaterialInstance(instID);
                     const Material* baseMat =
                         assetManager.getMaterial(inst.baseMaterial);
+                    
+                    // Base Material
+                    std::string baseMatName = "None";
+
+                    if (inst.baseMaterial) {
+                        baseMatName = assetManager.getMaterial(inst.baseMaterial)->getName();
+                    }
+                    ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
+                    ImGui::Text("Base Material");
+                    ImGui::Button((baseMatName + "##baseMaterial").c_str(), btnSize);
+
+                    if (ImGui::BeginDragDropTarget())
+                    {
+                        if (const ImGuiPayload* payload =
+                            ImGui::AcceptDragDropPayload("MATERIAL_ASSET"))
+                        {
+                            const TextureDragPayload* data =
+                                (const TextureDragPayload*)payload->Data;
+
+                            if (!assetManager.getMaterial(data->id)) {
+                                if (assetManager.loadMaterial(data->id, data->path)) {
+                                    inst.baseMaterial = data->id;
+                                }
+                            }
+                            else {
+                                inst.baseMaterial = data->id;
+                            }
+                           
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
 
                     // Diffuse Map
                     {
@@ -304,7 +336,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                             GLTexture* instTex = assetManager.getTexture(inst.map_kd.value());
                             diffuseTexName = instTex->name;
                         }
-                        else if (baseMat->map_Kd) {
+                        else if (baseMat->map_Kd != UUID::Null) {
                             GLTexture* baseTex = assetManager.getTexture(baseMat->map_Kd);
                             diffuseTexName = baseTex->name;
                         }
@@ -313,7 +345,6 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                         ImGui::Text("Diffuse Map");
                         ImGui::Button((diffuseTexName + "##diffuse").c_str(), btnSize);
 
-                        // --- Drag Drop Target ---
                         if (ImGui::BeginDragDropTarget())
                         {
                             if (const ImGuiPayload* payload =
@@ -333,13 +364,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                             ImGui::EndDragDropTarget();
                         }
 
-                        // Reset override
-                        if (inst.map_kd.has_value())
-                        {
-                            ImGui::SameLine();
-                            if (ImGui::SmallButton("X"))
-                                inst.map_kd.reset();
-                        }
+                        
 
                         ImGui::Spacing();
                     }
@@ -348,7 +373,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     // ---- Diffuse (Kd) ----
                     glm::vec3 kd = inst.Kd.value_or(baseMat->Kd);
                     if (ImGui::ColorEdit3("Diffuse (Kd)", glm::value_ptr(kd)))
-                        inst.Kd = kd; // override only if user edits
+                        inst.Kd = kd; 
 
                     if (inst.Kd.has_value() && ImGui::SmallButton("Reset Kd")) inst.Kd.reset();
                     ImGui::Spacing();
@@ -368,7 +393,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                             GLTexture* instTex = assetManager.getTexture(inst.map_ks.value());
                             specularTexName = instTex->name;
                         }
-                        else if (baseMat->map_Ks) {
+                        else if (baseMat->map_Ks != UUID::Null) {
                             GLTexture* baseTex = assetManager.getTexture(baseMat->map_Ks);
                             specularTexName = baseTex->name;
                         }
@@ -377,7 +402,6 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                         ImGui::Text("Specular Map");
                         ImGui::Button((specularTexName + "##specular").c_str(), btnSize);
 
-                        // --- Drag Drop Target ---
                         if (ImGui::BeginDragDropTarget())
                         {
                             if (const ImGuiPayload* payload =
@@ -397,13 +421,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                             ImGui::EndDragDropTarget();
                         }
 
-                        // Reset override
-                        if (inst.map_ks.has_value())
-                        {
-                            ImGui::SameLine();
-                            if (ImGui::SmallButton("X"))
-                                inst.map_ks.reset();
-                        }
+                       
 
                         ImGui::Spacing();
                     }
@@ -414,6 +432,55 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                         inst.Ks = ks;
                     if (inst.Ks.has_value() && ImGui::SmallButton("Reset Ks")) inst.Ks.reset();
                     ImGui::Spacing();
+
+                    // Normal Map
+                    {
+                        std::string normalTexName = "None";
+
+                        if (inst.map_bump.has_value()) {
+                            GLTexture* instTex = assetManager.getTexture(inst.map_bump.value());
+                            normalTexName = instTex->name;
+                        }
+                        else if (baseMat->map_bump != UUID::Null) {
+                            GLTexture* baseTex = assetManager.getTexture(baseMat->map_bump);
+                            normalTexName = baseTex->name;
+                        }
+
+                        ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
+                        ImGui::Text("Normal Map");
+                        ImGui::Button((normalTexName + "##normal").c_str(), btnSize);
+
+                        if (ImGui::BeginDragDropTarget())
+                        {
+                            if (const ImGuiPayload* payload =
+                                ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
+                            {
+                                const TextureDragPayload* data =
+                                    (const TextureDragPayload*)payload->Data;
+
+                                UUID texID = data->id;
+                                std::string texPath = data->path;
+                                if (!assetManager.getTexture(texID)) {
+                                    assetManager.loadTexture(texID, texPath);
+                                }
+                                inst.map_bump = texID;
+
+                            }
+                            ImGui::EndDragDropTarget();
+                        }
+
+
+                        ImGui::Spacing();
+                    }
+
+                    // Normal strength
+                    float normalStrength = inst.normalStrength.value_or(baseMat->normalStrength);
+                    if (ImGui::DragFloat("Normal Strength", &normalStrength, 0.1f, -10.0f, 10.0f))
+                        inst.normalStrength = normalStrength;
+                    if (inst.normalStrength.has_value() && ImGui::SmallButton("Reset Ns")) inst.normalStrength.reset();
+                    ImGui::Spacing();
+
+
 
                     // ---- Emissive (Ke) ----
                     glm::vec3 ke = inst.Ke.value_or(baseMat->Ke);

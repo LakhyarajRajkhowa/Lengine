@@ -1,4 +1,4 @@
-
+ï»¿
 #pragma once
 
 #include <iostream>
@@ -32,7 +32,7 @@ namespace Lengine {
         std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
 
-        vertices.reserve(mesh->mNumVertices);
+        vertices.reserve(mesh->mNumVertices); 
         indices.reserve(mesh->mNumFaces * 3);
 
         // --- Convert vertices ---
@@ -52,16 +52,15 @@ namespace Lengine {
                 vertex.normal = glm::vec3(0.0f);
 
             // Texture coordinates (only first UV channel)
-            if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0]) {
-                vertex.texCoord = glm::vec2(
-                    mesh->mTextureCoords[0][i].x,
+            if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0] ) {
+                vertex.texCoord = glm::vec2( // TODO: Fix Access Violation error when loading some mesh
+                    mesh->mTextureCoords[0][i].x, 
                     mesh->mTextureCoords[0][i].y
                 );
             }
             else {
                 vertex.texCoord = glm::vec2(0.0f);
             }
-
 
 
             // Tangents and Bitangents
@@ -80,7 +79,7 @@ namespace Lengine {
         // --- Convert faces (indices) ---
         for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
             const aiFace& face = mesh->mFaces[i];
-            // Defensive check — only handle triangles
+            // Defensive check ï¿½ only handle triangles
             if (face.mNumIndices == 3) {
                 indices.push_back(face.mIndices[0]);
                 indices.push_back(face.mIndices[1]);
@@ -88,23 +87,14 @@ namespace Lengine {
             }
         }
         std::string name = mesh->mName.C_Str();
-        // Construct SubMesh
-        SubMesh engineSubMesh(name, vertices, indices);
 
-        //clear temp memory
-        std::vector<Vertex>().swap(vertices);
-        std::vector<uint32_t>().swap(indices);
-        // print mesh size 
-
-      
-
-        return engineSubMesh;
+        return SubMesh(name, std::move(vertices), std::move(indices));
     }
 
     inline MeshProperties assimpLoader(
         const std::string& path,
         Mesh& mesh
-        ) {
+    ) {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path,
             aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
@@ -117,11 +107,10 @@ namespace Lengine {
         }
 
         std::cout << "Model loaded successfully! " << path << std::endl;
-       
+
         // additional info in the mesh file
         properties.hasMaterials = scene->HasMaterials();
 
-        
 
         for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
             aiMesh* aMesh = scene->mMeshes[i];
@@ -130,15 +119,15 @@ namespace Lengine {
             if (properties.hasMaterials) {
                 submesh.setMatIdx(aMesh->mMaterialIndex);
                 submesh.setIndex(i);
-                mesh.subMeshes.push_back(std::move(submesh));
-                
+                mesh.subMeshes.emplace_back(std::move(submesh));
+
                 mesh.materialGroups[aMesh->mMaterialIndex].push_back(submesh.getIndex());
                 mesh.visibleMaterialGroups.push_back(true);
-            }         
+            }
         }
 
         return properties;
 
     }
-    
-} 
+
+}

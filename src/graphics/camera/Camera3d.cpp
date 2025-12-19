@@ -35,8 +35,14 @@ namespace Lengine {
     glm::mat4 Camera3d::getViewMatrix() {
         return glm::lookAt(position, position + front, up);
     }
+    const glm::mat4& Camera3d::getViewMatrix() const{
+        return glm::lookAt(position, position + front, up);
+    }
 
     glm::mat4 Camera3d::getProjectionMatrix() {
+        return projectionMatrix;
+    }
+    const glm::mat4& Camera3d::getProjectionMatrix() const {
         return projectionMatrix;
     }
     glm::vec3 Camera3d::getRightVector() {
@@ -51,11 +57,8 @@ namespace Lengine {
 
             speedMultiplier = _inputManager->isKeyDown(SDLK_LCTRL) ? 5.0f : 1.0f;
             const float speed =  deltaTime * speedFactor * speedMultiplier;
-
             moveMouse(mouseCoords.x, mouseCoords.y);
-            moveKeyboard(speed);
-           
-            
+            moveKeyboard(speed);        
         }
         
     

@@ -44,8 +44,13 @@ Mesh* AssetManager::getMesh(const UUID& id) {
 }
 
 
-Material* AssetManager::getMaterial(const UUID& id) {
-    return materials[id].get();
+Material* AssetManager::getMaterial(const UUID& id)
+{
+    auto it = materials.find(id);
+    if (it == materials.end())
+        return nullptr;
+
+    return it->second.get();
 }
 UUID AssetManager::getMeshUUID(const std::string& name) {
     for (auto& [uuid, mesh] : meshes)
@@ -82,23 +87,52 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
 }
 
 // put shaders to the material
-void AssetManager::loadMaterial(
+bool AssetManager::loadMaterial(
     const UUID& uuid,
     const std::string& path,
-    const std::string& vertexShaderPath ,
-    const std::string& fragmentShaderPath 
+    const std::string& vertexShaderPath,
+    const std::string& fragmentShaderPath
 )
 {
+    if (materials[uuid]) return false;
     std::string materialName = ExtractNameFromPath(path);
     std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
-    UUID id = uuid;
-    std::shared_ptr<Material> materialPtr;
-    GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
-    materialPtr = std::make_shared<Material>(materialName, shader);
-    materials[uuid] = materialPtr;
 
-   
+    GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
+
+    auto materialPtr = std::make_shared<Material>(materialName, shader);
+    std::string folderPath = GetFolderPath(path);
+    std::string newPath = StripQuotes(path);
+    bool matLoaded = loadMTL(newPath, *materialPtr);
+    
+    if (matLoaded) {
+        std::cout << "Material Loaded: " << path << std::endl;
+    }
+    else {
+        std::cout << "Failed to load Material: " << path << std::endl;
+        return false;
+    }
+
+    if (!materialPtr->map_Kd_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_Kd_path);
+        materialPtr->map_Kd = importTexture(folderPath + "/" + materialPtr->map_Kd_path);
+        loadTexture(materialPtr->map_Kd, folderPath + "/" + materialPtr->map_Kd_path);
+    }
+    if (!materialPtr->map_Ks_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_Ks_path);
+        materialPtr->map_Ks = importTexture(folderPath + "/" + materialPtr->map_Ks_path);
+        loadTexture(materialPtr->map_Ks, folderPath + "/" + materialPtr->map_Ks_path);
+    }
+    if (!materialPtr->map_bump_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_bump_path);
+        materialPtr->map_bump = importTexture(folderPath + "/" + materialPtr->map_bump_path);
+        loadTexture(materialPtr->map_bump, folderPath + "/" + materialPtr->map_bump_path);
+    }
+
+    materials[uuid] = materialPtr;
+    return true;
 }
+
 
 
 UUID AssetManager::importMaterial(const std::string& path) {
@@ -108,7 +142,7 @@ UUID AssetManager::importMaterial(const std::string& path) {
     if (!MetaFileSystem::HasMeta(path)) {
         meta.uuid = UUID();
         meta.type = "material";
-        meta.source = NormalizePath(Paths::Materials + fileName);
+        meta.source = NormalizePath(path);
 
         MetaFileSystem::Save(path, meta);
     }
@@ -189,7 +223,9 @@ UUID AssetManager::importTexture(const std::string& path) {
 }
 
 void AssetManager::loadTexture(const UUID& uuid, const std::string& path) {
-
+    if (GetFileExtension(path) != "png") {
+        std::cout << "Failed to load: '" << path << "' is not a PNG image!\nPlease convert it to PNG image\n";
+    }
     std::string textureName = ExtractNameFromPath(path);
     UUID id = uuid;
     std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
@@ -213,6 +249,9 @@ GLTexture* AssetManager::getTexture(const UUID& id) {
 }
 
 GLTexture* AssetManager::loadImage(const std::string& name, const std::string& path) {
+    if (GetFileExtension(path) != "png") {
+        std::cout << "Failed to load: '" << path << "' is not a PNG image!\nPlease convert it to PNG image\n";
+    }
     MetaFile meta;
 
     std::string fileName = ExtractFileNameFromPath(path);
@@ -347,7 +386,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
         };
        
         
-
+        
         jScene["entities"].push_back(jEntity);
     }
 

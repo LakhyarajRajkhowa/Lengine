@@ -18,6 +18,10 @@ namespace Lengine {
 		Camera,
 		COUNT
 	};
+	struct EntityMaterialState {
+		std::unordered_map<uint32_t, UUID> baseMaterials;       // per group
+		std::unordered_map<uint32_t, UUID> submeshOverrides;   // per submesh
+	};
 
 	
 	class Entity {
@@ -57,7 +61,7 @@ namespace Lengine {
 		std::unordered_set<uint32_t> hoveredSubMeshes;
 		std::unordered_set<uint32_t> selectedSubMeshes;
 
-		
+		EntityMaterialState materialState;
 	private:
 		
 		UUID ID;
@@ -67,6 +71,8 @@ namespace Lengine {
 		Transform transform;
 
 		UUID meshID;
+		
+
 		std::unordered_map<unsigned int, UUID> materialIndexToUUID;
 
 

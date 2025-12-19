@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 
 static std::string ExtractNameFromPath(const std::string& path) {
@@ -50,6 +50,12 @@ static std::string StripQuotes(const std::string& s)
         [](unsigned char c) { return std::isspace(c); }), out.end());
     return out;
 }
+static inline std::string trim(const std::string& s)
+{
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
+}
 
 static bool IsMeshSource(const std::filesystem::path& path)
 {
@@ -62,4 +68,38 @@ static bool IsMeshSource(const std::filesystem::path& path)
 static bool IsTextureSource(const std::filesystem::path& path)
 {
     return path.extension() == ".png";
+}
+
+static bool IsMaterialSource(const std::filesystem::path& path)
+{
+    return path.extension() == ".mtl";
+}
+
+static std::string GetFolderPath(const std::string& filepath) {
+    if (filepath.empty()) return "";
+
+    // Find the last slash (both Windows and Unix style)
+    size_t pos = filepath.find_last_of("/\\");
+    if (pos == std::string::npos) {
+        // No slash found → file is in the current directory
+        return "";
+    }
+
+    // Return substring up to (but not including) the last slash
+    return filepath.substr(0, pos);
+}
+
+static std::string GetFileExtension(const std::string& filepath)
+{
+    size_t slashPos = filepath.find_last_of("/\\");
+    size_t dotPos = filepath.find_last_of('.');
+
+    // No dot OR dot is in a directory name
+    if (dotPos == std::string::npos ||
+        (slashPos != std::string::npos && dotPos < slashPos))
+    {
+        return "";
+    }
+
+    return filepath.substr(dotPos + 1); // without '.'
 }

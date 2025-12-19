@@ -25,7 +25,6 @@ void main()
     TBN = mat3(T, B, N);
 
     FragPos = vec3(model * vec4(aPos, 1.0));
-    TexCoord = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
-
+    TexCoord = aTexCoord;
     gl_Position = projection * view * vec4(FragPos, 1.0);
 }

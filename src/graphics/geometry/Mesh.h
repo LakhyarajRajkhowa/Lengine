@@ -19,6 +19,7 @@ struct Vertex {
 namespace Lengine {
     class SubMesh {
     private:
+
         unsigned int index;
         std::string name;
         std::vector<Vertex> vertices;
@@ -37,7 +38,13 @@ namespace Lengine {
 
 
     public:
-        SubMesh(const std::string& name, const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices);
+        SubMesh::SubMesh() = default;
+        SubMesh(
+            const std::string& name,
+            std::vector<Vertex>&& verts,
+            std::vector<uint32_t>&& inds
+        );
+      
         ~SubMesh();
 
         bool isHovered = false;
@@ -50,6 +57,10 @@ namespace Lengine {
         void setupMesh();
         const std::string& getName() { return name; }
         const unsigned int& getIndex() { return index; }
+
+        void reserve(uint32_t vertexCount, uint32_t indexCount);
+        void addVertex(const Vertex& v);
+        void addIndex(uint32_t i);
 
         void setMatIdx(unsigned int idx) { materialIndex = idx; }
         void setIndex(unsigned int ID) { index = ID; }

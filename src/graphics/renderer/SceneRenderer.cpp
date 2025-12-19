@@ -30,14 +30,7 @@ namespace Lengine {
 
     }
     void SceneRenderer::renderScene() {
-        double ms = ImGui::GetTime();
-        double s = ms / 1.0f;
-        if (renderer.changeColor) {
-            renderer.lightColor.x = sin(s * 2.0f);
-            renderer.lightColor.y = sin(s * 0.7f);
-            renderer.lightColor.z = sin(s * 1.3f);
-        }       
-
+         
         gizmoRenderer.drawGizmoGrid();
         renderer.renderScene(*sceneManager.getActiveScene(), camera, assetManager);
       //  gizmoRenderer.drawGizmoSpheres();
