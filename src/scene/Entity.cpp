@@ -2,5 +2,12 @@
 #define GLM_ENABLE_EXPERIMENTAL 
 #include <glm/gtx/component_wise.hpp>
 namespace Lengine {
-    
+    void Entity::setType(const EntityType& t) {
+        if (t == EntityType::Light) {
+            if (!light.has_value()) {
+                addLight();
+            }
+        }
+        type = t; 
+    }
 }

@@ -14,6 +14,10 @@ namespace Lengine {
         entities.push_back(std::move(entity));
         entities.back()->setIndex(index);
 
+        if (type == EntityType::Light) {
+            entities.back()->addLight();   
+        }
+
         return entityPtr;
     }
 

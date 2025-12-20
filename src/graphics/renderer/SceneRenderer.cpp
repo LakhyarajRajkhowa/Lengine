@@ -4,9 +4,9 @@ namespace Lengine {
   
     void SceneRenderer::init() {
         glEnable(GL_DEPTH_TEST);
-        glCullFace(GL_BACK);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);      // Remove back faces
         glFrontFace(GL_CCW);
-
         assetManager.LoadAllMetaFiles(Paths::Assets);
 
         gizmoRenderer.initGizmo();
@@ -19,23 +19,25 @@ namespace Lengine {
     }
 
     void SceneRenderer::initScene() {
-        activeScene = assetManager.loadScene(Paths::Default_Scenes + "defaultScene.json");
+        activeScene = assetManager.loadScene(Paths::GameScenes + "defaultScene.json");
         sceneManager.getScenes().insert(activeScene);
         sceneManager.getScenes().insert(assetManager.loadScene(Paths::GameScenes + "scene1.json"));
 
         // temporary active scene logic
         sceneManager.setActiveScene(activeScene);
-        std::string path = "C:/Users/llakh/OneDrive/Desktop/Projects/LengineGraphics3D/TestGameFolder/assets/Textures/brick.png";
-        assetManager.loadTexture(UUID(5416132005131648543), path);
+       
 
     }
     void SceneRenderer::renderScene() {
-         
-        gizmoRenderer.drawGizmoGrid();
-        renderer.renderScene(*sceneManager.getActiveScene(), camera, assetManager);
-      //  gizmoRenderer.drawGizmoSpheres();
-      //  gizmoRenderer.drawGizmoArrows();
+       
 
+        renderer.renderScene(*sceneManager.getActiveScene(), camera, assetManager);
+        
+        glDisable(GL_CULL_FACE);
+        gizmoRenderer.drawGizmoGrid();
+         // gizmoRenderer.drawGizmoSpheres();
+        //  gizmoRenderer.drawGizmoArrows();
+        glEnable(GL_CULL_FACE);
     }
 
     void SceneRenderer::endFrame() {

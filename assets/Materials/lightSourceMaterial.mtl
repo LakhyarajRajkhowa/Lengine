@@ -1,0 +1,26 @@
+# Light Source Material
+# Self-illuminated, does NOT react to scene lighting
+
+newmtl LightSourceMaterial
+
+# Emissive color (this is what you see)
+Ke 1.0 1.0 1.0
+
+# No diffuse response
+Kd 0.0 0.0 0.0
+
+# No ambient response
+Ka 0.0 0.0 0.0
+
+# No specular highlight
+Ks 0.0 0.0 0.0
+
+# Shininess irrelevant (set to 0)
+Ns 0.0
+
+# Fully opaque
+d 1.0
+
+# Illumination model
+# 0 = constant color (no lighting)
+illum 0

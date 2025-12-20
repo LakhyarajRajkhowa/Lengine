@@ -1,9 +1,9 @@
-#include "ImageLoader.h"
+﻿#include "ImageLoader.h"
 
 
 namespace Lengine {
 
-    GLTexture ImageLoader::loadPNG(std::string filePath) {
+    GLTexture ImageLoader::loadPNG(const std::string& filePath) {
         GLTexture texture = {};
 
         std::vector<unsigned char> in;

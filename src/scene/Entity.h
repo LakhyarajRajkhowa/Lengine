@@ -7,6 +7,7 @@
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/material/Material.h"
 #include "../graphics/camera/Camera3d.h"
+#include "../graphics/lightning/Light.h"
 #include "../scene/Transform.h"
 
 #include "../utils/UUID.h"
@@ -38,7 +39,7 @@ namespace Lengine {
 		const std::string& getName() const { return name; }
 		void setName(const std::string& newName) { name = newName; }
 		const EntityType& getType() const { return type; }
-		void setType(const EntityType& t) { type = t; }
+		void setType(const EntityType& t);
 		UUID getMeshID() const { return meshID; }
 		void setMeshID(const UUID& id) { meshID = id; }
 		std::unordered_map<unsigned int, UUID>& getMaterialIndexUUIDs() { return materialIndexToUUID; }
@@ -52,7 +53,6 @@ namespace Lengine {
 			return transform;
 		};
 		const glm::mat4& getTransformMatrix() const { return transform.getMatrix(); }
-		
 		bool isSelected = false;
 		bool isDragged = false;
 		bool isMovable = true;
@@ -62,6 +62,14 @@ namespace Lengine {
 		std::unordered_set<uint32_t> selectedSubMeshes;
 
 		EntityMaterialState materialState;
+
+		bool hasLight() const { return light.has_value(); }
+		Light& getLight() { return *light; }
+		const Light& getLight() const { return *light; }
+		void addLight() {
+			light.emplace(); 
+		}
+
 	private:
 		
 		UUID ID;
@@ -69,7 +77,7 @@ namespace Lengine {
 		std::string name;
 		EntityType type;
 		Transform transform;
-
+		std::optional<Light> light;
 		UUID meshID;
 		
 

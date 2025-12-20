@@ -50,7 +50,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     ImGui::Spacing();
 
     ImGui::Separator();
-    ImGui::Text("Transform");
+    ImGui::Text("Type");
     ImGui::Separator();
     ImGui::Spacing();
 
@@ -73,7 +73,6 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         entity->setType(static_cast<EntityType>(currentTypeIndex));
         Mesh* mesh = assetManager.getMesh(entity->getMeshID());
         sceneManager.getActiveScene()->assignDefaultMaterials(entity, mesh);
-        //assetManager.linkMaterialInstance(sceneManager.getActiveScene(),  entity);
     }
 
     ImGui::Spacing();
@@ -97,9 +96,19 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     ImGui::SameLine();
 
     if (ImGui::Button("Reset##rot")) {
-        tr.rotation = { 0.0f, 0.0f, 0.0f };
+        tr.rotation = glm::vec3(0.0f); 
     }
-    ImGui::DragFloat3("##Rotation", glm::value_ptr(tr.rotation), 0.5f);
+
+    glm::vec3 rotationDeg = glm::degrees(tr.rotation);
+
+    if (ImGui::DragFloat3(
+        "##Rotation",
+        glm::value_ptr(rotationDeg),
+        0.5f
+    ))
+    {
+        tr.rotation = glm::radians(rotationDeg);
+    }
 
 
     // ---------- SCALE ----------
@@ -177,42 +186,144 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
     // Lightning
 
-    ImGui::Separator();
-    ImGui::Text("Lightning");
-    ImGui::Separator();
+    if (entity->getType() == EntityType::Light) {
+        ImGui::Separator();
+        ImGui::Text("Lighting");
+        ImGui::Separator();
 
-    ImGui::Spacing();
+        ImGui::Spacing();
 
-    ImGui::Text("Position");
-    ImGui::SameLine();
-    ImGui::DragFloat3("##LightPosition", glm::value_ptr(renderer.light.position), 0.05f);
+        // ---------------- LIGHT TYPE ----------------
+        static const char* lightTypeLabels[] = {
+            "Directional",
+            "Point",
+            "Spotlight"
+            
+        };
 
-    ImGui::Spacing();
+        LightType currentType = entity->getLight().type;
+        int currentTypeIndex = static_cast<int>(currentType);
 
-    ImGui::Text("Direction");
-    ImGui::SameLine();
-    ImGui::DragFloat3("##LightDirection", glm::value_ptr(renderer.light.direction), 0.05f);
+        if (ImGui::Combo("Light Type", &currentTypeIndex,
+            lightTypeLabels,
+            static_cast<int>(LightType::count)))
+        {
+            entity->getLight().setType(static_cast<LightType>(currentTypeIndex));
+          
+        }
 
-    ImGui::Spacing();
+        ImGui::Spacing();
 
-    ImGui::Text("Ambient");
-    ImGui::SameLine();
-    ImGui::ColorEdit3("Ambient", glm::value_ptr(renderer.light.ambient));
+        // ---------------- Position (Point only) ----------------
+        if (currentType != LightType::Directional) {
+            ImGui::Text("Position");
+            ImGui::SameLine();
+            ImGui::DragFloat3(
+                "##LightPosition",
+                glm::value_ptr(entity->getLight().position),
+                0.05f
+            );
+        }
 
-    ImGui::Spacing();
+        // ---------------- Direction (Directional only) ----------------
+        if (currentType == LightType::Directional || currentType == LightType::Spotlight) {
+            ImGui::Text("Direction");
+            ImGui::SameLine();
+            ImGui::DragFloat3(
+                "##LightDirection",
+                glm::value_ptr(entity->getLight().direction),
+                0.05f
+            );
+        }
 
-    ImGui::Text("Diffuse");
-    ImGui::SameLine();
-    ImGui::ColorEdit3("Diffuse", glm::value_ptr(renderer.light.diffuse));
+        ImGui::Spacing();
 
-    ImGui::Spacing();
+        // ---------------- Colors ----------------
+        ImGui::Text("Ambient");
+        ImGui::SameLine();
+        ImGui::ColorEdit3(
+            "##LightAmbient",
+            glm::value_ptr(entity->getLight().ambient)
+        );
 
-    ImGui::Text("Specular");
-    ImGui::SameLine();
-    ImGui::ColorEdit3("Specular", glm::value_ptr(renderer.light.specular));
+        ImGui::Spacing();
+
+        ImGui::Text("Diffuse");
+        ImGui::SameLine();
+        ImGui::ColorEdit3(
+            "##LightDiffuse",
+            glm::value_ptr(entity->getLight().diffuse)
+        );
+
+        ImGui::Spacing();
+
+        ImGui::Text("Specular");
+        ImGui::SameLine();
+        ImGui::ColorEdit3(
+            "##LightSpecular",
+            glm::value_ptr(entity->getLight().specular)
+        );
+
+        ImGui::Spacing();
+
+        // ---------------- Attenuation (Point only) ----------------
+        if (currentType == LightType::Point || currentType == LightType::Spotlight) {
+            ImGui::Separator();
+            ImGui::Text("Attenuation");
+            ImGui::Separator();
+
+            ImGui::Text("Constant");
+            ImGui::SameLine();
+            ImGui::DragFloat(
+                "##AttenConstant",
+                &entity->getLight().constant,
+                0.01f, 0.0f, 10.0f
+            );
+
+            ImGui::Text("Linear");
+            ImGui::SameLine();
+            ImGui::DragFloat(
+                "##AttenLinear",
+                &entity->getLight().linear,
+                0.01f, 0.0f, 1.0f
+            );
+
+            ImGui::Text("Quadratic");
+            ImGui::SameLine();
+            ImGui::DragFloat(
+                "##AttenQuadratic",
+                &entity->getLight().quadratic,
+                0.001f, 0.0f, 1.0f
+            );
+
+            if (currentType == LightType::Spotlight) {
+                ImGui::Separator();
+                ImGui::Text("Cutoff Angles");
+                ImGui::Separator();
+
+                ImGui::Text("Inner (degrees)");
+                ImGui::SameLine();
+                ImGui::DragFloat(
+                    "##InnerCutoffAngle",
+                    &entity->getLight().cutOffAngle,
+                    0.1f, 0.0f, 360.0f
+                );
+
+                ImGui::Text("Outer (degrees)");
+                ImGui::SameLine();
+                ImGui::DragFloat(
+                    "##OuterCutoffAngle",
+                    &entity->getLight().outerCutOffAngle,
+                    0.1f, 0.0f, 360.0f
+                );
+            }
+        }
+
+        return;
+    }
 
      // MATERIALS
-       
+
     ImGui::Separator();
     ImGui::Text("Material");
     ImGui::Separator();

@@ -64,8 +64,7 @@ namespace Lengine {
 
     class Renderer {
     public:
-        Light light;
-
+        std::vector<Light> lights;
         void renderScene(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
 
        // void collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager);
@@ -87,7 +86,8 @@ namespace Lengine {
             );
         void bindLightUniforms(
             GLSLProgram& shader,
-            const Light& light
+            const Light& light,
+            int index
         );
         void bindMaterialUniforms(
             GLSLProgram& shader,
@@ -112,7 +112,7 @@ namespace Lengine {
             GLSLProgram& shader,
             const std::unordered_set<uint32_t>& hoveredSubMeshes
         );
-
+        void collectLights( const std::vector<std::unique_ptr<Entity>>& entities);
 
 
     };

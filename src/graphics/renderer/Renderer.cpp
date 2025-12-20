@@ -36,15 +36,29 @@ void Renderer::bindCameraUniforms(
 
 void Renderer::bindLightUniforms(
     GLSLProgram& shader,
-    const Light& light
+    const Light& light,
+    int index
 ) {
-    shader.setInt("light.type", (int)light.type);
-    shader.setVec3("light.position", light.position);
-    shader.setVec3("light.direction", light.direction);
-    shader.setVec3("light.ambient", light.ambient);
-    shader.setVec3("light.diffuse", light.diffuse);
-    shader.setVec3("light.specular", light.specular);
+    std::string base = "lights[" + std::to_string(index) + "].";
+
+    shader.setInt(base + "type", (int)light.type);
+    shader.setVec3(base + "position", light.position);
+    shader.setVec3(base + "direction", light.direction);
+    shader.setVec3(base + "ambient", light.ambient);
+    shader.setVec3(base + "diffuse", light.diffuse);
+    shader.setVec3(base + "specular", light.specular);
+
+    shader.setFloat(base + "constant", light.constant);
+    shader.setFloat(base + "linear", light.linear);
+    shader.setFloat(base + "quadratic", light.quadratic);
+
+    shader.setFloat(base + "cutOff",
+        cos(glm::radians(light.cutOffAngle)));
+
+    shader.setFloat(base + "outerCutOff",
+        cos(glm::radians(light.outerCutOffAngle)));
 }
+
 
 void Renderer::bindMaterialUniforms(
     GLSLProgram& shader,
@@ -66,18 +80,27 @@ void Renderer::bindTexture(
     const char* samplerUniform,
     GLenum textureUnit
 ) {
+    glActiveTexture(textureUnit);
+
     bool hasTexture = texID != UUID::Null;
     shader.setBool(hasUniform, hasTexture);
 
-    if (!hasTexture) return;
+    if (!hasTexture) {
+        glBindTexture(GL_TEXTURE_2D, 0);  
+        return;
+    }
 
     GLTexture* tex = assetManager.getTexture(texID);
-    if (!tex) return;
+    if (!tex) {
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return;
+    }
 
-    glActiveTexture(textureUnit);
     glBindTexture(GL_TEXTURE_2D, tex->id);
+
     shader.setInt(samplerUniform, textureUnit - GL_TEXTURE0);
 }
+
 
 void Renderer::drawSubMesh(
     SubMesh& sm,
@@ -113,6 +136,8 @@ void Renderer::drawSubMeshGroup(
 
 void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetManager ) {
     const auto& entities = scene.getEntities(); 
+    collectLights(entities);
+
     for (const auto& entityPtr : entities) {
        
         Entity* entity = entityPtr.get();
@@ -133,7 +158,6 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
             const MaterialInstance& inst = scene.getMaterialInstance(instID);
 
             Material* baseMaterial = assetManager.getMaterial(inst.baseMaterial);
-            //Material* baseMaterial = assetManager.getMaterial(entity->materialState.baseMaterials[matIndex]);
             if (!baseMaterial) continue;
 
 
@@ -147,7 +171,12 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
 
             bindCameraUniforms(*shader, model, camera);
 
-            bindLightUniforms(*shader, light);
+            shader->setInt("lightCount", (int)lights.size());
+
+            for (int i = 0; i < lights.size(); i++) {
+                bindLightUniforms(*shader, lights[i], i);
+            }
+            
             bindMaterialUniforms(*shader, finalMat);
             bindTexture(
                 *shader,
@@ -186,6 +215,42 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
         } 
     }
 }
+
+void Renderer::collectLights(const std::vector<std::unique_ptr<Entity>>& entities)
+{
+    lights.clear();
+
+    for (const auto& ePtr : entities) {
+        const Entity& e = *ePtr;   
+
+        if (e.getType() != EntityType::Light || !e.hasLight())
+            continue;
+
+        const Light& src = e.getLight();
+
+        Light gpuLight{};
+        gpuLight.type = src.type;
+
+        gpuLight.position = e.getTransform().position;
+        glm::quat q = glm::quat(e.getTransform().rotation); // radians
+        gpuLight.direction = glm::normalize(q * glm::vec3(0.0f, 0.0f, -1.0f));
+
+
+        gpuLight.ambient = src.ambient;
+        gpuLight.diffuse = src.diffuse;
+        gpuLight.specular = src.specular;
+
+        gpuLight.constant = src.constant;
+        gpuLight.linear = src.linear;
+        gpuLight.quadratic = src.quadratic;
+
+        gpuLight.cutOffAngle = src.cutOffAngle;
+        gpuLight.outerCutOffAngle = src.outerCutOffAngle;
+
+        lights.push_back(gpuLight);
+    }
+}
+
 /* 
 void Renderer::collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager) {
   

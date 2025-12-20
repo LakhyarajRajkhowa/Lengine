@@ -13,6 +13,6 @@ namespace Lengine {
     private:
 
     public:
-        static GLTexture loadPNG(std::string filePath);
+        static GLTexture loadPNG(const std::string& filePath);
     };
 }

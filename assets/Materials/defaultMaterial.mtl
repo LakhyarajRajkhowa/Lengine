@@ -1,0 +1,36 @@
+# Default Material
+# Used when no material or textures are assigned
+
+newmtl DefaultMaterial
+
+# Base color (diffuse) - light gray
+Kd 0.8 0.8 0.8
+
+# Ambient color
+Ka 0.2 0.2 0.2
+
+# Specular color
+Ks 0.04 0.04 0.04
+
+# Specular exponent (shininess)
+Ns 32.0
+
+# Opacity (1.0 = fully opaque)
+d 1.0
+
+# Index of refraction (optional)
+Ni 1.45
+
+# Illumination model
+# 2 = diffuse + specular
+illum 2
+
+
+# Diffuse map (albedo)
+# map_Kd default_albedo.png
+
+# Specular map
+# map_Ks default_specular.png
+
+# Normal map (your loader may use map_Bump or bump)
+# map_Bump default_normal.png
