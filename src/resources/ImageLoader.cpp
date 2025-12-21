@@ -1,5 +1,7 @@
 ﻿#include "ImageLoader.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "../external/stb_image.h"
 
 namespace Lengine {
 
@@ -43,4 +45,66 @@ namespace Lengine {
 
         return texture;
     }
+
+    GLTexture ImageLoader::loadTexture2D(
+        const std::string& filePath,
+        bool srgb
+    ) {
+        GLTexture texture = {};
+
+
+        int width, height, channels;
+        unsigned char* data = stbi_load(
+            filePath.c_str(),
+            &width,
+            &height,
+            &channels,
+            0
+        );
+
+        if (!data) {
+            fatalError("Failed to load texture: " + filePath);
+        }
+
+        GLenum format = GL_RGB;
+        if (channels == 1) format = GL_RED;
+        else if (channels == 3) format = GL_RGB;
+        else if (channels == 4) format = GL_RGBA;
+
+        GLenum internalFormat = srgb
+            ? (format == GL_RGBA ? GL_SRGB_ALPHA : GL_SRGB)
+            : format;
+
+        glGenTextures(1, &texture.id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
+
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            internalFormat,
+            width,
+            height,
+            0,
+            format,
+            GL_UNSIGNED_BYTE,
+            data
+        );
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        stbi_image_free(data);
+
+        texture.width = width;
+        texture.height = height;
+
+        return texture;
+    }
+
 }

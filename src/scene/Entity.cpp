@@ -8,6 +8,11 @@ namespace Lengine {
                 addLight();
             }
         }
+        else if (t == EntityType::Light) {
+            if (light.has_value()) {
+                
+            }
+        }
         type = t; 
     }
 }

@@ -83,7 +83,7 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
    
     meshes[uuid] = ptr;
     
-    
+    addAsset(uuid, AssetType::Mesh, newPath);
 }
 
 // put shaders to the material
@@ -130,6 +130,8 @@ bool AssetManager::loadMaterial(
     }
 
     materials[uuid] = materialPtr;
+
+    addAsset(uuid, AssetType::Material, newPath);
     return true;
 }
 
@@ -223,9 +225,7 @@ UUID AssetManager::importTexture(const std::string& path) {
 }
 
 void AssetManager::loadTexture(const UUID& uuid, const std::string& path) {
-    if (GetFileExtension(path) != "png") {
-        std::cout << "Failed to load: '" << path << "' is not a PNG image!\nPlease convert it to PNG image\n";
-    }
+   
     std::string textureName = ExtractNameFromPath(path);
     UUID id = uuid;
     std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
@@ -249,9 +249,7 @@ GLTexture* AssetManager::getTexture(const UUID& id) {
 }
 
 GLTexture* AssetManager::loadImage(const std::string& name, const std::string& path) {
-    if (GetFileExtension(path) != "png") {
-        std::cout << "Failed to load: '" << path << "' is not a PNG image!\nPlease convert it to PNG image\n";
-    }
+   
     MetaFile meta;
 
     std::string fileName = ExtractFileNameFromPath(path);
@@ -268,7 +266,6 @@ GLTexture* AssetManager::loadImage(const std::string& name, const std::string& p
     UUID id = meta.uuid;
     std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
     *tex = textureCache.getTexture(path);
-
     textures[id] = tex;
     return tex.get();
 
@@ -309,6 +306,155 @@ void AssetManager::saveModelFile(const UUID& meshUUID)
 
 
 }
+
+const AssetRecord* AssetManager::getRecord(const UUID& uuid) const
+{
+    auto it = assetRegistry.find(uuid);
+    if (it == assetRegistry.end())
+        return nullptr;
+
+    return &it->second;
+}
+
+bool AssetManager::loadAssetFromPath(const AssetRecord& record)
+{
+    switch (record.type)
+    {
+    case AssetType::Mesh:
+        loadMesh(record.uuid, record.path.string());
+        return true;
+
+    case AssetType::Texture:
+        loadTexture(record.uuid, record.path.string());
+        return true;
+
+    case AssetType::Material:
+        loadMaterial(record.uuid, record.path.string());
+        return true;
+
+    case AssetType::Shader:
+    //    loadShader(record.uuid, record.path.string());
+        return true;
+    }
+
+    return false;
+}
+
+bool AssetManager::loadAssetRegistry(const std::string& filePath)
+{
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open AssetRegistry: " << filePath << std::endl;
+        return false;
+    }
+
+    json j;
+    try {
+        file >> j;
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "AssetRegistry parse error: " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!j.contains("assets"))
+        return false;
+
+    for (const auto& jAsset : j["assets"])
+    {
+        UUID uuid(jAsset.at("uuid").get<uint64_t>());
+        std::string typeStr = jAsset.at("type").get<std::string>();
+        std::string path = jAsset.at("path").get<std::string>();
+
+        AssetType type;
+        if (typeStr == "Mesh")        type = AssetType::Mesh;
+        else if (typeStr == "Texture") type = AssetType::Texture;
+        else if (typeStr == "Material")type = AssetType::Material;
+        else if (typeStr == "Shader")  type = AssetType::Shader;
+        else continue; // unknown type
+
+        assetRegistry.try_emplace(
+            uuid,
+            AssetRecord{ uuid, NormalizePath(path), type }
+        );
+    }
+
+    return true;
+}
+void AssetManager::addAsset(
+    const UUID& uuid,
+    AssetType type,
+    const std::string& path
+)
+{
+    std::string normalizedPath = NormalizePath(path);
+
+    // If asset already registered, do nothing
+    if (assetRegistry.find(uuid) != assetRegistry.end())
+        return;
+
+    AssetRecord record;
+    record.uuid = uuid;
+    record.type = type;
+    record.path = normalizedPath;
+
+    assetRegistry.emplace(uuid, std::move(record));
+}
+
+void AssetManager::saveSceneAssetRegistryForScene(
+    const Scene& scene,
+    const std::string& folderPath
+) {
+    namespace fs = std::filesystem;
+
+    fs::path dir(folderPath);
+    if (!fs::exists(dir))
+        fs::create_directories(dir);
+
+    // Build per-scene registry filename
+    std::string registryFileName = "assetRegistry_" + scene.getName() + ".json";
+    fs::path registryPath = dir / registryFileName;
+
+    json jRegistry;
+    jRegistry["assets"] = json::array();
+
+    std::unordered_set<UUID> usedAssets;
+
+    // Collect asset UUIDs used by the scene
+    for (const auto& entityPtr : scene.getEntities()) {
+        Entity* entity = entityPtr.get();
+
+        if (!entity->getMeshID().isNull())
+            usedAssets.insert(entity->getMeshID());
+
+        for (auto& [matIdx, matUUID] : entity->getMaterialIndexUUIDs()) {
+            if (matUUID != UUID::Null)
+                usedAssets.insert(matUUID);
+        }
+        
+    }
+
+    // Serialize assets from the global assetRegistry
+    for (const UUID& uuid : usedAssets) {
+        auto it = assetRegistry.find(uuid);
+        if (it == assetRegistry.end())
+            continue;
+
+        const AssetRecord& record = it->second;
+
+        jRegistry["assets"].push_back({
+            { "uuid", record.uuid.toUint64() },
+            { "type", AssetTypeToString(record.type) },
+            { "path", record.path.string() }
+            });
+    }
+
+    // Save file
+    std::ofstream out(registryPath);
+    out << jRegistry.dump(4);
+}
+
+
 Scene* AssetManager::createScene(const std::string& name, const std::string& folderPath)
 {
     namespace fs = std::filesystem;
@@ -347,21 +493,16 @@ Scene* AssetManager::createScene(const std::string& name, const std::string& fol
 
 void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 {
-    // Build output file path automatically
-    std::filesystem::path dir(folderPath);
+    namespace fs = std::filesystem;
 
-    // Ensure folder exists
-    if (!std::filesystem::exists(dir))
-        std::filesystem::create_directories(dir);
+    fs::path dir(folderPath);
+    if (!fs::exists(dir))
+        fs::create_directories(dir);
 
     std::string sceneName = scene.getName();
-    std::string fileName = sceneName + ".json";
+    fs::path finalPath = dir / (sceneName + ".json");
 
-    std::filesystem::path finalPath = dir / fileName;
-
-    // --- JSON BUILDING ---
     json jScene;
-    // Add scene UUID
     jScene["uuid"] = scene.getUUID().toUint64();
     jScene["name"] = sceneName;
     jScene["entities"] = json::array();
@@ -370,34 +511,76 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 
     for (const auto& entityPtr : entities)
     {
-        auto entity = entityPtr.get();
+        Entity* entity = entityPtr.get();
         json jEntity;
 
         jEntity["entityID"] = entity->getID().toUint64();
         jEntity["name"] = entity->getName();
         jEntity["type"] = entity->getType();
         jEntity["meshID"] = entity->getMeshID().toUint64();
-        const auto& transform = entity->getTransform();
 
+        const auto& transform = entity->getTransform();
         jEntity["transform"] = {
-            { "position", { transform.position.x, transform.position.y, transform.position.z }},
-            { "rotation", { transform.rotation.x, transform.rotation.y, transform.rotation.z }},
-            { "scale",    { transform.scale.x,    transform.scale.y,    transform.scale.z }}
+            { "position", { transform.position.x, transform.position.y, transform.position.z } },
+            { "rotation", { transform.rotation.x, transform.rotation.y, transform.rotation.z } },
+            { "scale",    { transform.scale.x,    transform.scale.y,    transform.scale.z } }
         };
-       
-        
-        
+
+        // ---------- SAVE MATERIALS (NEW) ----------
+        const auto& matUUIDs = entity->getMaterialIndexUUIDs();
+        if (!matUUIDs.empty())
+        {
+            json jMaterials = json::object();
+
+            for (const auto& [matIndex, matUUID] : matUUIDs)
+            {
+                jMaterials[std::to_string(matIndex)] = matUUID.toUint64();
+            }
+
+            jEntity["materials"] = jMaterials;
+        }
+        // ------------------------------------------
+
+        // ---------- SAVE LIGHT ----------
+        if (entity->hasLight())
+        {
+            const Light& light = entity->getLight();
+            json jLight;
+
+            jLight["type"] = static_cast<int>(light.type);
+
+            jLight["position"] = { light.position.x,  light.position.y,  light.position.z };
+            jLight["direction"] = { light.direction.x, light.direction.y, light.direction.z };
+
+            jLight["ambient"] = { light.ambient.x,  light.ambient.y,  light.ambient.z };
+            jLight["diffuse"] = { light.diffuse.x,  light.diffuse.y,  light.diffuse.z };
+            jLight["specular"] = { light.specular.x, light.specular.y, light.specular.z };
+
+            jLight["attenuation"] = {
+                { "constant",  light.constant  },
+                { "linear",    light.linear    },
+                { "quadratic", light.quadratic }
+            };
+
+            jLight["spot"] = {
+                { "cutOff",      light.cutOffAngle      },
+                { "outerCutOff", light.outerCutOffAngle }
+            };
+
+            jEntity["light"] = jLight;
+        }
+        // ------------------------------------------
+
         jScene["entities"].push_back(jEntity);
     }
 
-    // --- WRITE FILE ---
-    std::ofstream file(finalPath.string());
+    std::ofstream file(finalPath);
     file << jScene.dump(4);
 
-    // --- SUCCESS MESSAGE ---
-    std::cout << "Saved \"" << sceneName << "\" successfully at: "
-        << finalPath.string() << std::endl;
+    std::cout << "Saved scene \"" << sceneName
+        << "\" at: " << finalPath << std::endl;
 }
+
 
 Scene* AssetManager::loadScene(const std::string& filePath)
 {
@@ -417,7 +600,7 @@ Scene* AssetManager::loadScene(const std::string& filePath)
 
     json jScene;
     try {
-        file >> jScene;   // this can throw
+        file >> jScene;   
     }
     catch (const json::parse_error& e) {
         std::cerr << "Failed to parse JSON: " << e.what() << std::endl;
@@ -467,11 +650,91 @@ Scene* AssetManager::loadScene(const std::string& filePath)
 
                 entity->setTransform(transform);
                 
-                if (meshes[meshUUID]) {
-                    Mesh* mesh = getMesh(entity->getMeshID());
-                    scene->assignDefaultMaterials(entity, mesh);
+                if (jEntity.contains("light"))
+                {
+                    const json& jLight = jEntity.at("light");
 
+                    entity->addLight();
+                    Light& light = entity->getLight();
+
+                    light.type = static_cast<LightType>(
+                        jLight.at("type").get<int>()
+                        );
+
+                    if (jLight.contains("direction")) {
+                        auto d = jLight.at("direction");
+                        light.direction = glm::normalize(glm::vec3(d[0], d[1], d[2]));
+                    }
+
+                    auto amb = jLight.at("ambient");
+                    auto diff = jLight.at("diffuse");
+                    auto spec = jLight.at("specular");
+
+                    light.ambient = { amb[0],  amb[1],  amb[2] };
+                    light.diffuse = { diff[0], diff[1], diff[2] };
+                    light.specular = { spec[0], spec[1], spec[2] };
+
+                    if (jLight.contains("attenuation"))
+                    {
+                        const auto& att = jLight.at("attenuation");
+                        light.constant = att.at("constant").get<float>();
+                        light.linear = att.at("linear").get<float>();
+                        light.quadratic = att.at("quadratic").get<float>();
+                    }
+
+                    if (light.type == LightType::Spotlight && jLight.contains("spot"))
+                    {
+                        const auto& spot = jLight.at("spot");
+                        light.cutOffAngle = spot.at("cutOff").get<float>();
+                        light.outerCutOffAngle = spot.at("outerCutOff").get<float>();
+                    }
                 }
+
+
+                Mesh* mesh = getMesh(meshUUID);
+
+                if (!mesh)
+                {
+                    const AssetRecord* record = getRecord(meshUUID);
+                    if (record)
+                    {
+                        loadAssetFromPath(*record);
+                        mesh = getMesh(meshUUID); // retry
+                    }
+                }
+
+                if (mesh)
+                {
+                    if (jEntity.contains("materials"))
+                    {
+                        const json& jMaterials = jEntity.at("materials");
+
+                        for (auto it = jMaterials.begin(); it != jMaterials.end(); ++it)
+                        {
+                            unsigned int matIndex = std::stoul(it.key());
+                            UUID matUUID(it.value().get<uint64_t>());
+
+                            entity->getMaterialIndexUUIDs()[matIndex] = matUUID;
+
+                            if (!getMaterial(matUUID)) {
+                                const AssetRecord* matRecord = getRecord(matUUID);
+                                if (matRecord)
+                                {
+                                    loadAssetFromPath(*matRecord);
+                                    mesh = getMesh(matUUID); // retry
+                                }
+
+                            }
+                        }
+                    }
+
+                    scene->assignDefaultMaterials(entity, mesh);
+                }
+                else
+                {
+                    std::cerr << "Mesh missing: UUID(" << meshUUID <<")"<< std::endl;
+                }
+
             }
             catch (const json::exception& e) {
                 std::cerr << "Skipping invalid entity in scene \"" << sceneName

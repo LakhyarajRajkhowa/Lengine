@@ -15,8 +15,8 @@ namespace Lengine {
         auto mit = _textureMap.find(texturePath);
 
         if (mit == _textureMap.end()) {
-            GLTexture newTexture = ImageLoader::loadPNG(texturePath);
-            
+            //GLTexture newTexture = ImageLoader::loadPNG(texturePath);
+            GLTexture newTexture = ImageLoader::loadTexture2D(texturePath, false);
             std::pair<std::string, GLTexture> newPair(texturePath, newTexture);
 
             _textureMap.insert(make_pair(texturePath, newTexture));

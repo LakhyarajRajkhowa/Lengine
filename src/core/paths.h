@@ -26,6 +26,8 @@ namespace Lengine {
         static inline std::string GameAssets_Textures;
         static inline std::string GameScenes;
 
+        static inline std::string GameAssetRegistryFolder;
+
         static void setGameFolderPath(const std::string& gameFolderPath)
         {
             ActiveGameFolder = gameFolderPath;
@@ -36,7 +38,11 @@ namespace Lengine {
             GameAssets_Mesh = GameAssets + "Mesh/";
             GameAssets_Textures = GameAssets + "Textures/";
             GameScenes = ActiveGameFolder + "/scenes/";
+
+            GameAssetRegistryFolder = GameAssets + "AssetRegistry/";
         }
+
+         
 
     };
 

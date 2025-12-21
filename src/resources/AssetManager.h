@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "../core/settings.h"
 #include "../core/paths.h"
+#include "../assets/AssetRegistry.h"
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/opengl/GLTexture.h"
 #include "../graphics/geometry/Mesh.h"
@@ -75,6 +76,21 @@ namespace Lengine {
             const std::string& vertPath,
             const std::string& fragPath);
 		GLSLProgram* getShader(const std::string& name);
+
+		const AssetRecord* getRecord(const UUID& uuid) const;
+		bool loadAssetFromPath(const AssetRecord& record);
+		bool loadAssetRegistry(const std::string& filePath);
+		void AssetManager::addAsset(
+			const UUID& uuid,
+			AssetType type,
+			const std::string& path
+		);
+		void saveSceneAssetRegistryForScene(
+			const Scene& scene,
+			const std::string& folderPath
+		);
+
+
 	private:
 		EngineSettings& settings;
 		std::string modelFolderPath;

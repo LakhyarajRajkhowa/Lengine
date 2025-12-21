@@ -46,6 +46,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
                 if (scene == activeScene) {
                     if (ImGui::MenuItem("Save Scene")) {
                         assetManager.saveScene(*scene, Paths::GameScenes);
+                        assetManager.saveSceneAssetRegistryForScene(*scene, Paths::GameAssetRegistryFolder);
                     }
 
                     if (ImGui::MenuItem("Add Entity")) {

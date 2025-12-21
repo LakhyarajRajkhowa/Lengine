@@ -151,10 +151,10 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
 
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
             if (!subMeshes.size()) continue;
-            if (entity->getMaterialIndexUUIDs().empty()) {
+            if (entity->getMaterialIndexInstIDs().empty()) {
                 scene.assignDefaultMaterials(entity, mesh);
             }
-            UUID instID = entity->getMaterialIndexUUIDs().at(matIndex);
+            UUID instID = entity->getMaterialIndexInstIDs().at(matIndex);
             const MaterialInstance& inst = scene.getMaterialInstance(instID);
 
             Material* baseMaterial = assetManager.getMaterial(inst.baseMaterial);

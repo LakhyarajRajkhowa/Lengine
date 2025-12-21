@@ -1,26 +1,24 @@
-# Light Source Material
-# Self-illuminated, does NOT react to scene lighting
-
 newmtl LightSourceMaterial
 
-# Emissive color (this is what you see)
+# Emissive color (glow)
 Ke 1.0 1.0 1.0
 
-# No diffuse response
-Kd 0.0 0.0 0.0
+# Diffuse response (lit by other lights)
+Kd 0.5 0.5 0.5
 
-# No ambient response
-Ka 0.0 0.0 0.0
+# Ambient response
+Ka 0.1 0.1 0.1
 
-# No specular highlight
-Ks 0.0 0.0 0.0
+# Specular highlight
+Ks 0.3 0.3 0.3
 
-# Shininess irrelevant (set to 0)
-Ns 0.0
+# Shininess
+Ns 50.0
 
 # Fully opaque
 d 1.0
 
 # Illumination model
-# 0 = constant color (no lighting)
-illum 0
+# 2 = diffuse + specular lighting
+# 3 = diffuse + specular + reflective
+illum 2

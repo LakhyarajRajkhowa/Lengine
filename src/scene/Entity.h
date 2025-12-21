@@ -42,6 +42,7 @@ namespace Lengine {
 		void setType(const EntityType& t);
 		UUID getMeshID() const { return meshID; }
 		void setMeshID(const UUID& id) { meshID = id; }
+		std::unordered_map<unsigned int, UUID>& getMaterialIndexInstIDs() { return materialIndexToInstID; }
 		std::unordered_map<unsigned int, UUID>& getMaterialIndexUUIDs() { return materialIndexToUUID; }
 
 
@@ -70,6 +71,7 @@ namespace Lengine {
 			light.emplace(); 
 		}
 
+
 	private:
 		
 		UUID ID;
@@ -81,8 +83,8 @@ namespace Lengine {
 		UUID meshID;
 		
 
-		std::unordered_map<unsigned int, UUID> materialIndexToUUID;
-
+		std::unordered_map<unsigned int, UUID> materialIndexToInstID; // for materialInstance
+		std::unordered_map<unsigned int, UUID> materialIndexToUUID; // for materials id from scene.json
 
 		
 

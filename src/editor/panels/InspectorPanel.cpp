@@ -399,24 +399,43 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     sm.isHovered = false;                   
                 }
                 
-                if (openSubmesh) {
+                if (openSubmesh)
+                {
                     sm.isSelected = true;
 
-                    UUID instID = entity->getMaterialIndexUUIDs().at(sm.getMatIdx());
-                    MaterialInstance& inst =
-                        sceneManager.getActiveScene()->getMaterialInstance(instID);
-                    const Material* baseMat =
-                        assetManager.getMaterial(inst.baseMaterial);
-                    
-                    // Base Material
-                    std::string baseMatName = "None";
+                    const uint32_t matIdx = sm.getMatIdx();
+                    Scene* scene = sceneManager.getActiveScene();
 
-                    if (inst.baseMaterial) {
-                        baseMatName = assetManager.getMaterial(inst.baseMaterial)->getName();
+                    // ---------- Fetch instance safely ----------
+                    UUID instID = entity->getMaterialIndexInstIDs().at(matIdx);
+                    MaterialInstance* inst = &scene->getMaterialInstance(instID);
+
+                    // ---------- Validate base material ----------
+                    const Material* baseMat = nullptr;
+
+                    if (inst->baseMaterial != UUID::Null)
+                        baseMat = assetManager.getMaterial(inst->baseMaterial);
+
+                    // ---------- If base material missing → reset ----------
+                    if (inst->baseMaterial != UUID::Null && !baseMat)
+                    {
+                        entity->getMaterialIndexUUIDs()[matIdx] = UUID::Null;
+                        scene->assignDefaultMaterials(entity, mesh);
+
+                        // re-fetch instance (old one is INVALID)
+                        instID = entity->getMaterialIndexInstIDs().at(matIdx);
+                        inst = &scene->getMaterialInstance(instID);
+
+                        if (inst->baseMaterial != UUID::Null)
+                            baseMat = assetManager.getMaterial(inst->baseMaterial);
                     }
-                    ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
+
+                    // ---------- Base Material UI ----------
+                    std::string baseMatName = baseMat ? baseMat->getName() : "None";
+
                     ImGui::Text("Base Material");
-                    ImGui::Button((baseMatName + "##baseMaterial").c_str(), btnSize);
+                    ImGui::Button((baseMatName + "##baseMaterial").c_str(),
+                        { ImGui::GetContentRegionAvail().x, 28 });
 
                     if (ImGui::BeginDragDropTarget())
                     {
@@ -424,192 +443,123 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                             ImGui::AcceptDragDropPayload("MATERIAL_ASSET"))
                         {
                             const TextureDragPayload* data =
-                                (const TextureDragPayload*)payload->Data;
+                                static_cast<const TextureDragPayload*>(payload->Data);
 
-                            if (!assetManager.getMaterial(data->id)) {
-                                if (assetManager.loadMaterial(data->id, data->path)) {
-                                    inst.baseMaterial = data->id;
-                                }
-                            }
-                            else {
-                                inst.baseMaterial = data->id;
-                            }
-                           
+                            if (!assetManager.getMaterial(data->id))
+                                assetManager.loadMaterial(data->id, data->path);
+
+                            inst->baseMaterial = data->id;
+                            entity->getMaterialIndexUUIDs()[matIdx] = data->id;
                         }
                         ImGui::EndDragDropTarget();
                     }
 
-                    // Diffuse Map
-                    {
-                        std::string diffuseTexName = "None";
+                    ImGui::Spacing();
 
-                        if (inst.map_kd.has_value()) {
-                            GLTexture* instTex = assetManager.getTexture(inst.map_kd.value());
-                            diffuseTexName = instTex->name;
-                        }
-                        else if (baseMat->map_Kd != UUID::Null) {
-                            GLTexture* baseTex = assetManager.getTexture(baseMat->map_Kd);
-                            diffuseTexName = baseTex->name;
-                        }
-
-                        ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
-                        ImGui::Text("Diffuse Map");
-                        ImGui::Button((diffuseTexName + "##diffuse").c_str(), btnSize);
-
-                        if (ImGui::BeginDragDropTarget())
+                    // ---------- Helper lambda for texture slots ----------
+                    auto DrawTextureSlot = [&](const char* label,
+                        std::optional<UUID>& instSlot,
+                        UUID baseSlot)
                         {
-                            if (const ImGuiPayload* payload =
-                                ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
+                            std::string texName = "None";
+
+                            if (instSlot.has_value())
                             {
-                                const TextureDragPayload* data =
-                                    (const TextureDragPayload*)payload->Data;
-
-                                UUID texID = data->id;
-                                std::string texPath = data->path;
-                                if (!assetManager.getTexture(texID)) {
-                                    assetManager.loadTexture(texID, texPath);
-                                }
-                                inst.map_kd = texID;
-
+                                if (GLTexture* t = assetManager.getTexture(instSlot.value()))
+                                    texName = t->name;
                             }
-                            ImGui::EndDragDropTarget();
-                        }
+                            else if (baseSlot != UUID::Null)
+                            {
+                                if (GLTexture* t = assetManager.getTexture(baseSlot))
+                                    texName = t->name;
+                            }
 
-                        
+                            ImGui::Text(label);
+                            ImGui::Button((texName + std::string("##") + label).c_str(),
+                                { ImGui::GetContentRegionAvail().x, 28 });
 
-                        ImGui::Spacing();
+                            if (ImGui::BeginDragDropTarget())
+                            {
+                                if (const ImGuiPayload* payload =
+                                    ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
+                                {
+                                    const TextureDragPayload* data =
+                                        static_cast<const TextureDragPayload*>(payload->Data);
+
+                                    if (!assetManager.getTexture(data->id))
+                                        assetManager.loadTexture(data->id, data->path);
+
+                                    instSlot = data->id;
+                                }
+                                ImGui::EndDragDropTarget();
+                            }
+
+                            ImGui::Spacing();
+                        };
+
+                    // ---------- Texture Maps ----------
+                    if (baseMat)
+                    {
+                        DrawTextureSlot("Diffuse Map", inst->map_kd, baseMat->map_Kd);
+                        DrawTextureSlot("Specular Map", inst->map_ks, baseMat->map_Ks);
+                        DrawTextureSlot("Normal Map", inst->map_bump, baseMat->map_bump);
                     }
 
-
-                    // ---- Diffuse (Kd) ----
-                    glm::vec3 kd = inst.Kd.value_or(baseMat->Kd);
-                    if (ImGui::ColorEdit3("Diffuse (Kd)", glm::value_ptr(kd)))
-                        inst.Kd = kd; 
-
-                    if (inst.Kd.has_value() && ImGui::SmallButton("Reset Kd")) inst.Kd.reset();
-                    ImGui::Spacing();
-
-                    // ---- Ambient (Ka) ----
-                    glm::vec3 ka = inst.Ka.value_or(baseMat->Ka);
-                    if (ImGui::ColorEdit3("Ambient (Ka)", glm::value_ptr(ka)))
-                        inst.Ka = ka;
-                    if (inst.Ka.has_value() && ImGui::SmallButton("Reset Ka")) inst.Ka.reset();
-                    ImGui::Spacing();
-
-                    // Specular Map
-                    {
-                        std::string specularTexName = "None";
-
-                        if (inst.map_ks.has_value()) {
-                            GLTexture* instTex = assetManager.getTexture(inst.map_ks.value());
-                            specularTexName = instTex->name;
-                        }
-                        else if (baseMat->map_Ks != UUID::Null) {
-                            GLTexture* baseTex = assetManager.getTexture(baseMat->map_Ks);
-                            specularTexName = baseTex->name;
-                        }
-
-                        ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
-                        ImGui::Text("Specular Map");
-                        ImGui::Button((specularTexName + "##specular").c_str(), btnSize);
-
-                        if (ImGui::BeginDragDropTarget())
+                    // ---------- Color + Scalar helpers ----------
+                    auto DrawVec3 = [&](const char* label,
+                        std::optional<glm::vec3>& instVal,
+                        const glm::vec3& baseVal)
                         {
-                            if (const ImGuiPayload* payload =
-                                ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
-                            {
-                                const TextureDragPayload* data =
-                                    (const TextureDragPayload*)payload->Data;
+                            glm::vec3 v = instVal.value_or(baseVal);
+                            if (ImGui::ColorEdit3(label, glm::value_ptr(v)))
+                                instVal = v;
 
-                                UUID texID = data->id;
-                                std::string texPath = data->path;
-                                if (!assetManager.getTexture(texID)) {
-                                    assetManager.loadTexture(texID, texPath);
-                                }
-                                inst.map_ks = texID;
+                            if (instVal.has_value() &&
+                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
+                                instVal.reset();
 
-                            }
-                            ImGui::EndDragDropTarget();
-                        }
+                            ImGui::Spacing();
+                        };
 
-                       
+                    auto DrawFloat = [&](const char* label,
+                        std::optional<float>& instVal,
+                        float baseVal,
+                        float min,
+                        float max)
+                        {
+                            float v = instVal.value_or(baseVal);
+                            if (ImGui::DragFloat(label, &v, 0.1f, min, max))
+                                instVal = v;
 
-                        ImGui::Spacing();
+                            if (instVal.has_value() &&
+                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
+                                instVal.reset();
+
+                            ImGui::Spacing();
+                        };
+
+                    // ---------- Material Params ----------
+                    if (baseMat)
+                    {
+                        DrawVec3("Diffuse (Kd)", inst->Kd, baseMat->Kd);
+                        DrawVec3("Ambient (Ka)", inst->Ka, baseMat->Ka);
+                        DrawVec3("Specular (Ks)", inst->Ks, baseMat->Ks);
+                        DrawVec3("Emissive (Ke)", inst->Ke, baseMat->Ke);
+
+                        DrawFloat("Normal Strength",
+                            inst->normalStrength,
+                            baseMat->normalStrength,
+                            -10.0f, 10.0f);
+
+                        DrawFloat("Shininess (Ns)",
+                            inst->Ns,
+                            baseMat->Ns,
+                            0.0f, 256.0f);
                     }
 
-                    // ---- Specular (Ks) ----
-                    glm::vec3 ks = inst.Ks.value_or(baseMat->Ks);
-                    if (ImGui::ColorEdit3("Specular (Ks)", glm::value_ptr(ks)))
-                        inst.Ks = ks;
-                    if (inst.Ks.has_value() && ImGui::SmallButton("Reset Ks")) inst.Ks.reset();
-                    ImGui::Spacing();
-
-                    // Normal Map
-                    {
-                        std::string normalTexName = "None";
-
-                        if (inst.map_bump.has_value()) {
-                            GLTexture* instTex = assetManager.getTexture(inst.map_bump.value());
-                            normalTexName = instTex->name;
-                        }
-                        else if (baseMat->map_bump != UUID::Null) {
-                            GLTexture* baseTex = assetManager.getTexture(baseMat->map_bump);
-                            normalTexName = baseTex->name;
-                        }
-
-                        ImVec2 btnSize = { ImGui::GetContentRegionAvail().x, 28 };
-                        ImGui::Text("Normal Map");
-                        ImGui::Button((normalTexName + "##normal").c_str(), btnSize);
-
-                        if (ImGui::BeginDragDropTarget())
-                        {
-                            if (const ImGuiPayload* payload =
-                                ImGui::AcceptDragDropPayload("TEXTURE_ASSET"))
-                            {
-                                const TextureDragPayload* data =
-                                    (const TextureDragPayload*)payload->Data;
-
-                                UUID texID = data->id;
-                                std::string texPath = data->path;
-                                if (!assetManager.getTexture(texID)) {
-                                    assetManager.loadTexture(texID, texPath);
-                                }
-                                inst.map_bump = texID;
-
-                            }
-                            ImGui::EndDragDropTarget();
-                        }
-
-
-                        ImGui::Spacing();
-                    }
-
-                    // Normal strength
-                    float normalStrength = inst.normalStrength.value_or(baseMat->normalStrength);
-                    if (ImGui::DragFloat("Normal Strength", &normalStrength, 0.1f, -10.0f, 10.0f))
-                        inst.normalStrength = normalStrength;
-                    if (inst.normalStrength.has_value() && ImGui::SmallButton("Reset Ns")) inst.normalStrength.reset();
-                    ImGui::Spacing();
-
-
-
-                    // ---- Emissive (Ke) ----
-                    glm::vec3 ke = inst.Ke.value_or(baseMat->Ke);
-                    if (ImGui::ColorEdit3("Emissive (Ke)", glm::value_ptr(ke)))
-                        inst.Ke = ke;
-                    if (inst.Ke.has_value() && ImGui::SmallButton("Reset Ke")) inst.Ke.reset();
-                    ImGui::Spacing();
-
-                    // ---- Shininess (Ns) ----
-                    float ns = inst.Ns.value_or(baseMat->Ns);
-                    if (ImGui::DragFloat("Shininess (Ns)", &ns, 0.1f, 0.0f, 256.0f))
-                        inst.Ns = ns;
-                    if (inst.Ns.has_value() && ImGui::SmallButton("Reset Ns")) inst.Ns.reset();
-
-                    ImGui::Spacing();
                     ImGui::TreePop();
                 }
-                
+
                 ImGui::PopID();
             }
             ImGui::TreePop();

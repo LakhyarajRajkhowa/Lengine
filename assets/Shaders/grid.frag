@@ -8,7 +8,7 @@ uniform vec3 baseColor = vec3(0.25, 0.25,0.25);     // plane color
 uniform vec3 minorColor = vec3(0.3, 0.3, 0.3);    // small grid color (1x1)
 uniform vec3 majorColor = vec3(0.4, 0.4, 0.4);    // large grid color (10x10)
 uniform float gridSpacing = 1.0;  // e.g. 1.0
-uniform float fadeDistance = 100.0; // e.g. 100.0
+uniform float fadeDistance = 1000.0; // e.g. 100.0
 float minorLineThickness = 1.0;
 float majorLineThickness = 0.2;
 

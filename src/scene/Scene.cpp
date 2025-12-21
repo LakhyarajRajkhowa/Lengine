@@ -111,34 +111,42 @@ namespace Lengine {
         }
     }
 
-    void Scene::assignDefaultMaterials(Entity* entity, Mesh* mesh) 
+    void Scene::assignDefaultMaterials(Entity* entity, Mesh* mesh)
     {
-        UUID baseMat = MaterialID::Default;
+        if (!mesh)
+            return;
+
+        UUID defaultMat;
 
         switch (entity->getType()) {
-            case EntityType::DefaultObject:
-                baseMat = MaterialID::Default;
-                break;
-            case EntityType::Light:
-                baseMat = MaterialID::LightSource;
-                break;
-            case EntityType::Camera:
-                baseMat = MaterialID::Default;
-                break;
+        case EntityType::DefaultObject:
+            defaultMat = MaterialID::Default;
+            break;
+        case EntityType::Light:
+            defaultMat = MaterialID::LightSource;
+            break;
+        case EntityType::Camera:
+            defaultMat = MaterialID::Default;
+            break;
         }
+
+        auto& matUUIDs = entity->getMaterialIndexUUIDs();
+        auto& instIDs = entity->getMaterialIndexInstIDs();
 
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
-            for (auto& sm : subMeshes) {
-                UUID instID;
 
-                instID = createMaterialInstance(baseMat);
+            UUID baseMat = defaultMat;
 
-                entity->getMaterialIndexUUIDs()[matIndex] = instID;
-
+            auto it = matUUIDs.find(matIndex);
+            if (it != matUUIDs.end() && it->second != UUID::Null) {
+                baseMat = it->second;
             }
-        }
             
+            UUID instID = createMaterialInstance(baseMat);
+            instIDs[matIndex] = instID;
+        }
     }
+
 
 }
 
