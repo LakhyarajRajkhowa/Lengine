@@ -8,7 +8,7 @@ namespace Lengine {
         glCullFace(GL_BACK);      // Remove back faces
         glFrontFace(GL_CCW);
         assetManager.LoadAllMetaFiles(Paths::Assets);
-        assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_defaultScene.json");
+        assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_hallway.json");
 
         gizmoRenderer.initGizmo();
         
@@ -20,7 +20,7 @@ namespace Lengine {
     }
 
     void SceneRenderer::initScene() {
-        activeScene = assetManager.loadScene(Paths::GameScenes + "defaultScene.json");
+        activeScene = assetManager.loadScene(Paths::GameScenes + "hallway.json");
         sceneManager.getScenes().insert(activeScene);
       //  sceneManager.getScenes().insert(assetManager.loadScene(Paths::GameScenes + "scene1.json"));
 

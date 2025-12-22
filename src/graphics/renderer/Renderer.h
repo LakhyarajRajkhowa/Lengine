@@ -59,7 +59,9 @@ namespace Lengine {
     };
     */
 
-
+    struct RenderFlags {
+        bool entitySelected = false;
+    };
    
 
     class Renderer {
@@ -67,6 +69,7 @@ namespace Lengine {
         std::vector<Light> lights;
         void renderScene(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
 
+        
        // void collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager);
        // void flushBatches(Scene& scene,
        //     Camera3d& camera,
@@ -100,6 +103,10 @@ namespace Lengine {
             const char* hasUniform,
             const char* samplerUniform,
             GLenum textureUnit
+        );
+        void bindEditorUniforms(
+            GLSLProgram& shader,
+            const RenderFlags& mat
         );
         void drawSubMesh(
             SubMesh& sm,

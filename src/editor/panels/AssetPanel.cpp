@@ -152,16 +152,13 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         }
 
 
-        // ============================================================
-        // SELECTABLE GROUP (fix: thumbnail is selectable)
-        // ============================================================
+        // SELECTABLE GROUP (TODO : make thumbnail selectable)
         ImGui::BeginGroup();
 
         ImGui::Image(icon, { thumbnailSize, thumbnailSize });
         bool clicked = ImGui::IsItemClicked();
 
-        // Add a selectable for the name (but invisible)
-        // So clicking *ANYWHERE* selects it
+        // Add a selectable for the name 
         ImGui::Selectable(ExtractNameFromPath(name).c_str(), false);
 
         if (clicked)
@@ -213,9 +210,7 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         ImGui::PopID();
     }
 
-    // ============================================================
-    // RIGHT-CLICK CONTEXT MENU (Mesh folder only)
-    // ============================================================
+    // RIGHT-CLICK CONTEXT MENU 
   
     if (ImGui::BeginPopupContextWindow("DirContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
@@ -282,12 +277,12 @@ void AssetPanel::OpenImportMeshDialog(std::string folderPath)
 }
 void AssetPanel::OpenImportTextureDialog()
 {
-    const char* filters[1] = { "*.png" };
+    const char* filters[3] = { "*.png", "*.jpeg", "*.jpg"};
 
     const char* filePath = tinyfd_openFileDialog(
         "Import Texture",
         "",
-        1,
+        3,
         filters,
         "Texture Files",
         0

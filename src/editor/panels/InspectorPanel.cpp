@@ -18,12 +18,12 @@ void InspectorPanel::OnImGuiRender() {
 
     ImGui::Separator();
 
+    selectedEntity = nullptr;
     for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
         if (entity->isSelected) {
             selectedEntity = entity.get();
             break;
         }
-        selectedEntity = nullptr;
     }
     
     DrawEntityInspector(selectedEntity, assetManager);
@@ -31,8 +31,10 @@ void InspectorPanel::OnImGuiRender() {
     ImGui::End();
 }
 
+// TODO : break down this func into parts
 void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 {
+    Scene* scene = sceneManager.getActiveScene();
     if (!entity) {
         ImGui::Text("No entity selected.");
         return;
@@ -43,9 +45,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     strcpy(buffer, entity->getName().c_str());
 
     if (ImGui::InputText("Name", buffer, sizeof(buffer))) {
-        if (!buffer[0] == '\0') {
+        if (buffer[0] != '\0') {
             entity->setName(buffer);
-        }     
+        }
     }
     ImGui::Spacing();
 
@@ -72,7 +74,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     {
         entity->setType(static_cast<EntityType>(currentTypeIndex));
         Mesh* mesh = assetManager.getMesh(entity->getMeshID());
-        sceneManager.getActiveScene()->assignDefaultMaterials(entity, mesh);
+
+        // have to do reassign materials based on new entity type
+        scene->assignDefaultMaterials(entity, mesh);
     }
 
     ImGui::Spacing();
@@ -92,6 +96,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
 
     // ---------- ROTATION ----------
+    //         ( in Degrees )
     ImGui::Text("Rotation");
     ImGui::SameLine();
 
@@ -120,7 +125,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     }
 
     // Uniform scale toggle
-    static bool uniformScale = true;
+    bool& uniformScale = inspectorState.uniformScale;
 
     ImGui::Checkbox("Uniform", &uniformScale);
 
@@ -156,7 +161,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         meshName = mesh ? mesh->name : "Invalid Mesh";
     }
     ImVec2 size = { ImGui::GetContentRegionAvail().x, 30 };
-    ImGui::Button(meshName.c_str(), size);
+    ImGui::Button((meshName + "##Mesh").c_str(), size);
 
     // --- Drag Drop Target ---
     if (ImGui::BeginDragDropTarget())
@@ -170,14 +175,16 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
             Mesh* mesh = assetManager.getMesh(droppedID);
            
+            // if dropped mesh ID isnt loaded yet, then load it
             if (!mesh) {
-                
                 assetManager.loadMesh(droppedID, meshPath);
                 mesh = assetManager.getMesh(droppedID);
             }
             
+            // reassign materials based on the mesh 
+            // because mesh are grouped material-wise
             entity->setMeshID(droppedID);
-            sceneManager.getActiveScene()->assignDefaultMaterials(entity, mesh);
+            scene->assignDefaultMaterials(entity, mesh);
         }
         ImGui::EndDragDropTarget();
     }
@@ -214,30 +221,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
         ImGui::Spacing();
 
-        // ---------------- Position (Point only) ----------------
-        if (currentType != LightType::Directional) {
-            ImGui::Text("Position");
-            ImGui::SameLine();
-            ImGui::DragFloat3(
-                "##LightPosition",
-                glm::value_ptr(entity->getLight().position),
-                0.05f
-            );
-        }
-
-        // ---------------- Direction (Directional only) ----------------
-        if (currentType == LightType::Directional || currentType == LightType::Spotlight) {
-            ImGui::Text("Direction");
-            ImGui::SameLine();
-            ImGui::DragFloat3(
-                "##LightDirection",
-                glm::value_ptr(entity->getLight().direction),
-                0.05f
-            );
-        }
-
-        ImGui::Spacing();
-
+        
         // ---------------- Colors ----------------
         ImGui::Text("Ambient");
         ImGui::SameLine();
@@ -266,7 +250,8 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
         ImGui::Spacing();
 
-        // ---------------- Attenuation (Point only) ----------------
+        // ---------------- Attenuation  ----------------
+
         if (currentType == LightType::Point || currentType == LightType::Spotlight) {
             ImGui::Separator();
             ImGui::Text("Attenuation");
@@ -331,9 +316,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     Mesh* mesh = assetManager.getMesh(entity->getMeshID());
     if (!mesh) return;
 
+    // Submesh group based on materials
     for (int i = 0; i < mesh->materialGroups.size(); i++)
     {
-
         auto& materialGroup = mesh->materialGroups[i];
         if (materialGroup.empty())
             continue;
@@ -356,18 +341,16 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         if (ImGui::IsItemHovered()) {
             for (auto& smIdx : materialGroup) {
                 entity->hoveredSubMeshes.insert(smIdx);
-              //  mesh->subMeshes[smIdx].isHovered = true;
             }
         }
         else {
             for (auto& smIdx : materialGroup) {
                 entity->hoveredSubMeshes.erase(smIdx);
-               // mesh->subMeshes[smIdx].isHovered = false;
             }
         }
         
         if (open) {
-            
+            // Display all submesh in a material group
             for (unsigned int i = 0; i < materialGroup.size(); i++) {
                 unsigned int smIdx = materialGroup[i];
                 SubMesh& sm = mesh->subMeshes[smIdx];
@@ -386,48 +369,45 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     flags,
                     "%s", sm.getName().empty() ? "SubMesh" : sm.getName().c_str()
                 );
+
+                // hover detection per submesh
                 if (ImGui::IsItemHovered()) {
                     entity->hoveredSubMeshes.insert(smIdx);
                 }
                 else {
                     entity->hoveredSubMeshes.erase(smIdx);
                 }
-                if (ImGui::IsItemHovered()) {
-                    sm.isHovered = true;   
-                }
-                else {
-                    sm.isHovered = false;                   
-                }
+                
                 
                 if (openSubmesh)
                 {
-                    sm.isSelected = true;
+                    
 
-                    const uint32_t matIdx = sm.getMatIdx();
-                    Scene* scene = sceneManager.getActiveScene();
-
-                    // ---------- Fetch instance safely ----------
+                    const uint32_t matIdx = sm.getMatIdx(); // matIdx could be retrived from the outer loop?        
                     UUID instID = entity->getMaterialIndexInstIDs().at(matIdx);
-                    MaterialInstance* inst = &scene->getMaterialInstance(instID);
-
-                    // ---------- Validate base material ----------
+                    MaterialInstance& inst = scene->getMaterialInstance(instID);
                     const Material* baseMat = nullptr;
 
-                    if (inst->baseMaterial != UUID::Null)
-                        baseMat = assetManager.getMaterial(inst->baseMaterial);
+                    // if baseMat id exist then check if we can get it 
+                    if (inst.baseMaterial != UUID::Null)
+                        baseMat = assetManager.getMaterial(inst.baseMaterial);
 
-                    // ---------- If base material missing → reset ----------
-                    if (inst->baseMaterial != UUID::Null && !baseMat)
+                    // if baseMat id exist but we can't get it
+                    // then reassign the material 
+                    if (inst.baseMaterial != UUID::Null && !baseMat)
                     {
+                        // assign null to the matID 
+                        // becoz there is a check for null id in the assignDefaultMaterials()
+                        // where if null id found the submesh just takes the material of the parent entity
                         entity->getMaterialIndexUUIDs()[matIdx] = UUID::Null;
                         scene->assignDefaultMaterials(entity, mesh);
 
-                        // re-fetch instance (old one is INVALID)
                         instID = entity->getMaterialIndexInstIDs().at(matIdx);
-                        inst = &scene->getMaterialInstance(instID);
+                        inst = scene->getMaterialInstance(instID);
 
-                        if (inst->baseMaterial != UUID::Null)
-                            baseMat = assetManager.getMaterial(inst->baseMaterial);
+                        // so here the new baseMat is just the material of the parent entity
+                        if (inst.baseMaterial != UUID::Null)
+                            baseMat = assetManager.getMaterial(inst.baseMaterial);
                     }
 
                     // ---------- Base Material UI ----------
@@ -445,10 +425,11 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                             const TextureDragPayload* data =
                                 static_cast<const TextureDragPayload*>(payload->Data);
 
+                            // if material isnt loaded then load it
                             if (!assetManager.getMaterial(data->id))
                                 assetManager.loadMaterial(data->id, data->path);
 
-                            inst->baseMaterial = data->id;
+                            inst.baseMaterial = data->id;
                             entity->getMaterialIndexUUIDs()[matIdx] = data->id;
                         }
                         ImGui::EndDragDropTarget();
@@ -486,6 +467,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                                     const TextureDragPayload* data =
                                         static_cast<const TextureDragPayload*>(payload->Data);
 
+                                    // if texture isn't loaded yet then laod it
                                     if (!assetManager.getTexture(data->id))
                                         assetManager.loadTexture(data->id, data->path);
 
@@ -500,9 +482,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     // ---------- Texture Maps ----------
                     if (baseMat)
                     {
-                        DrawTextureSlot("Diffuse Map", inst->map_kd, baseMat->map_Kd);
-                        DrawTextureSlot("Specular Map", inst->map_ks, baseMat->map_Ks);
-                        DrawTextureSlot("Normal Map", inst->map_bump, baseMat->map_bump);
+                        DrawTextureSlot("Diffuse Map", inst.map_kd, baseMat->map_Kd);
+                        DrawTextureSlot("Specular Map", inst.map_ks, baseMat->map_Ks);
+                        DrawTextureSlot("Normal Map", inst.map_bump, baseMat->map_bump);
                     }
 
                     // ---------- Color + Scalar helpers ----------
@@ -541,18 +523,18 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     // ---------- Material Params ----------
                     if (baseMat)
                     {
-                        DrawVec3("Diffuse (Kd)", inst->Kd, baseMat->Kd);
-                        DrawVec3("Ambient (Ka)", inst->Ka, baseMat->Ka);
-                        DrawVec3("Specular (Ks)", inst->Ks, baseMat->Ks);
-                        DrawVec3("Emissive (Ke)", inst->Ke, baseMat->Ke);
+                        DrawVec3("Diffuse (Kd)", inst.Kd, baseMat->Kd);
+                        DrawVec3("Ambient (Ka)", inst.Ka, baseMat->Ka);
+                        DrawVec3("Specular (Ks)", inst.Ks, baseMat->Ks);
+                        DrawVec3("Emissive (Ke)", inst.Ke, baseMat->Ke);
 
                         DrawFloat("Normal Strength",
-                            inst->normalStrength,
+                            inst.normalStrength,
                             baseMat->normalStrength,
                             -10.0f, 10.0f);
 
                         DrawFloat("Shininess (Ns)",
-                            inst->Ns,
+                            inst.Ns,
                             baseMat->Ns,
                             0.0f, 256.0f);
                     }
@@ -565,10 +547,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             ImGui::TreePop();
         }
         else {
-            for (auto& smIdx : materialGroup) {
-                mesh->subMeshes[smIdx].isSelected = false;
-
-            }           
+                    
             ImGui::PopID();
             continue;
         }

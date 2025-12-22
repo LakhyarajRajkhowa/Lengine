@@ -67,7 +67,8 @@ static bool IsMeshSource(const std::filesystem::path& path)
 
 static bool IsTextureSource(const std::filesystem::path& path)
 {
-    return path.extension() == ".png";
+    std::string ext = path.extension().string();
+    return ext == ".png" || ext == ".jpeg" || ext == ".jpg";
 }
 
 static bool IsMaterialSource(const std::filesystem::path& path)

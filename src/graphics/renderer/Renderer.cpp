@@ -100,7 +100,12 @@ void Renderer::bindTexture(
 
     shader.setInt(samplerUniform, textureUnit - GL_TEXTURE0);
 }
-
+void Renderer::bindEditorUniforms(
+    GLSLProgram& shader,
+    const RenderFlags& flags
+) {
+    shader.setBool("entitySelected", flags.entitySelected);
+}
 
 void Renderer::drawSubMesh(
     SubMesh& sm,
@@ -147,7 +152,9 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
 
         Mesh* mesh = assetManager.getMesh(entity->getMeshID());
         if (!mesh) continue;
-       
+        
+        RenderFlags flags;
+        flags.entitySelected = entity->isSelected;
 
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
             if (!subMeshes.size()) continue;
@@ -203,7 +210,10 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
                 "material.normalMap",
                 GL_TEXTURE2
             );
-
+            bindEditorUniforms(
+                *shader,
+                flags
+            );
             drawSubMeshGroup(
                 *mesh,
                 subMeshes,

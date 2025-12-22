@@ -53,6 +53,7 @@ out vec4 FragColor;
 
 uniform vec3 viewPos;
 uniform bool isHovered;
+uniform bool entitySelected;
 
 void main()
 {
@@ -138,8 +139,16 @@ void main()
         finalColor += ambient + diffuse + specular;
     }
 
+    // for individual submesh
     if (isHovered) {
-        finalColor += vec3(0.0, 0.0, 0.2);
+        finalColor += vec3(0.0, 0.0, 0.4);
+    }
+
+    // for whole entity
+   if (entitySelected) {
+        vec3 gold = vec3(0.25, 0.2, 0.075);   // warm golden yellow
+        finalColor = mix(finalColor, gold, 0.25);
+        finalColor += vec3(0.12, 0.10, 0.02); // subtle shine
     }
 
     FragColor = vec4(finalColor, 1.0);

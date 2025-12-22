@@ -7,6 +7,11 @@
 #include "../graphics/renderer/Renderer.h"
 namespace Lengine {
 
+    struct InspectorState {
+        bool uniformScale = true;
+    };
+
+
     class InspectorPanel {
     public:
         InspectorPanel(
@@ -23,6 +28,7 @@ namespace Lengine {
         Renderer& renderer;
         Entity* selectedEntity = nullptr;
 
+        InspectorState inspectorState;
     };
 
 }

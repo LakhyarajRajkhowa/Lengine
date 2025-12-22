@@ -26,8 +26,6 @@ void SceneHierarchyPanel::OnImGuiRender() {
         for (Scene* scene : allScenes)
         {
             
-            
-            
             // Highlight active scene
             ImGuiTreeNodeFlags flags =
                 (scene == activeScene ? ImGuiTreeNodeFlags_DefaultOpen : 0);
