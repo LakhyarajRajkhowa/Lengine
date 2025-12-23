@@ -71,6 +71,7 @@ namespace Lengine {
     class Mesh {
     public:
         std::string name;
+        std::string path;
         std::unordered_map<unsigned int, std::vector<unsigned int>> materialGroups;
         std::vector<SubMesh> subMeshes;
 

@@ -8,7 +8,6 @@ struct Light {
     vec3 position;
     vec3 direction;
 
-    vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 
@@ -22,6 +21,7 @@ struct Light {
     float outerCutOff;      // cos(outer angle)
 };
 
+uniform vec3 sceneAmbient;
 uniform int lightCount;
 uniform Light lights[MAX_LIGHTS];
 
@@ -120,9 +120,7 @@ void main()
                 );
             }
         }
-
-        // Ambient
-        vec3 ambient = light.ambient * diffuseTex;
+    
 
         // Diffuse
         float diff = max(dot(normal, lightDir), 0.0);
@@ -136,7 +134,7 @@ void main()
         diffuse  *= attenuation * intensity;
         specular *= attenuation * intensity;
 
-        finalColor += ambient + diffuse + specular;
+        finalColor += diffuse + specular;
     }
 
     // for individual submesh
@@ -151,5 +149,7 @@ void main()
         finalColor += vec3(0.12, 0.10, 0.02); // subtle shine
     }
 
+    vec3 ambient = sceneAmbient * diffuseTex;
+    finalColor += ambient;
     FragColor = vec4(finalColor, 1.0);
 }

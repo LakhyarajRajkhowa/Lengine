@@ -7,6 +7,7 @@
 namespace Lengine {
 
     enum class AssetType {
+        Unknown = -1,
         Mesh = 0,
         Material = 1,
         Texture = 2,

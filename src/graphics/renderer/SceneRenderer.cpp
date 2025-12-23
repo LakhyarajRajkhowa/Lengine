@@ -7,11 +7,12 @@ namespace Lengine {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);      // Remove back faces
         glFrontFace(GL_CCW);
+
+    }
+
+    void SceneRenderer::preloadAssets(){
         assetManager.LoadAllMetaFiles(Paths::Assets);
         assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_hallway.json");
-
-        gizmoRenderer.initGizmo();
-        
     }
 
     void SceneRenderer::clearFrame(const glm::vec4& clearColor) {
@@ -20,9 +21,11 @@ namespace Lengine {
     }
 
     void SceneRenderer::initScene() {
-        activeScene = assetManager.loadScene(Paths::GameScenes + "hallway.json");
+        gizmoRenderer.initGizmo();
+
+
+        activeScene = assetManager.loadScene(Paths::GameScenes + "hallway_scene.json");
         sceneManager.getScenes().insert(activeScene);
-      //  sceneManager.getScenes().insert(assetManager.loadScene(Paths::GameScenes + "scene1.json"));
 
         // temporary active scene logic
         sceneManager.setActiveScene(activeScene);
@@ -36,7 +39,7 @@ namespace Lengine {
         
         glDisable(GL_CULL_FACE);
         gizmoRenderer.drawGizmoGrid();
-         // gizmoRenderer.drawGizmoSpheres();
+        //  gizmoRenderer.drawGizmoSpheres();
         //  gizmoRenderer.drawGizmoArrows();
         glEnable(GL_CULL_FACE);
     }

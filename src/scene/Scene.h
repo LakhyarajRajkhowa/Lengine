@@ -38,6 +38,14 @@ namespace Lengine {
         std::vector<std::unique_ptr<Entity>>& Scene::getEntities() {
             return entities;
         }
+
+        const std::vector<Light>& getLights() const { return lights; }
+        std::vector<Light>& Scene::getLights() {
+            return lights;
+        }
+        const glm::vec3& getAmbientLighting() const { return ambient; }
+        glm::vec3& getAmbientLighting() { return ambient; }
+        void setAmbientLighting(const glm::vec3& amb) { ambient = amb; }
         void removeEntity(const UUID);
        
         /*
@@ -68,7 +76,6 @@ namespace Lengine {
         MaterialInstance& getMaterialInstance(UUID id);
         const MaterialInstance& getMaterialInstance(UUID id) const;
         UUID createMaterialInstance(UUID baseMaterial);
-        const UUID createMaterialInstance(UUID baseMaterial) const ;
         void destroyMaterialInstance(UUID id);
         void assignDefaultMaterials(Entity* entity,Mesh* mesh);
         const void assignDefaultMaterials(Entity* entity, Mesh* mesh) const ;
@@ -76,13 +83,13 @@ namespace Lengine {
             Entity* entity,
             const std::string& submeshName,
             Material* base);
-
+        
     private:
         std::string name;
         UUID sceneID;
         std::vector<std::unique_ptr<Entity>> entities;
-        
-
+        std::vector<Light> lights;
+        glm::vec3 ambient = {0.5f, 0.5f, 0.5f};
         std::unordered_map<UUID, MaterialInstance> materialInstances;
 
        // std::unordered_map<uint32_t, MeshRendererComponent> meshRenderers; // entityIdx, mrc

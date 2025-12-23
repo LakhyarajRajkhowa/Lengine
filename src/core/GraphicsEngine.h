@@ -1,5 +1,7 @@
 #pragma once
 
+
+
 #include <json.hpp>
 
 #include "../core/Lengine.h"
@@ -44,6 +46,8 @@ namespace Lengine {
 		
 		void initSystems();
 		void mainLoop();
+
+		
 	
 	};
 }

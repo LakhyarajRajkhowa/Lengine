@@ -37,6 +37,7 @@ void Renderer::bindCameraUniforms(
 void Renderer::bindLightUniforms(
     GLSLProgram& shader,
     const Light& light,
+    const glm::vec3& sceneAmbient,
     int index
 ) {
     std::string base = "lights[" + std::to_string(index) + "].";
@@ -44,7 +45,7 @@ void Renderer::bindLightUniforms(
     shader.setInt(base + "type", (int)light.type);
     shader.setVec3(base + "position", light.position);
     shader.setVec3(base + "direction", light.direction);
-    shader.setVec3(base + "ambient", light.ambient);
+    shader.setVec3("sceneAmbient", sceneAmbient);
     shader.setVec3(base + "diffuse", light.diffuse);
     shader.setVec3(base + "specular", light.specular);
 
@@ -141,7 +142,9 @@ void Renderer::drawSubMeshGroup(
 
 void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetManager ) {
     const auto& entities = scene.getEntities(); 
-    collectLights(entities);
+    auto& lights = scene.getLights();
+    const glm::vec3& sceneAmbient = scene.getAmbientLighting();
+    collectLights(lights, entities);
 
     for (const auto& entityPtr : entities) {
        
@@ -149,9 +152,9 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
         if (!entity || !entity->isVisible) continue;
 
         glm::mat4 model = entity->getTransformMatrix();
-
-        Mesh* mesh = assetManager.getMesh(entity->getMeshID());
-        if (!mesh) continue;
+        UUID meshID = entity->getMeshID();
+        Mesh* mesh = assetManager.getMesh(meshID);
+        if (!mesh || entity->hasPendingMesh()) continue;
         
         RenderFlags flags;
         flags.entitySelected = entity->isSelected;
@@ -181,7 +184,7 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
             shader->setInt("lightCount", (int)lights.size());
 
             for (int i = 0; i < lights.size(); i++) {
-                bindLightUniforms(*shader, lights[i], i);
+                bindLightUniforms(*shader, lights[i], sceneAmbient,i);
             }
             
             bindMaterialUniforms(*shader, finalMat);
@@ -226,7 +229,7 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
     }
 }
 
-void Renderer::collectLights(const std::vector<std::unique_ptr<Entity>>& entities)
+void Renderer::collectLights(std::vector<Light>& lights, const std::vector<std::unique_ptr<Entity>>& entities)
 {
     lights.clear();
 

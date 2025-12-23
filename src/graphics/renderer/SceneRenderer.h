@@ -25,6 +25,7 @@ namespace Lengine {
 		}
 
 		void init();
+		void preloadAssets();
 		void initScene();
 		void clearFrame(const glm::vec4& clearColor);
 		void renderScene();

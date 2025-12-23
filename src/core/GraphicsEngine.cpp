@@ -19,6 +19,8 @@ namespace Lengine {
 		initSystems();
 	}
 
+
+
 	void GraphicsEngine::initSystems() {
 		InitTimer();
 		Lengine::init();
@@ -50,10 +52,9 @@ namespace Lengine {
 			{ settings.cameraPosX, 5, settings.cameraPosZ },
 			settings.cameraFov
 		);
-
 		sceneRenderer.init();
-		sceneRenderer.initScene();
-		
+		sceneRenderer.preloadAssets();
+		sceneRenderer.initScene();   
 		mainLoop();
 
 		imguiLayer.shutdown();
@@ -67,6 +68,8 @@ namespace Lengine {
 		while (isRunning) {
 
 			inputManager.update();
+			assetManager.processGpuUploads();
+			assetManager.syncAssetsToScene(*sceneManager.getActiveScene());
 			inputHandler.handleInputs(imguiLayer, *editorLayer);
 			imguiLayer.beginFrame();
 
@@ -78,6 +81,7 @@ namespace Lengine {
 
 			editorLayer->OnImGuiRender();
 
+			assetManager.drawLoadingScreens();
 
 			imguiLayer.endFrame();
 

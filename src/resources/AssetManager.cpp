@@ -70,6 +70,144 @@ UUID AssetManager::getMaterialUUID(const std::string& name) {
 
     return UUID::Null;
 }
+void AssetManager::requestMeshLoad(const UUID& uuid, const std::string& path)
+{
+    std::string meshName = ExtractNameFromPath(path);
+    auto mesh = std::make_shared<Mesh>();
+    mesh->name = meshName;
+    mesh->path = path;
+
+    {
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[uuid] = AssetState::Loading;
+        meshes[uuid] = mesh;   // STORE IT
+    }
+
+    std::string cleanPath = StripQuotes(path);
+
+    std::thread([this, uuid, mesh, cleanPath]() {
+
+        bool ok = assimpLoader(cleanPath, *mesh);
+
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[uuid] = ok ? AssetState::LoadedToCPU
+            : AssetState::Failed;
+
+        }).detach();
+}
+
+void AssetManager::processGpuUploads()
+{
+    std::lock_guard<std::mutex> lock(assetMutex);
+
+    for (auto& [id, state] : assetStates) {
+        if (state == AssetState::LoadedToCPU) {
+
+            auto& mesh = meshes[id];
+            for (auto& sm : mesh->subMeshes)
+                sm.setupMesh(); 
+
+            state = AssetState::LoadedToGPU;
+
+        }
+    }
+}
+
+void AssetManager::syncAssetsToScene(Scene& activeScene)
+{
+    // sync mesh
+    for (auto& e : activeScene.getEntities())
+    {
+        Entity* entity = e.get();
+
+        if (!entity->hasPendingMesh())
+            continue;
+
+        UUID id = entity->getRequestedMeshID();
+
+        if (assetStates[id] == AssetState::LoadedToGPU)
+        {
+            Mesh* mesh = getMesh(id);
+            entity->setMeshID(id);
+            activeScene.assignDefaultMaterials(entity, mesh);
+            entity->clearPendingMesh();
+
+            assetStates[id] == AssetState::Loaded;
+        }
+    }
+}
+
+bool AssetManager::hasLoadingAssets() 
+{
+    for (const auto& [id, state] : assetStates)
+    {
+        if (state == AssetState::Loading)
+        {
+            currentLoadingAsset = id;
+            return true;
+        }
+    }
+    currentLoadingAsset = UUID::Null;
+    return false;
+}
+
+
+float AssetManager::getLoadingProgress(const UUID& id) const
+{
+    auto it = assetStates.find(id);
+    if (it == assetStates.end())
+        return -1.0f;
+
+    AssetState state = it->second;
+    switch (state) {
+    case AssetState::Failed:
+        return -1.0f;
+    case AssetState::Loading:
+        return 0.25f;
+    case AssetState::LoadedToCPU:
+        return 0.50f;
+    case AssetState::LoadedToGPU:
+        return 0.75f;
+    case AssetState::Loaded:
+        return 1.0f;
+    case AssetState::Unloaded:
+        return -1.0f;
+    default:
+        return 0.0f;
+    }
+
+}
+
+void AssetManager::drawLoadingScreens() {
+
+    // Progress bar
+    if (hasLoadingAssets()) {
+        UUID id = getCurrentLoadingAsset();
+        AssetType type = getAssetType(id);
+        std::string assetPath = "Unknown";
+        float progess = getLoadingProgress(id);
+
+        LoadingSystem::LoadingUIConfig config;
+       
+
+        switch (type) {
+        case AssetType::Mesh:
+            assetPath = getMesh(id)->path;
+            config.title = "Loading Mesh";
+            config.message = "Loading :" + assetPath;
+            LoadingSystem::progressBarUI(progess, config);
+        }
+    }
+}
+
+AssetType AssetManager::getAssetType(const UUID& id) {
+   
+    if (getMesh(id)) return AssetType::Mesh;
+    else if (getMaterial(id)) return AssetType::Material;
+    else if (getTexture(id)) return AssetType::Texture;
+    else return AssetType::Unknown;
+}
+
 void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
 {
     std::string meshName = ExtractNameFromPath(path);
@@ -79,8 +217,9 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
     std::shared_ptr<Mesh> ptr;
     MeshRendererComponent mrc;
     Model model;
-    MeshProperties prop = model.loadModel(meshName, newPath, ptr);
-   
+
+    model.loadModel(meshName, newPath, ptr);
+
     meshes[uuid] = ptr;
     
     addAsset(uuid, AssetType::Mesh, newPath);
@@ -505,6 +644,15 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
     json jScene;
     jScene["uuid"] = scene.getUUID().toUint64();
     jScene["name"] = sceneName;
+    
+    json jGlobalLighting;
+    jGlobalLighting["ambient"] = {
+        scene.getAmbientLighting().x,
+        scene.getAmbientLighting().y,
+        scene.getAmbientLighting().z
+    };
+    jScene["GlobalLighting"] = jGlobalLighting;
+
     jScene["entities"] = json::array();
 
     const auto& entities = scene.getEntities();
@@ -621,6 +769,25 @@ Scene* AssetManager::loadScene(const std::string& filePath)
     }
 
     Scene* scene = new Scene(sceneName, UUID(sceneUUID));
+
+    try {
+        if (jScene.contains("GlobalLighting")) {
+            auto jGlobalLighting = jScene.at("GlobalLighting");
+
+            if (jGlobalLighting.contains("ambient")) {
+                auto g_ambient = jGlobalLighting.at("ambient");
+                scene->setAmbientLighting({
+                    g_ambient[0].get<float>(),
+                    g_ambient[1].get<float>(),
+                    g_ambient[2].get<float>()
+                    });
+            }
+        }
+
+    }
+    catch(const json::exception& e){
+        std::cerr << "Invalid Global Lightning : " << sceneName << std::endl;
+    }
 
     // --- LOAD ENTITIES ---
     try {
@@ -739,7 +906,7 @@ Scene* AssetManager::loadScene(const std::string& filePath)
             catch (const json::exception& e) {
                 std::cerr << "Skipping invalid entity in scene \"" << sceneName
                     << "\": " << e.what() << std::endl;
-                continue; // skip only this entity
+                continue; 
             }
             catch (const std::exception& e) {
                 std::cerr << "Error creating entity: " << e.what() << std::endl;

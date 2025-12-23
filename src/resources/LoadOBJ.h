@@ -91,42 +91,37 @@ namespace Lengine {
         return SubMesh(name, std::move(vertices), std::move(indices));
     }
 
-    inline MeshProperties assimpLoader(
+    inline bool assimpLoader(
         const std::string& path,
         Mesh& mesh
     ) {
+
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path,
             aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
 
-        MeshProperties properties;
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cerr << "Assimp error: " << importer.GetErrorString() << std::endl;
-            return properties;
+            return false;
         }
 
         std::cout << "Model loaded successfully! " << path << std::endl;
-
-        // additional info in the mesh file
-        properties.hasMaterials = scene->HasMaterials();
 
 
         for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
             aiMesh* aMesh = scene->mMeshes[i];
             SubMesh submesh = convertToEngineSubMesh(aMesh);
 
-            if (properties.hasMaterials) {
-                submesh.setMatIdx(aMesh->mMaterialIndex);
-                submesh.setIndex(i);
-                mesh.subMeshes.emplace_back(std::move(submesh));
+            submesh.setMatIdx(aMesh->mMaterialIndex);
+            submesh.setIndex(i);
+            mesh.subMeshes.emplace_back(std::move(submesh));
 
-                mesh.materialGroups[aMesh->mMaterialIndex].push_back(submesh.getIndex());
-                mesh.visibleMaterialGroups.push_back(true);
-            }
+            mesh.materialGroups[aMesh->mMaterialIndex].push_back(i);
+            mesh.visibleMaterialGroups.push_back(true);
+           
         }
-
-        return properties;
+        return true;
 
     }
 

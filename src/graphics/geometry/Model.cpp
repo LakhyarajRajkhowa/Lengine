@@ -1,9 +1,11 @@
 #include "Model.h"
 
 #include <memory>
+
+
 namespace Lengine {
-   
-    MeshProperties Model::loadModel(
+    
+    bool Model::loadModel(
         const std::string& name,
         const std::string& path,
         std::shared_ptr<Lengine::Mesh>& mesh
@@ -11,14 +13,13 @@ namespace Lengine {
     {
         mesh = std::make_shared<Lengine::Mesh>();
         mesh->name = name;
-        
-        
-    MeshProperties prop = assimpLoader(path, *mesh);
+                
+       bool loaded = assimpLoader(path, *mesh);
         for (auto& sm : mesh->subMeshes)
             sm.setupMesh();
     
-        return prop;
+        return loaded;
     }
 
-    
+ 
 }

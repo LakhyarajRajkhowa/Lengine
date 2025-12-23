@@ -42,6 +42,12 @@ namespace Lengine {
 		void setType(const EntityType& t);
 		UUID getMeshID() const { return meshID; }
 		void setMeshID(const UUID& id) { meshID = id; }
+
+		void requestMesh(const UUID& id);
+		bool hasPendingMesh() const;
+		UUID getRequestedMeshID() const;
+		void clearPendingMesh();
+
 		std::unordered_map<unsigned int, UUID>& getMaterialIndexInstIDs() { return materialIndexToInstID; }
 		std::unordered_map<unsigned int, UUID>& getMaterialIndexUUIDs() { return materialIndexToUUID; }
 
@@ -86,6 +92,9 @@ namespace Lengine {
 		std::unordered_map<unsigned int, UUID> materialIndexToInstID; // for materialInstance
 		std::unordered_map<unsigned int, UUID> materialIndexToUUID; // for materials id from scene.json
 
+
+		bool pendingMesh = false;
+		UUID pendingMeshID;
 		
 
 	};

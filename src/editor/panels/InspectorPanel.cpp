@@ -156,7 +156,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     std::string meshName = "None";
     UUID meshID = entity->getMeshID();
 
-    if (!meshID.isNull()) {
+    if (!meshID.isNull() && !entity->hasPendingMesh()) {
         Mesh* mesh = assets.getMesh(meshID);
         meshName = mesh ? mesh->name : "Invalid Mesh";
     }
@@ -175,21 +175,24 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
             Mesh* mesh = assetManager.getMesh(droppedID);
            
-            // if dropped mesh ID isnt loaded yet, then load it
-            if (!mesh) {
-                assetManager.loadMesh(droppedID, meshPath);
-                mesh = assetManager.getMesh(droppedID);
+            // if dropped mesh ID isnt loaded yet, then request for a load
+            if (!mesh && assetManager.assetStates[droppedID] != AssetState::Loading) {
+                assetManager.requestMeshLoad(droppedID, meshPath);
+                entity->requestMesh(droppedID);
             }
-            
-            // reassign materials based on the mesh 
-            // because mesh are grouped material-wise
-            entity->setMeshID(droppedID);
-            scene->assignDefaultMaterials(entity, mesh);
+            else {
+                entity->setMeshID(droppedID);
+                scene->assignDefaultMaterials(entity, mesh);
+            }
         }
         ImGui::EndDragDropTarget();
     }
 
     ImGui::EndGroup();
+
+
+ 
+
 
     // Lightning
 
@@ -223,14 +226,6 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
         
         // ---------------- Colors ----------------
-        ImGui::Text("Ambient");
-        ImGui::SameLine();
-        ImGui::ColorEdit3(
-            "##LightAmbient",
-            glm::value_ptr(entity->getLight().ambient)
-        );
-
-        ImGui::Spacing();
 
         ImGui::Text("Diffuse");
         ImGui::SameLine();
@@ -306,6 +301,21 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
         return;
     }
+    else {
+        ImGui::Separator();
+        ImGui::Text("Global Lightning");
+        ImGui::Separator();
+
+        ImGui::Spacing();
+
+        // Global Ambient 
+        ImGui::Text("Ambient");
+        ImGui::SameLine();
+        ImGui::ColorEdit3(
+            "##GlobalLightAmbient",
+            glm::value_ptr(scene->getAmbientLighting())
+        );
+    }
 
      // MATERIALS
 
@@ -314,7 +324,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     ImGui::Separator();
     ImGui::Spacing();
     Mesh* mesh = assetManager.getMesh(entity->getMeshID());
-    if (!mesh) return;
+    if (!mesh || entity->hasPendingMesh()) return;
 
     // Submesh group based on materials
     for (int i = 0; i < mesh->materialGroups.size(); i++)
