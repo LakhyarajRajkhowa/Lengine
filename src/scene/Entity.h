@@ -92,7 +92,6 @@ namespace Lengine {
 		std::unordered_map<unsigned int, UUID> materialIndexToInstID; // for materialInstance
 		std::unordered_map<unsigned int, UUID> materialIndexToUUID; // for materials id from scene.json
 
-
 		bool pendingMesh = false;
 		UUID pendingMeshID;
 		

@@ -103,9 +103,11 @@ void Renderer::bindTexture(
 }
 void Renderer::bindEditorUniforms(
     GLSLProgram& shader,
-    const RenderFlags& flags
+    const RenderFlags& flags,
+    EditorConfig& editorConfig
 ) {
     shader.setBool("entitySelected", flags.entitySelected);
+    shader.setBool("entityEditingMode", editorConfig.editingMode);
 }
 
 void Renderer::drawSubMesh(
@@ -138,16 +140,31 @@ void Renderer::drawSubMeshGroup(
         drawSubMesh(sm, shader, hovered);
     }
 }
+void Renderer::drawMeshAllSubMeshes(
+    Mesh& mesh,
+    GLSLProgram& shader
+)
+{
+   
+    for (const SubMesh& sm : mesh.subMeshes)
+    {
+        if(sm.isVisible)
+            sm.draw();
+    }
+
+}
 
 
-void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetManager ) {
-    const auto& entities = scene.getEntities(); 
-    auto& lights = scene.getLights();
-    const glm::vec3& sceneAmbient = scene.getAmbientLighting();
+void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig) {
+   
+    const auto& entities = activeScene.getEntities(); 
+    auto& lights = activeScene.getLights();
+    const glm::vec3& sceneAmbient = activeScene.getAmbientLighting();
     collectLights(lights, entities);
 
     for (const auto& entityPtr : entities) {
-       
+        glDisable(GL_STENCIL_TEST);
+        glEnable(GL_DEPTH_TEST);
         Entity* entity = entityPtr.get();
         if (!entity || !entity->isVisible) continue;
 
@@ -157,15 +174,17 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
         if (!mesh || entity->hasPendingMesh()) continue;
         
         RenderFlags flags;
-        flags.entitySelected = entity->isSelected;
+        flags.entitySelected = entity->isSelected;   
+        flags.entityDragged = entity->isDragged;
+
 
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
             if (!subMeshes.size()) continue;
             if (entity->getMaterialIndexInstIDs().empty()) {
-                scene.assignDefaultMaterials(entity, mesh);
+                activeScene.assignDefaultMaterials(entity, mesh);
             }
             UUID instID = entity->getMaterialIndexInstIDs().at(matIndex);
-            const MaterialInstance& inst = scene.getMaterialInstance(instID);
+            const MaterialInstance& inst = activeScene.getMaterialInstance(instID);
 
             Material* baseMaterial = assetManager.getMaterial(inst.baseMaterial);
             if (!baseMaterial) continue;
@@ -215,7 +234,8 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
             );
             bindEditorUniforms(
                 *shader,
-                flags
+                flags,
+                editorConfig
             );
             drawSubMeshGroup(
                 *mesh,
@@ -226,8 +246,53 @@ void Renderer::renderScene( Scene& scene, Camera3d& camera, AssetManager& assetM
 
             shader->unuse();  
         } 
+
     }
 }
+
+/*
+void Renderer::initOutlineShader() {
+    outlineShader.compileShaders(
+        Paths::Shaders + "defaultShader.vert",
+        Paths::Shaders + "outlineShader.frag"
+    );
+
+    outlineShader.linkShaders();
+}
+
+void Renderer::renderSelectionOutline(
+    Entity& entity,
+    Camera3d& camera,
+    AssetManager& assetManager
+)
+{
+    if (!entity.isSelected)
+        return;
+
+    Mesh* mesh = assetManager.getMesh(entity.getMeshID());
+    if (!mesh || entity.hasPendingMesh())
+        return;
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00);
+    glDisable(GL_DEPTH_TEST);
+
+    outlineShader.use();
+
+    glm::mat4 outlineModel =
+        glm::scale(entity.getTransformMatrix(), glm::vec3(1.03f));
+
+    bindCameraUniforms(outlineShader, outlineModel, camera);
+    outlineShader.setVec3("outlineColor", glm::vec3(1.0f, 0.85f, 0.25f));
+
+    drawMeshAllSubMeshes(*mesh, outlineShader);
+
+    outlineShader.unuse();
+
+    glEnable(GL_DEPTH_TEST);
+    glStencilMask(0xFF);
+}
+*/
 
 void Renderer::collectLights(std::vector<Light>& lights, const std::vector<std::unique_ptr<Entity>>& entities)
 {

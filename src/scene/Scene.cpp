@@ -135,17 +135,19 @@ namespace Lengine {
         auto& matUUIDs = entity->getMaterialIndexUUIDs();
         auto& instIDs = entity->getMaterialIndexInstIDs();
 
+
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
 
             UUID baseMat = defaultMat;
 
-            auto it = matUUIDs.find(matIndex);
-            if (it != matUUIDs.end() && it->second != UUID::Null) {
-                baseMat = it->second;
+            auto it_matid = matUUIDs.find(matIndex);
+            if (it_matid != matUUIDs.end() && it_matid->second != UUID::Null) {
+                baseMat = it_matid->second;
             }
-            
+
             UUID instID = createMaterialInstance(baseMat);
             instIDs[matIndex] = instID;
+
         }
     }
 

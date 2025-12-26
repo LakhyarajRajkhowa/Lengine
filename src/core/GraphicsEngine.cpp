@@ -42,8 +42,7 @@ namespace Lengine {
 			camera,
 			inputManager,
 			assetManager,
-			window,
-			sceneRenderer.renderer	
+			window	
 		);
 		camera.init(
 			editorLayer->GetViewportPanel().GetViewportSize().x,
@@ -76,7 +75,7 @@ namespace Lengine {
 			//  Framebuffer captures the frame of the game screen
 			viewportPanel.GetFramebuffer().Bind();
 			sceneRenderer.clearFrame({ 0.0f, 0.0f, 0.0f, 1.0f });
-			sceneRenderer.renderScene();
+			sceneRenderer.renderScene(editorLayer->config);
 			viewportPanel.GetFramebuffer().Unbind();
 
 			editorLayer->OnImGuiRender();

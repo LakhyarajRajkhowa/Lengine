@@ -19,8 +19,8 @@ namespace Lengine {
 			camera(cam),
 			sceneManager(scnMgr),
 			assetManager(assetmgr),
-			gizmoRenderer(assetmgr,scnMgr, cam)
-			
+			gizmoRenderer(assetmgr,scnMgr, cam),
+			renderer(cam, assetmgr )
 		{
 		}
 
@@ -28,7 +28,7 @@ namespace Lengine {
 		void preloadAssets();
 		void initScene();
 		void clearFrame(const glm::vec4& clearColor);
-		void renderScene();
+		void renderScene(EditorConfig& editorConfig);
 		void endFrame();
 		Renderer renderer;
 

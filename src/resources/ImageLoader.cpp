@@ -46,6 +46,64 @@ namespace Lengine {
         return texture;
     }
 
+      ImageData ImageLoader::stbiLoader(const std::string& filePath)
+        {
+            ImageData img;
+
+            unsigned char* data = stbi_load(
+                filePath.c_str(),
+                &img.width,
+                &img.height,
+                &img.channels,
+                0
+            );
+
+            if (!data)
+                fatalError("Failed to load image: " + filePath);
+
+            size_t size = img.width * img.height * img.channels;
+            img.pixels.assign(data, data + size);
+
+            stbi_image_free(data);
+            return img;
+        }
+      /*
+      void ImageLoader::uploadToGPU(const ImageData& img, bool srgb)
+      {
+          GLint id = img.id
+          GLenum format =
+              img.channels == 1 ? GL_RED :
+              img.channels == 3 ? GL_RGB :
+              GL_RGBA;
+
+          GLenum internalFormat = srgb
+              ? (format == GL_RGBA ? GL_SRGB_ALPHA : GL_SRGB)
+              : format;
+
+          glGenTextures(1, &id);
+          glBindTexture(GL_TEXTURE_2D, id);
+
+          glTexImage2D(
+              GL_TEXTURE_2D, 0, internalFormat,
+              img.width, img.height,
+              0, format, GL_UNSIGNED_BYTE,
+              img.pixels.data()
+          );
+
+          glGenerateMipmap(GL_TEXTURE_2D);
+
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+          glBindTexture(GL_TEXTURE_2D, 0);
+
+          width = img.width;
+          height = img.height;
+      }
+      */
+
     GLTexture ImageLoader::loadTexture2D(
         const std::string& filePath,
         bool srgb

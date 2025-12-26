@@ -26,4 +26,28 @@ namespace Lengine {
 
         return mit->second;
     };
+
+    bool TextureCache::attachTexture(
+        const std::string& texturePath,
+        GLTexture* outTexture
+    )
+    {
+        auto it = _textureMap.find(texturePath);
+
+        // Already cached
+        if (it != _textureMap.end())
+        {
+            *outTexture = (it->second); // or copy handle if safe
+            return true;
+        }
+
+        // Load new texture
+        *outTexture = ImageLoader::loadTexture2D(texturePath, false);
+
+        // Store pointer
+        _textureMap[texturePath] = *outTexture;
+
+        return false;
+    }
+
 }

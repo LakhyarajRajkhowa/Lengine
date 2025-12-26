@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../editor/EditorLayer.h"
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
 #include "../graphics/opengl/GLSLProgram.h"
@@ -61,13 +63,22 @@ namespace Lengine {
 
     struct RenderFlags {
         bool entitySelected = false;
+        bool entityDragged = false;
     };
    
 
     class Renderer {
     public:
-        
-        void renderScene(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
+        Renderer(
+            Camera3d& cam,
+            AssetManager& assetmgr
+
+        ) :
+            camera(cam),
+            assetManager(assetmgr)
+        {
+        }
+        void renderScene(Scene& activeScene, EditorConfig& editorConfig);
 
         
        // void collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager);
@@ -77,7 +88,12 @@ namespace Lengine {
 
        // void renderSceneECS(Scene& scene, Camera3d& camera, AssetManager& assetManaegr);
        // RenderBatcher batcher;
+
+        void initOutlineShader();
     private:
+        Camera3d& camera;
+        AssetManager& assetManager;
+
         ResolvedMaterial resolveMaterial(
             const Material& baseMaterial,
             const MaterialInstance& inst
@@ -107,7 +123,8 @@ namespace Lengine {
         );
         void bindEditorUniforms(
             GLSLProgram& shader,
-            const RenderFlags& mat
+            const RenderFlags& mat,
+            EditorConfig& editorConfig
         );
         void drawSubMesh(
             SubMesh& sm,
@@ -122,6 +139,13 @@ namespace Lengine {
         );
         void collectLights(std::vector<Light>& lights, const std::vector<std::unique_ptr<Entity>>& entities);
 
-
+        GLSLProgram outlineShader;
+        void renderSelectionOutline();
+        void Renderer::drawMeshAllSubMeshes(
+            Mesh& mesh,
+            GLSLProgram& shader
+        );
+       
+        
     };
 }

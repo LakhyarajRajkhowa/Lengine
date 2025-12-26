@@ -31,6 +31,7 @@ namespace Lengine {
         {
             if (viewportHovered)
             {
+                editorLayer.config.editingMode = false;
                 for (SDL_Keycode key : EditorKeys::All)
                 {
                     editorLayer.HandleKeyboardShortcuts(key);
@@ -57,7 +58,8 @@ namespace Lengine {
                 }
             }
             else {
-                editorLayer.deselectAllEntities();
+                editorLayer.config.editingMode = true;
+                
             }
         }
         // reset each frame otherwise the scroll activates in next frame

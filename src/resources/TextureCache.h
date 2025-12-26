@@ -16,6 +16,10 @@ namespace Lengine {
         ~TextureCache();
 
         GLTexture getTexture(const std::string& texturePath);
+        bool attachTexture(
+            const std::string& texturePath,
+            GLTexture* outTexture
+        );
     };
 }
 

@@ -53,6 +53,7 @@ out vec4 FragColor;
 
 uniform vec3 viewPos;
 uniform bool isHovered;
+uniform bool entityEditingMode;
 uniform bool entitySelected;
 
 void main()
@@ -139,11 +140,11 @@ void main()
 
     // for individual submesh
     if (isHovered) {
-        finalColor += vec3(0.0, 0.0, 0.4);
+        finalColor += vec3(0.0, 0.0, 0.2);
     }
 
     // for whole entity
-   if (entitySelected) {
+   if (entitySelected && !entityEditingMode) {
         vec3 gold = vec3(0.25, 0.2, 0.075);   // warm golden yellow
         finalColor = mix(finalColor, gold, 0.25);
         finalColor += vec3(0.12, 0.10, 0.02); // subtle shine

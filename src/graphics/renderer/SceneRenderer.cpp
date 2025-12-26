@@ -12,7 +12,7 @@ namespace Lengine {
 
     void SceneRenderer::preloadAssets(){
         assetManager.LoadAllMetaFiles(Paths::Assets);
-        assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_hallway.json");
+        assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_hallway_scene.json");
     }
 
     void SceneRenderer::clearFrame(const glm::vec4& clearColor) {
@@ -23,7 +23,6 @@ namespace Lengine {
     void SceneRenderer::initScene() {
         gizmoRenderer.initGizmo();
 
-
         activeScene = assetManager.loadScene(Paths::GameScenes + "hallway_scene.json");
         sceneManager.getScenes().insert(activeScene);
 
@@ -32,10 +31,10 @@ namespace Lengine {
        
 
     }
-    void SceneRenderer::renderScene() {
+    void SceneRenderer::renderScene(EditorConfig& edtitorConfig) {
        
 
-        renderer.renderScene(*sceneManager.getActiveScene(), camera, assetManager);
+        renderer.renderScene(*sceneManager.getActiveScene(), edtitorConfig);
         
         glDisable(GL_CULL_FACE);
         gizmoRenderer.drawGizmoGrid();

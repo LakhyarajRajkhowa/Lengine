@@ -4,7 +4,7 @@
 #include "AssetPanel.h"
 
 #include "../scene/Scene.h"
-#include "../graphics/renderer/Renderer.h"
+#include "../scene/SceneManager.h"
 namespace Lengine {
 
     struct InspectorState {
@@ -16,8 +16,7 @@ namespace Lengine {
     public:
         InspectorPanel(
             SceneManager& sceneManager,
-            AssetManager& assetManager,
-            Renderer& renderer
+            AssetManager& assetManager
         );
 
         void OnImGuiRender();
@@ -25,9 +24,8 @@ namespace Lengine {
     private:
         SceneManager& sceneManager;
         AssetManager& assetManager;
-        Renderer& renderer;
-        Entity* selectedEntity = nullptr;
 
+        Entity* selectedEntity = nullptr;
         InspectorState inspectorState;
     };
 

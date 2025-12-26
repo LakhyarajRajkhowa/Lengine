@@ -20,7 +20,9 @@
 #include "../graphics/geometry/ray.h"
 
 namespace Lengine {
-    
+    struct EditorConfig {
+        bool editingMode = false;
+    };
 
     class EditorLayer {
     public:
@@ -30,8 +32,8 @@ namespace Lengine {
             Camera3d& camera,
             InputManager& inputManager,
             AssetManager& assetManager,
-            Window& window,
-            Renderer& renderer            
+            Window& window
+                      
             );
         ~EditorLayer() = default;
 
@@ -50,8 +52,8 @@ namespace Lengine {
         void HandleDrag();
         void HandleMouseWheel(const int& mousewheelY);
         void HandleKeyboardShortcuts(const SDL_Keycode& key);
-
         
+        EditorConfig config;
     private:
         void BeginDockspace();
         void SetupDefaultLayout();
@@ -59,6 +61,8 @@ namespace Lengine {
         // Selection state
         Entity* selectedEntity = nullptr;
         Entity* hoveredEntity = nullptr;
+
+        
 
         bool leftMousePressed = false;
         bool leftMouseDown = false;
@@ -87,19 +91,17 @@ namespace Lengine {
         InputManager& inputManager;
         AssetManager& assetManager;
         Window& window;
-        Renderer& renderer;
     private:
-        // Data sending to panels
-
-        void sendDataToSceneHeirarchyPanel();
-        void sendDataToInspectorPanel();
-
+       
         std::filesystem::path exePath = std::filesystem::current_path();
         std::filesystem::path assestPath = Paths::Assets;
     private:
         // Keyboard 
         float movementSpeed = 0.01f;
         float movementSpeedMultiplier = 1.0f;
+
+        void unselectAllEntites();
+        bool isAnyEntitySelected();
     };
 
 }

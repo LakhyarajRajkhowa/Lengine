@@ -1,15 +1,13 @@
 ﻿#include "InspectorPanel.h"
-#include "../graphics/renderer/Renderer.h"
+
 using namespace Lengine;
 
 InspectorPanel::InspectorPanel(
     SceneManager& scnMgr,
-    AssetManager& asstMgr,
-    Renderer& rndr
+    AssetManager& asstMgr
 ) :
     sceneManager(scnMgr),
-    assetManager(asstMgr),
-    renderer(rndr)
+    assetManager(asstMgr)
 {
 }
 
@@ -441,6 +439,8 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
                             inst.baseMaterial = data->id;
                             entity->getMaterialIndexUUIDs()[matIdx] = data->id;
+
+                            
                         }
                         ImGui::EndDragDropTarget();
                     }
@@ -478,9 +478,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                                         static_cast<const TextureDragPayload*>(payload->Data);
 
                                     // if texture isn't loaded yet then laod it
-                                    if (!assetManager.getTexture(data->id))
-                                        assetManager.loadTexture(data->id, data->path);
-
+                                    if (!assetManager.getTexture(data->id)) {
+                                        assetManager.requestTextureLoad(data->id, data->path);
+                                    }
                                     instSlot = data->id;
                                 }
                                 ImGui::EndDragDropTarget();

@@ -8,18 +8,16 @@ namespace Lengine {
         Camera3d& cam,
         InputManager& inputMgr,
         AssetManager& assetMgr,
-        Window& win,
-        Renderer& rndr
+        Window& win
     )
         :camera(cam),
         sceneManager(scnMgr),
         inputManager(inputMgr),
         assetManager(assetMgr),
         window(win),
-        renderer(rndr),
         viewportPanel(cam),     
         hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
-        inspectorPanel(scnMgr, assetMgr, rndr),
+        inspectorPanel(scnMgr, assetMgr),
         consolePanel(buffer),
         assetPanel(Paths::ActiveGameFolder, assetMgr)
         
@@ -53,6 +51,8 @@ namespace Lengine {
             performancePanel.OnImGuiRender();
         }
         else {
+
+            config.editingMode = true;
             viewportPanel.RenderFullscreen();
             performancePanel.OnImGuiRender();
         }
@@ -352,6 +352,24 @@ namespace Lengine {
         ImGui::DockBuilderDockWindow("Console", dock_bottom);
 
         ImGui::DockBuilderFinish(dockspace_id);
+    }
+
+    bool EditorLayer::isAnyEntitySelected() {
+        auto& entities = sceneManager.getActiveScene()->getEntities();
+
+        for (auto& e : entities) {
+            if (e->isSelected)
+                return true;
+        }
+        return false;
+    }
+
+    void EditorLayer::unselectAllEntites() {
+        auto& entities = sceneManager.getActiveScene()->getEntities();
+
+        for (auto& e : entities) {
+            e->isSelected = false;
+        }
     }
 
 }
