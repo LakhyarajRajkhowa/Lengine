@@ -17,7 +17,8 @@ namespace Lengine {
        bool loaded = assimpLoader(path, *mesh);
         for (auto& sm : mesh->subMeshes)
             sm.setupMesh();
-    
+
+        mesh->computeBounds();
         return loaded;
     }
 

@@ -7,6 +7,9 @@ namespace Lengine {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);      // Remove back faces
         glFrontFace(GL_CCW);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+       
 
     }
 
@@ -34,13 +37,13 @@ namespace Lengine {
     void SceneRenderer::renderScene(EditorConfig& edtitorConfig) {
        
 
-        renderer.renderScene(*sceneManager.getActiveScene(), edtitorConfig);
-        
         glDisable(GL_CULL_FACE);
         gizmoRenderer.drawGizmoGrid();
-        //  gizmoRenderer.drawGizmoSpheres();
-        //  gizmoRenderer.drawGizmoArrows();
+        gizmoRenderer.drawGizmoArrows();
         glEnable(GL_CULL_FACE);
+
+        renderer.renderScene(*sceneManager.getActiveScene(), edtitorConfig);
+        
     }
 
     void SceneRenderer::endFrame() {

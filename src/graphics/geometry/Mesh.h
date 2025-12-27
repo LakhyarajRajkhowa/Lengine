@@ -30,9 +30,7 @@ namespace Lengine {
 
         
 
-        
-        glm::vec3 localCenter;
-        float boundingRadius;
+       
 
         void computeBounds();
 
@@ -50,7 +48,10 @@ namespace Lengine {
         bool isHovered = false;
         bool isSelected = false;
         bool isVisible = true;
-
+        glm::vec3 aabbMin;
+        glm::vec3 aabbMax;
+        glm::vec3 localCenter;
+        float boundingRadius;
         void draw() const;
         const glm::vec3& getLocalCenter() { return localCenter; }
         float& getBoundingRadius() { return boundingRadius; }
@@ -70,6 +71,7 @@ namespace Lengine {
     };
     class Mesh {
     public:
+        
         std::string name;
         std::string path;
         std::unordered_map<unsigned int, std::vector<unsigned int>> materialGroups;
@@ -89,7 +91,16 @@ namespace Lengine {
                 sm.draw();
             }
         }
-    
+        
+        glm::vec3 aabbMin;
+        glm::vec3 aabbMax;
+
+        glm::vec3 localCenter;
+        float boundingRadius;
+
+        void computeBounds();
+        const glm::vec3& getLocalCenter() { return localCenter; }
+        float& getBoundingRadius() { return boundingRadius; }
     };
 }
 

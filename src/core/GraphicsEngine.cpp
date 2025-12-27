@@ -3,11 +3,12 @@
 namespace Lengine {
 
 	GraphicsEngine::GraphicsEngine() :
-		sceneRenderer(camera,  sceneManager, assetManager),
+		sceneManager(assetManager),
+		gizmoRenderer(assetManager, sceneManager, camera),
+		sceneRenderer(camera,  sceneManager, assetManager, gizmoRenderer),
 		inputHandler(camera, inputManager,  window, isRunning),
 		imguiLayer(inputManager, isRunning),
-		assetManager(settings),
-		sceneManager(assetManager)
+		assetManager(settings)
 		
 	{
 		
@@ -17,6 +18,8 @@ namespace Lengine {
 	}
 	void GraphicsEngine::run() {
 		initSystems();
+		mainLoop();
+		shutDown();
 	}
 
 
@@ -39,6 +42,7 @@ namespace Lengine {
 		editorLayer = new EditorLayer(
 			logBuffer,
 			sceneManager,
+			gizmoRenderer,
 			camera,
 			inputManager,
 			assetManager,
@@ -54,10 +58,9 @@ namespace Lengine {
 		sceneRenderer.init();
 		sceneRenderer.preloadAssets();
 		sceneRenderer.initScene();   
-		mainLoop();
+		
 
-		imguiLayer.shutdown();
-		window.quitWindow();
+		
 	}
 
 	void GraphicsEngine::mainLoop() {
@@ -89,8 +92,10 @@ namespace Lengine {
 		}
 		
 	}
-	
 
-
+	void GraphicsEngine::shutDown() {
+		imguiLayer.shutdown();
+		window.quitWindow();
+	}
 }
 

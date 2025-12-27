@@ -18,17 +18,28 @@
 #include "../editor/panels/PerformancePanel.h"
 
 #include "../graphics/geometry/ray.h"
+#include "../graphics/geometry/Gizmos.h"
 
 namespace Lengine {
     struct EditorConfig {
         bool editingMode = false;
     };
 
+    struct GizmoDragState {
+        bool isDragging = false;
+        GizmoAxis activeAxis = GizmoAxis::None;
+        GizmoAxis hoveredAxis = GizmoAxis::None;
+
+        glm::vec3 dragStartWorld;     // world-space hit point
+        glm::vec3 entityStartPos;     // entity position at drag start
+        glm::vec3 axisDir;            // locked axis direction (world)
+    };
     class EditorLayer {
     public:
         EditorLayer(
             LogBuffer& buffer,
             SceneManager& sceneManager,
+            GizmoRenderer& gizmoRndr,
             Camera3d& camera,
             InputManager& inputManager,
             AssetManager& assetManager,
@@ -46,10 +57,14 @@ namespace Lengine {
         PerformancePanel& GetPerformancePanel() { return performancePanel; }
 
         // Editor manipulation
-        void checkForHoveredEntity(const glm::vec3& rayDir, const glm::vec3& rayOrigin);
+        void checkForHoveredEntity();
+        void beginArrowDrag();
+        GizmoAxis getHoveredGizmoAxis();
+
         void selectHoveredEntity();
         void deselectAllEntities();
-        void HandleDrag();
+        void HandleArrowDrag();
+        void endArrowDrag();
         void HandleMouseWheel(const int& mousewheelY);
         void HandleKeyboardShortcuts(const SDL_Keycode& key);
         
@@ -87,6 +102,7 @@ namespace Lengine {
 
         // External engine systems (not owned)
         SceneManager& sceneManager;
+        GizmoRenderer& gizmoRenderer;
         Camera3d& camera;
         InputManager& inputManager;
         AssetManager& assetManager;
@@ -102,6 +118,16 @@ namespace Lengine {
 
         void unselectAllEntites();
         bool isAnyEntitySelected();
+    
+    private:
+        AxisCapsule capX;
+        AxisCapsule capY;
+        AxisCapsule capZ;
+
+        GizmoDragState state;
+        float closestT = FLT_MAX;
+        GizmoAxis chosenAxis = GizmoAxis::None;
+
     };
 
 }

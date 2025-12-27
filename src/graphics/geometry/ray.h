@@ -1,5 +1,8 @@
 ﻿#pragma once
+
+#define GLM_ENABLE_EXPERIMENTAL 
 #include <glm/glm.hpp>
+#include <glm/gtx/norm.hpp>
 #include <iostream>
 namespace Lengine {
     inline glm::vec3 ComputeRayDirection(
@@ -41,6 +44,59 @@ namespace Lengine {
         return hit;
     }
 
+    inline bool rayIntersectsCapsule(
+        const glm::vec3& rayOrigin,
+        const glm::vec3& rayDir,
+        const glm::vec3& a,
+        const glm::vec3& b,
+        float radius,
+        float& outT
+    ) {
+        const float EPS = 1e-6f;
+
+        glm::vec3 ab = b - a;
+        glm::vec3 ao = rayOrigin - a;
+
+        float abLen2 = glm::dot(ab, ab);
+        float abDotDir = glm::dot(ab, rayDir);
+        float abDotAO = glm::dot(ab, ao);
+
+        float dirDotAO = glm::dot(rayDir, ao);
+
+        float denom = abLen2 - abDotDir * abDotDir;
+
+        float tRay, tSeg;
+
+        // ---------------------------------------------
+        // Closest points between ray and segment
+        // ---------------------------------------------
+        if (fabs(denom) > EPS) {
+            tRay = (abDotDir * abDotAO - abLen2 * dirDotAO) / denom;
+            tSeg = (abDotAO + tRay * abDotDir) / abLen2;
+        }
+        else {
+            // Ray and segment nearly parallel
+            tRay = -dirDotAO;
+            tSeg = abDotAO / abLen2;
+        }
+
+        // Clamp segment parameter
+        tSeg = glm::clamp(tSeg, 0.0f, 1.0f);
+        tRay = glm::max(tRay, 0.0f);
+
+        glm::vec3 closestRay = rayOrigin + tRay * rayDir;
+        glm::vec3 closestSeg = a + tSeg * ab;
+
+        float dist2 = glm::length2(closestRay - closestSeg);
+
+        if (dist2 > radius * radius)
+            return false;
+
+        outT = tRay;
+        return true;
+    }
+
+
     inline glm::vec3 RayPlaneIntersection(const glm::vec3& rayOrigin, const glm::vec3& rayDir,
         glm::vec3 planeNormal, float planeHeight)
     {
@@ -48,6 +104,25 @@ namespace Lengine {
         if (fabs(denom) < 0.0001f) return rayOrigin; // parallel
 
         float t = (planeHeight - glm::dot(rayOrigin, planeNormal)) / denom;
+        return rayOrigin + rayDir * t;
+    }
+
+    inline glm::vec3 computeAxisPlaneHit(
+        const glm::vec3& rayOrigin,
+        const glm::vec3& rayDir,
+        const glm::vec3& axisDir,
+        const glm::vec3& pivot,
+        const glm::vec3& camPos
+    ) {
+        glm::vec3 camDir = glm::normalize(camPos - pivot);
+
+        glm::vec3 planeNormal =
+            glm::normalize(glm::cross(axisDir, glm::cross(camDir, axisDir)));
+
+        float d = glm::dot(planeNormal, pivot);
+        float t = (d - glm::dot(planeNormal, rayOrigin)) /
+            glm::dot(planeNormal, rayDir);
+
         return rayOrigin + rayDir * t;
     }
 

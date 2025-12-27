@@ -144,13 +144,15 @@ void main()
     }
 
     // for whole entity
+    float alpha = 1.0;
    if (entitySelected && !entityEditingMode) {
         vec3 gold = vec3(0.25, 0.2, 0.075);   // warm golden yellow
         finalColor = mix(finalColor, gold, 0.25);
         finalColor += vec3(0.12, 0.10, 0.02); // subtle shine
+        alpha = 0.7;
     }
 
     vec3 ambient = sceneAmbient * diffuseTex;
     finalColor += ambient;
-    FragColor = vec4(finalColor, 1.0);
+    FragColor = vec4(finalColor, alpha);
 }

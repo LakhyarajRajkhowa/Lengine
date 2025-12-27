@@ -7,6 +7,23 @@
 
 
 namespace Lengine {
+
+	enum class GizmoAxis {
+		None,
+		X,
+		Y,
+		Z
+	};
+
+
+
+	struct AxisCapsule {
+		glm::vec3 start;
+		glm::vec3 end;
+		float radius;
+		bool hovered = false;
+	};
+
 	struct GizmoArrows {
 		Mesh* gizmoArrow = nullptr;
 		GLSLProgram gizmoArrowShader;
@@ -30,12 +47,20 @@ namespace Lengine {
 		void GizmoRenderer::drawSingleArrow(
 			GizmoArrows& arrow,
 			const glm::vec3& position,
-			float size
+			const float& size,
+			const bool& highlight
 		);
 
 		void drawGizmoSpheres();
 		void drawGizmoGrid();
 		void drawGizmoArrows();
+		void drawDebugCapsuleForArrow(
+			const glm::vec3& position,
+			const glm::vec3& axis,
+			float size
+		);
+
+		AxisCapsule& getCapsule(const GizmoAxis axis);
 
 		void initGizmo() {
 			initGizmoGrid();
@@ -59,6 +84,10 @@ namespace Lengine {
 		GizmoArrows arrowX;
 		GizmoArrows arrowY;
 		GizmoArrows arrowZ;
+
+		AxisCapsule capX;
+		AxisCapsule capY;
+		AxisCapsule capZ;
 		
 		void initGizmoSpheres();
 		void initGizmoGrid();

@@ -43,6 +43,10 @@ file(GLOB_RECURSE CORE_SRC
     "src/core/*.cpp"
     "src/core/*.h"
 )
+file(GLOB_RECURSE ASSETS_SRC
+    "src/assets/*.cpp"
+    "src/assets/*.h"
+)
 file(GLOB_RECURSE EDITOR_SRC
     "src/editor/*.cpp"
     "src/editor/*.h"
@@ -62,7 +66,6 @@ file(GLOB_RECURSE LOGGING_SRC
     "src/logging/*.h"
 )
 
-
 file(GLOB_RECURSE RESOURCES_SRC
     "src/resources/*.cpp"
     "src/resources/*.h"
@@ -71,11 +74,6 @@ file(GLOB_RECURSE RESOURCES_SRC
 file(GLOB_RECURSE SCENE_SRC
     "src/scene/*.cpp"
     "src/scene/*.h"
-)
-
-file(GLOB_RECURSE UI_SRC
-    "src/ui/*.cpp"
-    "src/ui/*.h"
 )
 file(GLOB_RECURSE UTILS_SRC
     "src/utils/*.h"
@@ -87,6 +85,7 @@ file(GLOB_RECURSE EXTERNAL_SRC
     "src/external/picopng.cpp"
     "src/external/tinyfiledialogs.c"
     "src/external/json.hpp"
+    "src/external/stb_image.h"
 )
 
 
@@ -96,6 +95,7 @@ set(MAIN_SRC src/main.cpp)
 # Visual Studio Filters
 # ────────────────────────────────────────────────
 source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "" FILES
+    ${ASSETS_SRC}
     ${CORE_SRC}
     ${EDITOR_SRC}
     ${PLATFORM_SRC}
@@ -103,7 +103,6 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "" FILES
     ${LOGGING_SRC}
     ${RESOURCES_SRC}
     ${SCENE_SRC}
-    ${UI_SRC}
     ${UTILS_SRC}
     ${EXTERNAL_SRC}
 )
@@ -114,6 +113,7 @@ source_group(TREE ${CMAKE_SOURCE_DIR}/src PREFIX "" FILES
 # Build Executable
 # ────────────────────────────────────────────────
 add_executable(${PROJECT_NAME}
+    ${ASSETS_SRC}
     ${MAIN_SRC}
     ${CORE_SRC}
     ${EDITOR_SRC}
@@ -122,7 +122,6 @@ add_executable(${PROJECT_NAME}
     ${LOGGING_SRC}
     ${RESOURCES_SRC}
     ${SCENE_SRC}
-    ${UI_SRC}
     ${UTILS_SRC}
     ${EXTERNAL_SRC}
     ${IMGUI_SOURCES}

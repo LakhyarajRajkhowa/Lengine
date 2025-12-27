@@ -31,27 +31,27 @@ namespace Lengine {
         {
             if (viewportHovered)
             {
+                editorLayer.getHoveredGizmoAxis();
                 editorLayer.config.editingMode = false;
+
                 for (SDL_Keycode key : EditorKeys::All)
                 {
                     editorLayer.HandleKeyboardShortcuts(key);
                 }
                 for ( Uint8 button : { SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE}) {
-                    if (inputManager.isMouseButtonPressed(button)) {
-                        switch (button) {
-                        case  SDL_BUTTON_LEFT:
-                            editorLayer.selectHoveredEntity();
-                            break;
-                        }
+                    if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
+                        editorLayer.selectHoveredEntity();
+                        editorLayer.beginArrowDrag();   // ✅ ONLY ON PRESS
                     }
-                    
-                    if (inputManager.isMouseButtonDown(button)) {
-                        switch (button) {
-                        case  SDL_BUTTON_LEFT: 
-                            editorLayer.HandleDrag();
-                            break;
-                        }
-                    }           
+
+                    if (inputManager.isMouseButtonDown(SDL_BUTTON_LEFT)) {
+                        editorLayer.HandleArrowDrag();  // ✅ ONLY MOVE
+                    }
+
+                    if (!inputManager.isMouseButtonDown(SDL_BUTTON_LEFT)) {
+                        editorLayer.endArrowDrag();     // ✅ CLEAN EXIT
+                    }
+
                 }
                 if (inputManager.getScrollY()) {
                     editorLayer.HandleMouseWheel(inputManager.getScrollY());

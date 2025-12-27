@@ -14,13 +14,14 @@ namespace Lengine {
 		SceneRenderer(
 			Camera3d& cam,
 			SceneManager& scnMgr,
-			AssetManager& assetmgr
+			AssetManager& assetmgr,
+			GizmoRenderer& gizmoRndr
 		) :
 			camera(cam),
 			sceneManager(scnMgr),
 			assetManager(assetmgr),
-			gizmoRenderer(assetmgr,scnMgr, cam),
-			renderer(cam, assetmgr )
+			renderer(cam, assetmgr ),
+			gizmoRenderer(gizmoRndr)
 		{
 		}
 
@@ -36,7 +37,7 @@ namespace Lengine {
 		Camera3d& camera;
 		SceneManager& sceneManager;
 		AssetManager& assetManager;
-		GizmoRenderer gizmoRenderer;
+		GizmoRenderer& gizmoRenderer;
 
 		
 		Scene* activeScene;

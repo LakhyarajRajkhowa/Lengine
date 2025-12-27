@@ -104,6 +104,14 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
     addAssetToAssetRegistry(uuid, AssetType::Mesh, newPath);
 }
 
+void AssetManager::processPendingMesh(const UUID& id) {
+    auto& mesh = meshes[id];
+    for (auto& sm : mesh->subMeshes)
+        sm.setupMesh();
+
+    mesh->computeBounds();
+}
+
 Mesh* AssetManager::getMesh(const UUID& id) {
     auto it = meshes.find(id);
     if (it == meshes.end())
@@ -965,9 +973,7 @@ void AssetManager::processGpuUploads()
             switch (type) {
             case AssetType::Mesh:
             {
-                auto& mesh = meshes[id];
-                for (auto& sm : mesh->subMeshes)
-                    sm.setupMesh();
+                processPendingMesh(id);
                 state = AssetState::LoadedToGPU;
             }
                 break;

@@ -58,6 +58,7 @@ namespace Lengine {
 		UUID importAndLoadMesh(const std::string& name, const std::string& path);
 		void requestMeshLoad(const UUID& uuid, const std::string& path);
 		void loadMesh(const UUID& uuid, const std::string& path);
+		void processPendingMesh(const UUID& id);
 		Mesh* getMesh(const UUID& id);
 		UUID getMeshUUID(const std::string& name);
 

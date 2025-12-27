@@ -5,6 +5,7 @@ namespace Lengine {
     EditorLayer::EditorLayer(
         LogBuffer& buffer,
         SceneManager& scnMgr,
+        GizmoRenderer& gizmoRndr,
         Camera3d& cam,
         InputManager& inputMgr,
         AssetManager& assetMgr,
@@ -12,6 +13,7 @@ namespace Lengine {
     )
         :camera(cam),
         sceneManager(scnMgr),
+        gizmoRenderer(gizmoRndr),
         inputManager(inputMgr),
         assetManager(assetMgr),
         window(win),
@@ -59,9 +61,26 @@ namespace Lengine {
 
     }
 
-    void EditorLayer::checkForHoveredEntity(const glm::vec3& rayDir, const glm::vec3& rayOrigin) {
+    void EditorLayer::checkForHoveredEntity() {
         hoveredEntity = nullptr;
 
+        ImVec2 mouse = viewportPanel.getMousePosInViewport();
+        ImVec2 mouse2 = viewportPanel.getMousePosInImage();
+        ImVec2 vpSize = viewportPanel.GetViewportSize();
+
+        glm::mat4 view = camera.getViewMatrix();
+        glm::mat4 projection = camera.getProjectionMatrix();
+
+        glm::vec3 rayDir = ComputeRayDirection(
+            mouse.x,
+            mouse.y,
+            vpSize.x,
+            vpSize.y,
+            view,
+            projection
+        );
+
+        glm::vec3 rayOrigin = camera.getCameraPosition();
         const auto& entities = sceneManager.getActiveScene()->getEntities();
         float closest = 999999.0f;
 
@@ -69,6 +88,7 @@ namespace Lengine {
 
             glm::vec3 pos = e->getTransform().position;
             glm::vec3 scale = e->getTransform().scale;
+
 
             // --------------------------------------------------------
             // CASE 1: Entity has NO mesh assigned
@@ -83,92 +103,69 @@ namespace Lengine {
                     {
                         closest = dist;
                         hoveredEntity = e.get();
-
-                        dragPlaneNormal = glm::vec3(0, 1, 0);
-                        dragPlaneY = pos.y;
-
-                        dragStartPoint = RayPlaneIntersection(rayOrigin, rayDir, dragPlaneNormal, dragPlaneY);
-                        dragOffset = pos - dragStartPoint;
+                       
                     }
                 }
-                continue;   
             }
 
-            // --------------------------------------------------------
-            // CASE 2: Entity HAS a mesh ID → try to get mesh
-            // --------------------------------------------------------
-            Mesh* mesh = assetManager.getMesh(e->getMeshID());
 
-            if (!mesh)
+            
+            else if (e->getMeshID())
             {
-              
-                float radius = 1.0f;
-                if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
-                {
-                    float dist = glm::distance(rayOrigin, pos);
-                    if (dist < closest)
+                Mesh* mesh = assetManager.getMesh(e->getMeshID());
+
+
+                // --------------------------------------------------------
+                // CASE 2: Entity HAS a mesh ID → try to get mesh
+                // --------------------------------------------------------
+                if (!mesh) {
+                    float radius = 1.0f;
+                    if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
                     {
-                        closest = dist;
-                        hoveredEntity = e.get();
-
-                        dragPlaneNormal = glm::vec3(0, 1, 0);
-                        dragPlaneY = pos.y;
-
-                        dragStartPoint = RayPlaneIntersection(rayOrigin, rayDir, dragPlaneNormal, dragPlaneY);
-                        dragOffset = pos - dragStartPoint;
+                        float dist = glm::distance(rayOrigin, pos);
+                        if (dist < closest)
+                        {
+                            closest = dist;
+                            hoveredEntity = e.get();
+                        }
                     }
                 }
-                continue;
-            }
+                else {
+                    // --------------------------------------------------------
+                    // CASE 3: Mesh exists 
+                    // --------------------------------------------------------
+                    glm::vec3 localCenter = mesh->getLocalCenter();
+                    float localRadius = mesh->getBoundingRadius();
 
-            // --------------------------------------------------------
-            // CASE 3: Mesh exists → test submeshes
-            // --------------------------------------------------------
-            for (auto& sm : mesh->subMeshes)
-            {
-                float r = sm.getBoundingRadius() * scale.x;
-                glm::vec3 centre = pos + sm.getLocalCenter() * scale;
+                    // World-space conversion
+                    glm::vec3 worldCenter = pos + localCenter * scale;
 
-                if (rayIntersectsSphere(rayOrigin, rayDir, centre, r))
-                {
-                    float dist = glm::distance(rayOrigin, centre);
-                    if (dist < closest)
+                    float maxScale = glm::max(scale.x, glm::max(scale.y, scale.z));
+                    float worldRadius = localRadius * maxScale;
+
+                    // Ray-sphere intersection
+                    if (rayIntersectsSphere(rayOrigin, rayDir, worldCenter, worldRadius))
                     {
-                        closest = dist;
-                        hoveredEntity = e.get();
+                        float dist = glm::distance(rayOrigin, worldCenter);
+                        if (dist < closest)
+                        {
+                            closest = dist;
 
-                        dragPlaneNormal = glm::vec3(0, 1, 0);
-                        dragPlaneY = pos.y;
+                            hoveredEntity = e.get();
 
-                        dragStartPoint = RayPlaneIntersection(rayOrigin, rayDir, dragPlaneNormal, dragPlaneY);
-                        dragOffset = pos - dragStartPoint;
+                        }
                     }
+
                 }
             }
+
+          
         }
     }
 
-
+    
     void EditorLayer::selectHoveredEntity() {
-        ImVec2 mouse = viewportPanel.getMousePosInViewport();
-        ImVec2 mouse2 = viewportPanel.getMousePosInImage();
-        ImVec2 vpSize = viewportPanel.GetViewportSize();
-             
-        glm::mat4 view = camera.getViewMatrix();
-        glm::mat4 projection = camera.getProjectionMatrix();
-      
-        glm::vec3 rayDir = ComputeRayDirection(
-            mouse.x,
-            mouse.y,
-            vpSize.x,
-            vpSize.y,
-            view,
-            projection
-        );
-
-        glm::vec3 rayOrigin = camera.getCameraPosition();
-               
-        checkForHoveredEntity(rayDir, rayOrigin);
+        checkForHoveredEntity();
         if (hoveredEntity == nullptr) {
             for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
                 entity->isSelected = false;
@@ -182,35 +179,147 @@ namespace Lengine {
         selectedEntity = hoveredEntity;
         selectedEntity->isSelected = true;       
     }
-    void EditorLayer::deselectAllEntities() {
-        selectedEntity = nullptr;
+    GizmoAxis EditorLayer::getHoveredGizmoAxis()
+    {
+        ImVec2 mouse = viewportPanel.getMousePosInViewport();
+        ImVec2 vpSize = viewportPanel.GetViewportSize();
+
+        glm::vec3 rayDir = ComputeRayDirection(
+            mouse.x, mouse.y,
+            vpSize.x, vpSize.y,
+            camera.getViewMatrix(),
+            camera.getProjectionMatrix()
+        );
+
+        glm::vec3 rayOrigin = camera.getCameraPosition();
+
+        float closestT = FLT_MAX;
+        GizmoAxis result = GizmoAxis::None;
+
+        auto& capX = gizmoRenderer.getCapsule(GizmoAxis::X);
+        auto& capY = gizmoRenderer.getCapsule(GizmoAxis::Y);
+        auto& capZ = gizmoRenderer.getCapsule(GizmoAxis::Z);
+
+        float t;
+
+
+        if (rayIntersectsCapsule(rayOrigin, rayDir, capX.start, capX.end, capX.radius, t) && t < closestT) {
+            closestT = t;
+            result = GizmoAxis::X;
+            capX.hovered = true;
+            capY.hovered = false;
+            capZ.hovered = false;
+
+        }
+
+       if (rayIntersectsCapsule(rayOrigin, rayDir, capY.start, capY.end, capY.radius, t) && t < closestT) {
+            closestT = t;
+            result = GizmoAxis::Y;
+            capY.hovered = true;
+            capX.hovered = false;
+            capZ.hovered = false;
+        }
+
+        if (rayIntersectsCapsule(rayOrigin, rayDir, capZ.start, capZ.end, capZ.radius, t) && t < closestT) {
+            closestT = t;
+            result = GizmoAxis::Z;
+            capZ.hovered = true;
+            capX.hovered = false;
+            capY.hovered = false;
+        }
+
+        if (result == GizmoAxis::None) {
+            capX.hovered = false;
+            capY.hovered = false;
+            capZ.hovered = false;
+        }
+        
+        return result;
     }
-    void EditorLayer::HandleDrag() {
+    
+    void EditorLayer::beginArrowDrag()
+    {
+        if (!selectedEntity) return;
+
+       
+        GizmoAxis hovered = getHoveredGizmoAxis();
+        if (hovered == GizmoAxis::None)
+            return;
 
         ImVec2 mouse = viewportPanel.getMousePosInViewport();
         ImVec2 vpSize = viewportPanel.GetViewportSize();
-        glm::mat4 view = camera.getViewMatrix();
-        glm::mat4 projection = camera.getProjectionMatrix();
+
         glm::vec3 rayDir = ComputeRayDirection(
-            mouse.x,
-            mouse.y,
-            vpSize.x,
-            vpSize.y,
-            view,
-            projection
+            mouse.x, mouse.y,
+            vpSize.x, vpSize.y,
+            camera.getViewMatrix(),
+            camera.getProjectionMatrix()
         );
+
         glm::vec3 rayOrigin = camera.getCameraPosition();
-            if (selectedEntity != nullptr && selectedEntity->isSelected) {
-                glm::vec3 currentHit = RayPlaneIntersection(
-                    rayOrigin, rayDir,
-                    dragPlaneNormal, dragPlaneY
-                );
-                    selectedEntity->getTransform().position = currentHit + dragOffset;
-            }
-            else {
-                checkForHoveredEntity(rayDir, rayOrigin);
-            }     
+
+        state.activeAxis = hovered;
+
+        state.axisDir =
+            hovered == GizmoAxis::X ? glm::vec3(1, 0, 0) :
+            hovered == GizmoAxis::Y ? glm::vec3(0, 1, 0) :
+            glm::vec3(0, 0, 1);
+
+        state.axisDir = glm::normalize(state.axisDir);
+        state.entityStartPos = selectedEntity->getTransform().position;
+
+        state.dragStartWorld = computeAxisPlaneHit(
+            rayOrigin,
+            rayDir,
+            state.axisDir,
+            state.entityStartPos,
+            camera.getCameraPosition()
+        );
+
+        state.isDragging = true;
     }
+
+    void EditorLayer::deselectAllEntities() {
+        selectedEntity = nullptr;
+    }
+
+    void EditorLayer::HandleArrowDrag()
+    {
+        if (!state.isDragging || !selectedEntity)
+            return;
+
+        ImVec2 mouse = viewportPanel.getMousePosInViewport();
+        ImVec2 vpSize = viewportPanel.GetViewportSize();
+
+        glm::vec3 rayDir = ComputeRayDirection(
+            mouse.x, mouse.y,
+            vpSize.x, vpSize.y,
+            camera.getViewMatrix(),
+            camera.getProjectionMatrix()
+        );
+
+        glm::vec3 rayOrigin = camera.getCameraPosition();
+
+        glm::vec3 hit = computeAxisPlaneHit(
+            rayOrigin,
+            rayDir,
+            state.axisDir,
+            state.entityStartPos,
+            rayOrigin
+        );
+
+        glm::vec3 delta = hit - state.dragStartWorld;
+        float movement = glm::dot(delta, state.axisDir);
+
+        selectedEntity->getTransform().position =
+            state.entityStartPos + state.axisDir * movement;
+    }
+    void EditorLayer::endArrowDrag()
+    {
+        state.isDragging = false;
+        state.activeAxis = GizmoAxis::None;
+    }
+
 
     void EditorLayer::HandleMouseWheel(const int& mouseWheelY) {
 

@@ -26,31 +26,24 @@ namespace Lengine {
     void SubMesh::computeBounds() {
         if (vertices.empty()) return;
 
-        glm::vec3 minV = vertices[0].position;
-        glm::vec3 maxV = vertices[0].position;
+        aabbMin = vertices[0].position;
+        aabbMax = vertices[0].position;
 
-        // Step 1: find bounding box
         for (const auto& v : vertices) {
-            minV = glm::min(minV, v.position);
-            maxV = glm::max(maxV, v.position);
+            aabbMin = glm::min(aabbMin, v.position);
+            aabbMax = glm::max(aabbMax, v.position);
         }
 
-        // Step 2: center = middle of min and max
-        glm::vec3 size = maxV - minV;
-        localCenter = (minV + maxV) * 0.5f;
+        localCenter = (aabbMin + aabbMax) * 0.5f;
 
-        //adjusting the size
-        float maxExtent = glm::max(size.x, glm::max(size.y, size.z));
-
-        // Step 3: bounding radius = max distance from center
         float maxDist = 0.0f;
         for (const auto& v : vertices) {
             maxDist = glm::max(maxDist, glm::length(v.position - localCenter));
         }
 
         boundingRadius = maxDist;
-
     }
+
     
 
     void SubMesh::setupMesh() {
@@ -126,5 +119,45 @@ namespace Lengine {
     void SubMesh::addIndex(uint32_t i) {
         indices.push_back(i);
     }
+
+    void Mesh::computeBounds() {
+        if (subMeshes.empty()) return;
+
+        // Initialize with first submesh
+        aabbMin = subMeshes[0].aabbMin;
+        aabbMax = subMeshes[0].aabbMax;
+
+        // Expand over all submeshes
+        for (const auto& sm : subMeshes) {
+            aabbMin = glm::min(aabbMin, sm.aabbMin);
+            aabbMax = glm::max(aabbMax, sm.aabbMax);
+        }
+
+        // Mesh center
+        localCenter = (aabbMin + aabbMax) * 0.5f;
+
+        // Bounding sphere radius
+        float maxDist = 0.0f;
+        for (const auto& sm : subMeshes) {
+            // Check submesh corners
+            glm::vec3 corners[8] = {
+                {sm.aabbMin.x, sm.aabbMin.y, sm.aabbMin.z},
+                {sm.aabbMax.x, sm.aabbMin.y, sm.aabbMin.z},
+                {sm.aabbMin.x, sm.aabbMax.y, sm.aabbMin.z},
+                {sm.aabbMax.x, sm.aabbMax.y, sm.aabbMin.z},
+                {sm.aabbMin.x, sm.aabbMin.y, sm.aabbMax.z},
+                {sm.aabbMax.x, sm.aabbMin.y, sm.aabbMax.z},
+                {sm.aabbMin.x, sm.aabbMax.y, sm.aabbMax.z},
+                {sm.aabbMax.x, sm.aabbMax.y, sm.aabbMax.z},
+            };
+
+            for (auto& c : corners) {
+                maxDist = glm::max(maxDist, glm::length(c - localCenter));
+            }
+        }
+
+        boundingRadius = maxDist;
+    }
+
    
 }

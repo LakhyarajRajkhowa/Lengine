@@ -34,6 +34,7 @@ namespace Lengine {
 		Lengine::AssetManager assetManager;
 		Lengine::SceneManager sceneManager;
 		Lengine::SceneRenderer sceneRenderer;
+		Lengine::GizmoRenderer gizmoRenderer;
 
 		ImGuiLayer imguiLayer;
 		EditorLayer* editorLayer = nullptr;
@@ -46,6 +47,7 @@ namespace Lengine {
 		
 		void initSystems();
 		void mainLoop();
+		void shutDown();
 
 		
 	
