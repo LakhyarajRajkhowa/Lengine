@@ -3,6 +3,7 @@
     "windowWidth": 1280,
     "windowHeight": 720,
     "windowMode": "borderless",
+    "msaaSamples": 4,
 
     "cameraPosX": 0,
     "cameraPosY": 0,

@@ -22,6 +22,7 @@ namespace Lengine {
             const std::string& filePath,
             bool srgb
         );
+        static GLTexture loadTextureCubeMap(std::vector<std::string> filePaths);
 
         static ImageData stbiLoader(const std::string& filePath);
         static void uploadToGPU(const ImageData& img, bool srgb);

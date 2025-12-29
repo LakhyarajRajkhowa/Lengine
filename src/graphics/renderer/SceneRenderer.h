@@ -2,6 +2,7 @@
 
 #include "../graphics/geometry/Model.h"
 #include "../graphics/geometry/Gizmos.h"
+#include "../graphics/geometry/skybox.h"
 #include "../graphics/renderer/Renderer.h"
 #include "../resources/AssetManager.h"
 #include "../resources/fileLoader.h"
@@ -42,6 +43,7 @@ namespace Lengine {
 		
 		Scene* activeScene;
 		
+		Skybox skybox;
 
 	};
 }

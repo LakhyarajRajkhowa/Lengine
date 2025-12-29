@@ -11,6 +11,8 @@
 
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/renderer/Framebuffer.h"
+#include "../graphics/renderer/MSAAFramebuffer.h"
+
 
 #include "../utils/fps.h"
 #include "../utils/imGuiScreens.h"
@@ -25,6 +27,7 @@ namespace Lengine {
 
         // Access framebuffer for rendering the scene
         Framebuffer& GetFramebuffer() { return m_Framebuffer; }
+        MSAAFramebuffer& GetMSAAFramebuffer() { return m_MSAAFramebuffer; }
 
         // Check if the viewport has resized
         bool IsViewportFocused() const { return m_Focused; }
@@ -44,6 +47,9 @@ namespace Lengine {
         Camera3d& camera;
 
         Framebuffer m_Framebuffer;
+        MSAAFramebuffer m_MSAAFramebuffer;
+
+
         float offsetValueX = 0.14f;
         float offsetValueY = -0.1f;
         ImVec2 m_ViewportSize = { 1280, 720 };

@@ -60,8 +60,11 @@ void main()
 {
     // ---------------- Diffuse color ----------------
     vec3 diffuseTex = material.Kd;
+    float texAlpha = 1.0;
     if (material.hasDiffuseMap) {
-        diffuseTex *= texture(material.diffuseMap, TexCoord).rgb;
+        vec4 tex = texture(material.diffuseMap, TexCoord);
+        diffuseTex *= tex.rgb;
+        texAlpha *= tex.a;
     }
 
     float specMask = 1.0;
@@ -144,13 +147,15 @@ void main()
     }
 
     // for whole entity
-    float alpha = 1.0;
-   if (entitySelected && !entityEditingMode) {
-        vec3 gold = vec3(0.25, 0.2, 0.075);   // warm golden yellow
+    
+    float alpha = texAlpha;
+    if (entitySelected && !entityEditingMode) {
+        vec3 gold = vec3(0.25, 0.2, 0.075);
         finalColor = mix(finalColor, gold, 0.25);
-        finalColor += vec3(0.12, 0.10, 0.02); // subtle shine
-        alpha = 0.7;
+        finalColor += vec3(0.12, 0.10, 0.02);
+        alpha *= 0.7;   // <-- multiply, not override
     }
+
 
     vec3 ambient = sceneAmbient * diffuseTex;
     finalColor += ambient;

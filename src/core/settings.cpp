@@ -17,7 +17,8 @@ const bool EngineSettings::loadSettings() {
     windowName = j.value("windowName", windowName);
     windowWidth = j.value("windowWidth", windowWidth);
     windowHeight = j.value("windowHeight", windowHeight);
-    
+    msaaSamples = j.value("msaaSamples", msaaSamples);
+
     std::string modeStr = j.value("windowMode", "borderless");
 
     if (modeStr == "borderless")
@@ -60,6 +61,7 @@ const bool EngineSettings::saveSettings()
     case FULLSCREEN: j["windowMode"] = "fullscreen"; break;
     }
 
+    j["msaaSamples"] = msaaSamples;
     // --- Camera ---
     j["cameraPosX"] = cameraPosX;
     j["cameraPosY"] = cameraPosY;

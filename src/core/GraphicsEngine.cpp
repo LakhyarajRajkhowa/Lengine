@@ -67,6 +67,8 @@ namespace Lengine {
 		isRunning = true;
 		ViewportPanel& viewportPanel = editorLayer->GetViewportPanel();
 
+		viewportPanel.GetMSAAFramebuffer().setMSAASamples(settings.msaaSamples);
+		viewportPanel.GetMSAAFramebuffer().Create();
 		while (isRunning) {
 
 			inputManager.update();
@@ -76,10 +78,12 @@ namespace Lengine {
 			imguiLayer.beginFrame();
 
 			//  Framebuffer captures the frame of the game screen
-			viewportPanel.GetFramebuffer().Bind();
+			viewportPanel.GetMSAAFramebuffer().Bind();
 			sceneRenderer.clearFrame({ 0.0f, 0.0f, 0.0f, 1.0f });
 			sceneRenderer.renderScene(editorLayer->config);
-			viewportPanel.GetFramebuffer().Unbind();
+			viewportPanel.GetMSAAFramebuffer().Unbind();
+
+			viewportPanel.GetMSAAFramebuffer().ResolveTo(viewportPanel.GetFramebuffer());
 
 			editorLayer->OnImGuiRender();
 

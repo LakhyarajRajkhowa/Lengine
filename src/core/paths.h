@@ -16,6 +16,7 @@ namespace Lengine {
         static inline std::string Icons = Assets + "icons/";
         static inline std::string Defaults = "../defaults/";
         static inline std::string Default_Scenes = Defaults + "scenes/";
+        static inline std::string Default_skybox = Defaults + "skybox/";
 
         static inline std::string ActiveGameFolder;
 

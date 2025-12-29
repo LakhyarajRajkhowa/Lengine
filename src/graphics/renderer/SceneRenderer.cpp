@@ -9,7 +9,8 @@ namespace Lengine {
         glFrontFace(GL_CCW);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-       
+        glEnable(GL_MULTISAMPLE);
+
 
     }
 
@@ -36,7 +37,6 @@ namespace Lengine {
     }
     void SceneRenderer::renderScene(EditorConfig& edtitorConfig) {
        
-
         glDisable(GL_CULL_FACE);
         gizmoRenderer.drawGizmoGrid();
         gizmoRenderer.drawGizmoArrows();

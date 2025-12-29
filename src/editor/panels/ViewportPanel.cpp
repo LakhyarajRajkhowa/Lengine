@@ -4,7 +4,8 @@
 using namespace Lengine;
 
     ViewportPanel::ViewportPanel(Camera3d& cam)
-		: m_Framebuffer(1280, 720), camera(cam)
+		: m_Framebuffer(1280, 720), camera(cam),
+         m_MSAAFramebuffer(1280, 720)
     {
     }
 

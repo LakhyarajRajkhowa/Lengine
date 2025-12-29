@@ -29,6 +29,12 @@ namespace Lengine {
         if (screenWidth > mode.w) screenWidth = mode.w;
         if (screenHeight > mode.h) screenHeight = mode.h;
 
+        // MSAA
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
+
+
         _sdlWindow = SDL_CreateWindow(
             windowName.c_str(),
             SDL_WINDOWPOS_CENTERED,
