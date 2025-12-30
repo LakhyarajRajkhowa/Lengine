@@ -22,7 +22,13 @@ public:
 	uint16_t  windowWidth = 1280;
 	uint16_t  windowHeight = 720 ;
 	WindowMode windowMode = WindowMode::BORDERLESS;
-	uint32_t msaaSamples = 4;
+	uint8_t msaaSamples = 4;
+	
+	uint16_t resolution_X = 1280;
+	uint16_t resolution_Y = 720;
+
+	uint16_t shadowMapResolution = 1024;
+
 
 	float cameraPosX = 0;
 	float cameraPosY = 0;

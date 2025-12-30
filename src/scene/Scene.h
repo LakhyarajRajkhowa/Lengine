@@ -43,6 +43,26 @@ namespace Lengine {
         std::vector<Light>& Scene::getLights() {
             return lights;
         }
+        Light& getMainDirectionalLight() {
+            for (auto& l : lights)
+                if (l.type == LightType::Directional)
+                    return l;
+            Light directionalLight = Light();
+            directionalLight.setType(LightType::Directional);
+            directionalLight.direction = glm::vec3(0.5f);
+
+            return directionalLight;
+        }
+
+        Light& getMainSpotLight() {
+            for (auto& l : lights)
+                if (l.type == LightType::Spotlight)
+                    return l;
+            Light light = Light();
+            light.setType(LightType::Spotlight);
+
+            return light;
+        }
         const glm::vec3& getAmbientLighting() const { return ambient; }
         glm::vec3& getAmbientLighting() { return ambient; }
         void setAmbientLighting(const glm::vec3& amb) { ambient = amb; }

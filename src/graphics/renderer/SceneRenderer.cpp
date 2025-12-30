@@ -11,12 +11,12 @@ namespace Lengine {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_MULTISAMPLE);
 
-
+        shadowMap.init();
     }
 
     void SceneRenderer::preloadAssets(){
         assetManager.LoadAllMetaFiles(Paths::Assets);
-        assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_hallway_scene.json");
+        assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_defaultScene.json");
     }
 
     void SceneRenderer::clearFrame(const glm::vec4& clearColor) {
@@ -27,7 +27,7 @@ namespace Lengine {
     void SceneRenderer::initScene() {
         gizmoRenderer.initGizmo();
 
-        activeScene = assetManager.loadScene(Paths::GameScenes + "hallway_scene.json");
+        activeScene = assetManager.loadScene(Paths::GameScenes + "defaultScene.json");
         sceneManager.getScenes().insert(activeScene);
 
         // temporary active scene logic
@@ -35,6 +35,26 @@ namespace Lengine {
        
 
     }
+
+    void SceneRenderer::renderShadowPass(glm::vec2 resolution)
+    {
+        Scene* scene = sceneManager.getActiveScene();
+       
+        auto& light = scene->getMainDirectionalLight();
+        
+        // Peter panning 
+        glCullFace(GL_FRONT);
+        shadowMap.renderDepthMap(*scene, light, assetManager);
+        glCullFace(GL_BACK);
+
+        glViewport(
+            0, 0,
+            resolution.x,
+            resolution.y
+        );
+        
+    }
+
     void SceneRenderer::renderScene(EditorConfig& edtitorConfig) {
        
         glDisable(GL_CULL_FACE);
@@ -42,8 +62,7 @@ namespace Lengine {
         gizmoRenderer.drawGizmoArrows();
         glEnable(GL_CULL_FACE);
 
-        renderer.renderScene(*sceneManager.getActiveScene(), edtitorConfig);
-        
+        renderer.renderScene(*sceneManager.getActiveScene(), edtitorConfig, shadowMap);
     }
 
     void SceneRenderer::endFrame() {

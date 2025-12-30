@@ -6,6 +6,7 @@
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/lightning/Light.h"
+#include "../graphics/renderer/shadowMap.h"
 #include "../resources/TextureCache.h"
 
 #include "../resources/AssetManager.h"
@@ -78,7 +79,7 @@ namespace Lengine {
             assetManager(assetmgr)
         {
         }
-        void renderScene(Scene& activeScene, EditorConfig& editorConfig);
+        void renderScene(Scene& activeScene, EditorConfig& editorConfig, ShadowMap& shadowMap);
 
         
        // void collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager);

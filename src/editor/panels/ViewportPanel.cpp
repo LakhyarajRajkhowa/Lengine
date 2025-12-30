@@ -3,9 +3,9 @@
 
 using namespace Lengine;
 
-    ViewportPanel::ViewportPanel(Camera3d& cam)
-		: m_Framebuffer(1280, 720), camera(cam),
-         m_MSAAFramebuffer(1280, 720)
+    ViewportPanel::ViewportPanel(Camera3d& cam, glm::vec2 resolution)
+		: m_Framebuffer(resolution.x, resolution.y), camera(cam),
+         m_MSAAFramebuffer(resolution.x, resolution.y)
     {
     }
 
@@ -39,6 +39,7 @@ using namespace Lengine;
             {
                 
                 m_LastViewportSize = m_ViewportSize;
+                camera.setAspectRatio(m_ViewportSize.x / m_ViewportSize.y);
             }
         }
         

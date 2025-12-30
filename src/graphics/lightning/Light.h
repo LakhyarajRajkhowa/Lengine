@@ -29,6 +29,42 @@ namespace Lengine {
         // Spotlight cutoff angles (in degrees)
         float cutOffAngle = 30.0f ;        
         float outerCutOffAngle = 45.0f ;
+        float nearPlane = 0.1f;
+        float farPlane = 1000.5f;
 
+        // For Shadow map (spotlight)
+        glm::mat4 getLightProjection() {
+            if(type == LightType::Directional)
+            return glm::ortho(
+                -20.0f, 20.0f,
+                -20.0f, 20.0f,
+                nearPlane, farPlane
+            );
+
+            return  glm::perspective(
+                glm::radians(getFOV()),
+                1.0f,
+                nearPlane,
+                farPlane
+            );
+        }
+        glm::vec3 getDirection() const {
+            return glm::normalize(direction);
+        }
+
+        float getFOV() { return outerCutOffAngle * 2.0f; }
+        
+
+        glm::mat4 getLightView() {
+            return glm::lookAt(
+                position,
+                position + getDirection(),
+                glm::vec3(0, 1, 0)
+            );
+        }
+
+        glm::mat4 getSpaceMatrix() {
+            return getLightProjection() * getLightView();
+        }
     };
 }

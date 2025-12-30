@@ -9,7 +9,8 @@ namespace Lengine {
         Camera3d& cam,
         InputManager& inputMgr,
         AssetManager& assetMgr,
-        Window& win
+        Window& win,
+        glm::vec2 resolution
     )
         :camera(cam),
         sceneManager(scnMgr),
@@ -17,7 +18,7 @@ namespace Lengine {
         inputManager(inputMgr),
         assetManager(assetMgr),
         window(win),
-        viewportPanel(cam),     
+        viewportPanel(cam, resolution),     
         hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
         inspectorPanel(scnMgr, assetMgr),
         consolePanel(buffer),

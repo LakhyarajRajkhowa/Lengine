@@ -155,7 +155,7 @@ void Renderer::drawMeshAllSubMeshes(
 }
 
 
-void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig) {
+void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, ShadowMap& shadowMap) {
    
     const auto& entities = activeScene.getEntities(); 
     auto& lights = activeScene.getLights();
@@ -194,6 +194,14 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig) {
             if (!shader) continue;
 
             shader->use();
+            shader->setMat4(
+                "lightSpaceMatrix",
+                activeScene.getMainDirectionalLight().getSpaceMatrix()
+            );
+
+            glActiveTexture(GL_TEXTURE5);
+            glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthTexture());
+            shader->setInt("shadowMap", 5);
 
 
             ResolvedMaterial finalMat = resolveMaterial(*baseMaterial, inst);

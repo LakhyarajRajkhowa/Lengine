@@ -20,7 +20,7 @@ namespace Lengine {
 
     class ViewportPanel {
     public:
-        ViewportPanel(Camera3d& camera);
+        ViewportPanel(Camera3d& camera, glm::vec2 resolution);
 
         void OnImGuiRender();
         void RenderFullscreen();
@@ -52,7 +52,7 @@ namespace Lengine {
 
         float offsetValueX = 0.14f;
         float offsetValueY = -0.1f;
-        ImVec2 m_ViewportSize = { 1280, 720 };
+        ImVec2 m_ViewportSize = { 1920, 1080 };
         ImVec2 m_ViewportPos;
         ImVec2 m_LastViewportSize = { -1, -1 };
 

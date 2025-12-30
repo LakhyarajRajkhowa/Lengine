@@ -5,7 +5,7 @@ namespace Lengine {
 	GraphicsEngine::GraphicsEngine() :
 		sceneManager(assetManager),
 		gizmoRenderer(assetManager, sceneManager, camera),
-		sceneRenderer(camera,  sceneManager, assetManager, gizmoRenderer),
+		sceneRenderer(camera,  sceneManager, assetManager, gizmoRenderer, settings),
 		inputHandler(camera, inputManager,  window, isRunning),
 		imguiLayer(inputManager, isRunning),
 		assetManager(settings)
@@ -46,11 +46,15 @@ namespace Lengine {
 			camera,
 			inputManager,
 			assetManager,
-			window	
+			window,
+			glm::vec2(
+				settings.resolution_X,
+				settings.resolution_Y
+			)
 		);
 		camera.init(
-			editorLayer->GetViewportPanel().GetViewportSize().x,
-			editorLayer->GetViewportPanel().GetViewportSize().y,
+			settings.resolution_X,
+			settings.resolution_Y,
 			&inputManager,
 			{ settings.cameraPosX, 5, settings.cameraPosZ },
 			settings.cameraFov
@@ -75,14 +79,24 @@ namespace Lengine {
 			assetManager.processGpuUploads();
 			assetManager.syncAssetsToScene(*sceneManager.getActiveScene());
 			inputHandler.handleInputs(imguiLayer, *editorLayer);
+			sceneRenderer.renderShadowPass(
+				glm::vec2(
+					settings.resolution_X,
+					settings.resolution_Y
+				)
+			);
 			imguiLayer.beginFrame();
-
+			
+			
 			//  Framebuffer captures the frame of the game screen
 			viewportPanel.GetMSAAFramebuffer().Bind();
+			
 			sceneRenderer.clearFrame({ 0.0f, 0.0f, 0.0f, 1.0f });
-			sceneRenderer.renderScene(editorLayer->config);
-			viewportPanel.GetMSAAFramebuffer().Unbind();
 
+			sceneRenderer.renderScene(editorLayer->config);
+
+			viewportPanel.GetMSAAFramebuffer().Unbind();
+			
 			viewportPanel.GetMSAAFramebuffer().ResolveTo(viewportPanel.GetFramebuffer());
 
 			editorLayer->OnImGuiRender();

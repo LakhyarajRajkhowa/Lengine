@@ -43,8 +43,8 @@ namespace Lengine {
             Camera3d& camera,
             InputManager& inputManager,
             AssetManager& assetManager,
-            Window& window
-                      
+            Window& window,
+            glm::vec2 resolution          
             );
         ~EditorLayer() = default;
 

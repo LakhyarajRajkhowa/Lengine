@@ -21,6 +21,11 @@ struct Light {
     float outerCutOff;      // cos(outer angle)
 };
 
+uniform sampler2D shadowMap;
+uniform mat4 lightSpaceMatrix;
+
+in vec4 FragPosLightSpace;
+
 uniform vec3 sceneAmbient;
 uniform int lightCount;
 uniform Light lights[MAX_LIGHTS];
@@ -55,6 +60,44 @@ uniform vec3 viewPos;
 uniform bool isHovered;
 uniform bool entityEditingMode;
 uniform bool entitySelected;
+
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
+{
+    // Perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // Outside shadow map
+    if (projCoords.x < 0.0 || projCoords.x > 1.0 ||
+    projCoords.y < 0.0 || projCoords.y > 1.0 ||
+    projCoords.z > 1.0)
+        {
+            return 0.0;
+        }
+
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+
+    // Bias (prevents acne)
+
+    float bias = max(0.01 * (1.0 - dot(normal, lightDir)), 0.002);
+    float shadow = 0.0;
+
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+    
+    return shadow;
+}
+ 
+
 
 void main()
 {
@@ -131,14 +174,29 @@ void main()
         vec3 diffuse = light.diffuse * diff * diffuseTex;
 
         // Specular
+        vec3 halfwayDir = normalize(lightDir + viewDir);
         vec3 reflectDir = reflect(-lightDir, normal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.Ns);
+        float spec = pow(max(dot(normal, halfwayDir), 0.0), material.Ns);
         vec3 specular = light.specular * spec * specMask * material.Ks;
 
         diffuse  *= attenuation * intensity;
         specular *= attenuation * intensity;
 
-        finalColor += diffuse + specular;
+        float shadow = 0.0;
+
+        float theta = dot(lightDir, normalize(-light.direction));
+
+       if (light.type == 0) {
+        // directional
+        shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
+    }
+        else if (light.type == 2 ) {
+        // spotlight
+        shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
+    }
+
+        finalColor += (1.0 - shadow) * (diffuse + specular);
+
     }
 
     // for individual submesh

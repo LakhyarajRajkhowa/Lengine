@@ -17,7 +17,14 @@ const bool EngineSettings::loadSettings() {
     windowName = j.value("windowName", windowName);
     windowWidth = j.value("windowWidth", windowWidth);
     windowHeight = j.value("windowHeight", windowHeight);
+
     msaaSamples = j.value("msaaSamples", msaaSamples);
+
+    resolution_X = j.value("resolution_X", resolution_X);
+    resolution_Y = j.value("resolution_Y", resolution_Y);
+
+    shadowMapResolution = j.value("shadowMapResolution", shadowMapResolution);
+
 
     std::string modeStr = j.value("windowMode", "borderless");
 
@@ -62,6 +69,11 @@ const bool EngineSettings::saveSettings()
     }
 
     j["msaaSamples"] = msaaSamples;
+    j["resolution_X"] = resolution_X;
+    j["resolution_Y"] = resolution_Y;
+    j["shadowMapResolution"] = shadowMapResolution;
+
+
     // --- Camera ---
     j["cameraPosX"] = cameraPosX;
     j["cameraPosY"] = cameraPosY;
