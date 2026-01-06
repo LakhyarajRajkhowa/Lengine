@@ -15,7 +15,8 @@ namespace Lengine {
         entities.back()->setIndex(index);
 
         if (type == EntityType::Light) {
-            entities.back()->addLight();   
+            entities.back()->addLight();
+
         }
 
         return entityPtr;

@@ -449,6 +449,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
                     // ---------- Helper lambda for texture slots ----------
                     auto DrawTextureSlot = [&](const char* label,
+                        bool& useMap,
                         std::optional<UUID>& instSlot,
                         UUID baseSlot)
                         {
@@ -465,9 +466,16 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                                     texName = t->name;
                             }
 
+                            // Checkbox
+                            ImGui::Checkbox(("Use##" + std::string(label)).c_str(), &useMap);
+
+                            ImGui::BeginDisabled(!useMap);
+
                             ImGui::Text(label);
-                            ImGui::Button((texName + std::string("##") + label).c_str(),
-                                { ImGui::GetContentRegionAvail().x, 28 });
+                            ImGui::Button(
+                                (texName + std::string("##") + label).c_str(),
+                                { ImGui::GetContentRegionAvail().x, 28 }
+                            );
 
                             if (ImGui::BeginDragDropTarget())
                             {
@@ -477,25 +485,37 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                                     const TextureDragPayload* data =
                                         static_cast<const TextureDragPayload*>(payload->Data);
 
-                                    // if texture isn't loaded yet then laod it
-                                    if (!assetManager.getTexture(data->id)) {
+                                    if (!assetManager.getTexture(data->id))
                                         assetManager.requestTextureLoad(data->id, data->path);
-                                    }
+
                                     instSlot = data->id;
+                                    useMap = true; // auto-enable when dropped
                                 }
                                 ImGui::EndDragDropTarget();
                             }
 
+                            if (instSlot.has_value() &&
+                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
+                                instSlot.reset();
+
+                            ImGui::EndDisabled();
                             ImGui::Spacing();
                         };
+
 
                     // ---------- Texture Maps ----------
                     if (baseMat)
                     {
-                        DrawTextureSlot("Diffuse Map", inst.map_kd, baseMat->map_Kd);
-                        DrawTextureSlot("Specular Map", inst.map_ks, baseMat->map_Ks);
-                        DrawTextureSlot("Normal Map", inst.map_bump, baseMat->map_bump);
+                        DrawTextureSlot("Diffuse Map",
+                            inst.use_map_kd, inst.map_kd, baseMat->map_Kd);
+
+                        DrawTextureSlot("Specular Map",
+                            inst.use_map_ks, inst.map_ks, baseMat->map_Ks);
+
+                        DrawTextureSlot("Normal Map",
+                            inst.use_map_bump, inst.map_bump, baseMat->map_bump);
                     }
+
 
                     // ---------- Color + Scalar helpers ----------
                     auto DrawVec3 = [&](const char* label,

@@ -16,6 +16,8 @@ ResolvedMaterial Renderer::resolveMaterial(
     mat.Ns = inst.Ns.value_or(baseMaterial.Ns);
     mat.map_Kd = inst.map_kd.value_or(baseMaterial.map_Kd);
     mat.map_Ks = inst.map_ks.value_or(baseMaterial.map_Ks);
+    mat.map_bump = inst.map_bump.value_or(baseMaterial.map_bump);
+
     mat.normalStrength = inst.normalStrength.value_or(baseMaterial.normalStrength);
     return mat;
 }
@@ -33,6 +35,33 @@ void Renderer::bindCameraUniforms(
     shader.setVec3("viewPos", camera.getCameraPosition());
 
 }
+
+void Renderer::bindShadowMapUniforms(
+    GLSLProgram& shader,
+    ShadowMap& shadowMap,
+    Light& mainDirectionalLight
+) {
+    shader.setMat4(
+        "lightSpaceMatrix",
+       mainDirectionalLight.getSpaceMatrix()
+    );
+
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthTexture());
+    shader.setInt("shadowMap", 5);
+}
+void Renderer::bindPointShadowUniforms(
+    GLSLProgram& shader,
+    ShadowCubeMap& shadowCubeMap,
+    Light& light
+) {
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, shadowCubeMap.getDepthCubeMap());
+    shader.setInt("shadowCubeMap", 6);
+
+    shader.setFloat("farPlane", shadowCubeMap.getFarPlane());
+}
+
 
 void Renderer::bindLightUniforms(
     GLSLProgram& shader,
@@ -77,17 +106,19 @@ void Renderer::bindTexture(
     GLSLProgram& shader,
     AssetManager& assetManager,
     const UUID& texID,
+    const bool useTexture,
     const char* hasUniform,
     const char* samplerUniform,
     GLenum textureUnit
 ) {
+    if (!useTexture) return;
     glActiveTexture(textureUnit);
 
     bool hasTexture = texID != UUID::Null;
     shader.setBool(hasUniform, hasTexture);
 
-    if (!hasTexture) {
-        glBindTexture(GL_TEXTURE_2D, 0);  
+    if (!hasTexture ) {
+        glBindTexture(GL_TEXTURE_2D, 0);
         return;
     }
 
@@ -145,26 +176,33 @@ void Renderer::drawMeshAllSubMeshes(
     GLSLProgram& shader
 )
 {
-   
+
     for (const SubMesh& sm : mesh.subMeshes)
     {
-        if(sm.isVisible)
+        if (sm.isVisible)
             sm.draw();
     }
 
 }
 
 
-void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, ShadowMap& shadowMap) {
-   
-    const auto& entities = activeScene.getEntities(); 
+void Renderer::renderScene(
+    Scene& activeScene,
+    EditorConfig& editorConfig,
+    ShadowMap& shadowMap,
+    ShadowCubeMap& shadowCubeMap
+    ) {
+
+    const auto& entities = activeScene.getEntities();
     auto& lights = activeScene.getLights();
+    Light& mainDirectionalLight = activeScene.getMainDirectionalLight();
+    Light& mainPointLight = activeScene.getMainPointLight();
+
     const glm::vec3& sceneAmbient = activeScene.getAmbientLighting();
     collectLights(lights, entities);
 
     for (const auto& entityPtr : entities) {
-        glDisable(GL_STENCIL_TEST);
-        glEnable(GL_DEPTH_TEST);
+
         Entity* entity = entityPtr.get();
         if (!entity || !entity->isVisible) continue;
 
@@ -172,9 +210,9 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, Shado
         UUID meshID = entity->getMeshID();
         Mesh* mesh = assetManager.getMesh(meshID);
         if (!mesh || entity->hasPendingMesh()) continue;
-        
+
         RenderFlags flags;
-        flags.entitySelected = entity->isSelected;   
+        flags.entitySelected = entity->isSelected;
         flags.entityDragged = entity->isDragged;
 
 
@@ -194,16 +232,8 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, Shado
             if (!shader) continue;
 
             shader->use();
-            shader->setMat4(
-                "lightSpaceMatrix",
-                activeScene.getMainDirectionalLight().getSpaceMatrix()
-            );
-
-            glActiveTexture(GL_TEXTURE5);
-            glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthTexture());
-            shader->setInt("shadowMap", 5);
-
-
+            bindShadowMapUniforms(*shader, shadowMap, mainDirectionalLight);
+            bindPointShadowUniforms(*shader, shadowCubeMap, mainPointLight);
             ResolvedMaterial finalMat = resolveMaterial(*baseMaterial, inst);
 
             bindCameraUniforms(*shader, model, camera);
@@ -211,14 +241,15 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, Shado
             shader->setInt("lightCount", (int)lights.size());
 
             for (int i = 0; i < lights.size(); i++) {
-                bindLightUniforms(*shader, lights[i], sceneAmbient,i);
+                bindLightUniforms(*shader, lights[i], sceneAmbient, i);
             }
-            
+
             bindMaterialUniforms(*shader, finalMat);
             bindTexture(
                 *shader,
                 assetManager,
                 finalMat.map_Kd,
+                inst.use_map_kd,
                 "material.hasDiffuseMap",
                 "material.diffuseMap",
                 GL_TEXTURE0
@@ -228,6 +259,7 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, Shado
                 *shader,
                 assetManager,
                 finalMat.map_Ks,
+                inst.use_map_ks,
                 "material.hasSpecularMap",
                 "material.specularMap",
                 GL_TEXTURE1
@@ -236,6 +268,7 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, Shado
                 *shader,
                 assetManager,
                 finalMat.map_bump,
+                inst.use_map_bump,
                 "material.hasNormalMap",
                 "material.normalMap",
                 GL_TEXTURE2
@@ -252,8 +285,8 @@ void Renderer::renderScene(Scene& activeScene, EditorConfig& editorConfig, Shado
                 entity->hoveredSubMeshes
             );
 
-            shader->unuse();  
-        } 
+            shader->unuse();
+        }
 
     }
 }
@@ -307,7 +340,7 @@ void Renderer::collectLights(std::vector<Light>& lights, const std::vector<std::
     lights.clear();
 
     for (const auto& ePtr : entities) {
-        const Entity& e = *ePtr;   
+        const Entity& e = *ePtr;
 
         if (e.getType() != EntityType::Light || !e.hasLight())
             continue;
@@ -337,12 +370,12 @@ void Renderer::collectLights(std::vector<Light>& lights, const std::vector<std::
     }
 }
 
-/* 
+/*
 void Renderer::collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager) {
-  
+
     for (auto& [entityIndex, mr] : scene.getMeshRenderers())
     {
-        
+
         const Entity* entity = scene.getEntityByIndex(entityIndex);
 
         glm::mat4 model = entity->getTransformMatrix();

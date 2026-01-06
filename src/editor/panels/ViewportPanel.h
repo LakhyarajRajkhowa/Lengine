@@ -17,6 +17,12 @@
 #include "../utils/fps.h"
 #include "../utils/imGuiScreens.h"
 namespace Lengine {
+    enum class ViewportMode {
+        first = 0,
+        second,
+        third,
+        count 
+    };
 
     class ViewportPanel {
     public:
@@ -62,6 +68,8 @@ namespace Lengine {
 
         bool m_Focused = false; 
         bool m_Hovered = false;  
+
+        ViewportMode mode = ViewportMode::first;
    
 
     };

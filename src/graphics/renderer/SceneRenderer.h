@@ -5,6 +5,7 @@
 #include "../graphics/geometry/skybox.h"
 #include "../graphics/renderer/Renderer.h"
 #include "../graphics/renderer/shadowMap.h"
+#include "../graphics/renderer/shadowCubeMap.h"
 #include "../resources/AssetManager.h"
 #include "../resources/fileLoader.h"
 
@@ -23,10 +24,11 @@ namespace Lengine {
 			camera(cam),
 			sceneManager(scnMgr),
 			assetManager(assetmgr),
-			renderer(cam, assetmgr ),
+			renderer(cam, assetmgr),
 			gizmoRenderer(gizmoRndr),
 			settings(sett),
-			shadowMap(settings.shadowMapResolution)
+			shadowMap(settings.shadowMapResolution),
+			shadowCubeMap(settings.shadowMapResolution)
 		{
 		}
 
@@ -34,7 +36,7 @@ namespace Lengine {
 		void preloadAssets();
 		void initScene();
 		void clearFrame(const glm::vec4& clearColor);
-		void renderShadowPass(glm::vec2 resolution);
+		void renderShadowPass();
 		void renderScene(EditorConfig& editorConfig);
 		void endFrame();
 		Renderer renderer;
@@ -45,11 +47,12 @@ namespace Lengine {
 		AssetManager& assetManager;
 		GizmoRenderer& gizmoRenderer;
 		EngineSettings& settings;
-		
+
 		Scene* activeScene;
-		
+
 		Skybox skybox;
 		ShadowMap shadowMap;
+		ShadowCubeMap shadowCubeMap;
 
 
 	};

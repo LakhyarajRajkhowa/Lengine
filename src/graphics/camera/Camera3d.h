@@ -7,6 +7,12 @@
 #include "../platform/InputManager.h"
 
 namespace Lengine {
+    enum class CameraControlMode {
+        first = 0,
+        second, 
+        third
+    };
+
     class Camera3d {
     public:
         Camera3d();
@@ -28,14 +34,16 @@ namespace Lengine {
          glm::vec3 getRightVector();
          glm::vec3 getForwardVector();
         void update(const float& deltaTime, const glm::vec2& mouseCoords);
-        void moveMouse( float xoffset,  float yoffset);
-        void moveKeyboard(const float& speed);
+        void moveMouse( float xoffset,  float yoffset, float speed);
+        void controlMovement(const float& speed);
 
         bool isFixed = true;
 
         glm::vec3 Camera3d::getForward() const;
         glm::vec3 Camera3d::getRight() const;
         glm::vec3 Camera3d::getUp() const;
+
+        CameraControlMode controlMode = CameraControlMode::first;
     private:
         glm::vec3 position;
         glm::vec3 front;

@@ -75,6 +75,7 @@ namespace Lengine {
 		const Light& getLight() const { return *light; }
 		void addLight() {
 			light.emplace(); 
+			light.value().id = ID;
 		}
 
 

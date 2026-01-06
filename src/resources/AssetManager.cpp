@@ -455,6 +455,11 @@ void AssetManager::saveSceneAssetRegistryForScene(
             if (inst.map_kd.has_value()) {
                 usedAssets.insert(inst.map_kd.value());
             }
+            if (inst.map_ks.has_value()) {
+                usedAssets.insert(inst.map_ks.value());
+            }if (inst.map_bump.has_value()) {
+                usedAssets.insert(inst.map_bump.value());
+            }
         }
 
     }

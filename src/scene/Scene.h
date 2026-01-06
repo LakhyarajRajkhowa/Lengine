@@ -63,6 +63,15 @@ namespace Lengine {
 
             return light;
         }
+        Light& getMainPointLight() {
+            for (auto& l : lights)
+                if (l.type == LightType::Point)
+                    return l;
+            Light light = Light();
+            light.setType(LightType::Point);
+
+            return light;
+        }
         const glm::vec3& getAmbientLighting() const { return ambient; }
         glm::vec3& getAmbientLighting() { return ambient; }
         void setAmbientLighting(const glm::vec3& amb) { ambient = amb; }

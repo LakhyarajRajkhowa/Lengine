@@ -55,6 +55,8 @@ namespace Lengine {
                 }
                 if (inputManager.getScrollY()) {
                     editorLayer.HandleMouseWheel(inputManager.getScrollY());
+                    // reset each frame otherwise the scroll activates in next frame
+                    inputManager.resetScroll();
                 }
             }
             else {
@@ -62,22 +64,19 @@ namespace Lengine {
                 
             }
         }
-        // reset each frame otherwise the scroll activates in next frame
-        inputManager.resetScroll();
 
-        
-        if (camera.isFixed == false )
+        if (!camera.isFixed)
         {
             
-           
-            SDL_ShowCursor(SDL_DISABLE);
-            SDL_SetRelativeMouseMode(SDL_TRUE);
-            int mx, my;
-            SDL_GetRelativeMouseState(&mx, &my);
-            glm::vec2 relativeMouseCoords = { mx,my };
-            
+            if (camera.controlMode == CameraControlMode::first) {
+                SDL_ShowCursor(SDL_DISABLE);
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+                int mx, my;
+                SDL_GetRelativeMouseState(&mx, &my);
+                glm::vec2 relativeMouseCoords = { mx,my };
+
                 // this is for bounding the cursor inside the viewport and recentering the cursor        
-             
+
                 ImVec2 pos = editorLayer.GetViewportPanel().GetViewportPos();
                 ImVec2 size = editorLayer.GetViewportPanel().GetViewportSize();
 
@@ -85,9 +84,25 @@ namespace Lengine {
                 int clampedY = std::clamp(my, (int)pos.y, (int)(pos.y + size.y - 1));
 
                 if (mx != clampedX || my != clampedY)
-                    SDL_WarpMouseInWindow(window.getWindow(), clampedX, clampedY);               
+                    SDL_WarpMouseInWindow(window.getWindow(), clampedX, clampedY);
 
                 camera.update(dt, relativeMouseCoords);
+            }
+
+
+            else {
+                SDL_ShowCursor(SDL_ENABLE);
+                SDL_SetRelativeMouseMode(SDL_FALSE);
+                int mx, my;
+                SDL_GetRelativeMouseState(&mx, &my);
+                glm::vec2 relativeMouseCoords = { mx,my };
+
+
+                camera.update(dt, relativeMouseCoords);
+                // reset each frame otherwise the scroll activates in next frame
+                inputManager.resetScroll();
+
+            }   
         
         }
         else

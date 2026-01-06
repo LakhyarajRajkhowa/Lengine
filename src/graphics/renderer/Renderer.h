@@ -7,6 +7,7 @@
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/lightning/Light.h"
 #include "../graphics/renderer/shadowMap.h"
+#include "../graphics/renderer/shadowCubeMap.h"
 #include "../resources/TextureCache.h"
 
 #include "../resources/AssetManager.h"
@@ -79,7 +80,12 @@ namespace Lengine {
             assetManager(assetmgr)
         {
         }
-        void renderScene(Scene& activeScene, EditorConfig& editorConfig, ShadowMap& shadowMap);
+        void renderScene(
+            Scene& activeScene,
+            EditorConfig& editorConfig,
+            ShadowMap& shadowMap,
+            ShadowCubeMap& shadowCubeMap
+        );
 
         
        // void collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager);
@@ -99,6 +105,17 @@ namespace Lengine {
             const Material& baseMaterial,
             const MaterialInstance& inst
         );
+        void bindShadowMapUniforms(
+            GLSLProgram& shader,
+            ShadowMap& shadowMap,
+            Light& mainDirectionalLight
+        );
+        void bindPointShadowUniforms(
+            GLSLProgram& shader,
+            ShadowCubeMap& shadowCubeMap,
+            Light& light
+        );
+
         void bindCameraUniforms(
             GLSLProgram& shader,
             const glm::mat4& model,
@@ -118,6 +135,7 @@ namespace Lengine {
             GLSLProgram& shader,
             AssetManager& assetManager,
             const UUID& texID,
+            const bool  use,
             const char* hasUniform,
             const char* samplerUniform,
             GLenum textureUnit

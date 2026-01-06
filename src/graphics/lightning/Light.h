@@ -11,6 +11,7 @@ namespace Lengine {
     };
 
     struct Light {
+        UUID id;
         LightType type = LightType::Point;
         void setType(const LightType& t) { type = t; }
 
@@ -40,7 +41,7 @@ namespace Lengine {
                 -20.0f, 20.0f,
                 nearPlane, farPlane
             );
-
+            if(type == LightType::Spotlight)
             return  glm::perspective(
                 glm::radians(getFOV()),
                 1.0f,

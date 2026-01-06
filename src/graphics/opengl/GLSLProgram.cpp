@@ -21,6 +21,7 @@ namespace Lengine {
     void GLSLProgram::compileShaders(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath)
     {
 
+        _programID = glCreateProgram();
 
         _vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
         if (!_vertexShaderID)
@@ -36,10 +37,34 @@ namespace Lengine {
         compileShader(vertexShaderFilePath, _vertexShaderID);
         compileShader(fragmentShaderFilePath, _fragmentShaderID);
     }
+
+    void GLSLProgram::compileShaders_3(
+        const std::string& vertexShaderFilePath,
+        const std::string& geometryShaderFilePath,
+        const std::string& fragmentShaderFilePath)
+    {
+        _programID = glCreateProgram();
+
+        _vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+        _geometryShaderID = glCreateShader(GL_GEOMETRY_SHADER);
+        _fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+
+        if (!_vertexShaderID || !_geometryShaderID || !_fragmentShaderID) {
+            fatalError("Shader failed to be created!");
+        }
+
+        compileShader(vertexShaderFilePath, _vertexShaderID);
+        compileShader(geometryShaderFilePath, _geometryShaderID);
+        compileShader(fragmentShaderFilePath, _fragmentShaderID);
+    }
+
     void GLSLProgram::linkShaders()
     {
 
         glAttachShader(_programID, _vertexShaderID);
+        if (_geometryShaderID != 0) {              
+            glAttachShader(_programID, _geometryShaderID);
+        }
         glAttachShader(_programID, _fragmentShaderID);
 
         glLinkProgram(_programID);
@@ -57,6 +82,7 @@ namespace Lengine {
             glDeleteProgram(_programID);
             glDeleteShader(_vertexShaderID);
             glDeleteShader(_fragmentShaderID);
+            glDeleteShader(_geometryShaderID);
 
             printf("%s\n", &(errorLog[0]));
             fatalError("Shaders  failed to link");
@@ -64,6 +90,10 @@ namespace Lengine {
 
         glDetachShader(_programID, _vertexShaderID);
         glDetachShader(_programID, _fragmentShaderID);
+        if (_geometryShaderID != 0) {
+            glDetachShader(_programID, _geometryShaderID);
+            glDeleteShader(_geometryShaderID);
+        }
         glDeleteShader(_vertexShaderID);
         glDeleteShader(_fragmentShaderID);
     }
@@ -96,7 +126,7 @@ namespace Lengine {
     }
     void GLSLProgram::compileShader(const std::string& filePath, GLuint id)
     {
-        _programID = glCreateProgram();
+        
         std::ifstream shaderFile(filePath);
         if (shaderFile.fail())
         {

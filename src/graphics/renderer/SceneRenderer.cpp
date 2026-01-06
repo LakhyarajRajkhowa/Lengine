@@ -1,20 +1,27 @@
 #include "SceneRenderer.h"
 
 namespace Lengine {
-  
+
     void SceneRenderer::init() {
         glEnable(GL_DEPTH_TEST);
+
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);      // Remove back faces
         glFrontFace(GL_CCW);
+
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glDisable(GL_STENCIL_TEST);
+
         glEnable(GL_MULTISAMPLE);
 
         shadowMap.init();
+        shadowCubeMap.init();
     }
 
-    void SceneRenderer::preloadAssets(){
+    void SceneRenderer::preloadAssets() {
         assetManager.LoadAllMetaFiles(Paths::Assets);
         assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_defaultScene.json");
     }
@@ -32,37 +39,46 @@ namespace Lengine {
 
         // temporary active scene logic
         sceneManager.setActiveScene(activeScene);
-       
+
 
     }
 
-    void SceneRenderer::renderShadowPass(glm::vec2 resolution)
+    void SceneRenderer::renderShadowPass()
     {
         Scene* scene = sceneManager.getActiveScene();
-       
-        auto& light = scene->getMainDirectionalLight();
-        
+        auto& entities = scene->getEntities();
+
+        auto& directionalLight = scene->getMainDirectionalLight();
+        auto& pointLight = scene->getMainPointLight();
+
         // Peter panning 
-        glCullFace(GL_FRONT);
-        shadowMap.renderDepthMap(*scene, light, assetManager);
-        glCullFace(GL_BACK);
+        //  glCullFace(GL_FRONT);
+        shadowMap.renderDepthMap(entities, directionalLight, assetManager);
+       // glCullFace(GL_BACK);
+
+        shadowCubeMap.renderDepthCubeMap(entities, pointLight, assetManager);
 
         glViewport(
             0, 0,
-            resolution.x,
-            resolution.y
+            settings.resolution_X,
+            settings.resolution_Y
         );
-        
+
     }
 
     void SceneRenderer::renderScene(EditorConfig& edtitorConfig) {
-       
+
         glDisable(GL_CULL_FACE);
         gizmoRenderer.drawGizmoGrid();
         gizmoRenderer.drawGizmoArrows();
         glEnable(GL_CULL_FACE);
 
-        renderer.renderScene(*sceneManager.getActiveScene(), edtitorConfig, shadowMap);
+        renderer.renderScene(
+            *sceneManager.getActiveScene(),
+            edtitorConfig,
+            shadowMap,
+            shadowCubeMap
+        );
     }
 
     void SceneRenderer::endFrame() {

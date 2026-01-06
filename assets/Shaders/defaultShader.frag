@@ -24,6 +24,9 @@ struct Light {
 uniform sampler2D shadowMap;
 uniform mat4 lightSpaceMatrix;
 
+uniform samplerCube shadowCubeMap;
+uniform float farPlane;
+
 in vec4 FragPosLightSpace;
 
 uniform vec3 sceneAmbient;
@@ -96,6 +99,35 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
     
     return shadow;
 }
+vec3 sampleOffsetDirections[20] = vec3[](
+   vec3( 1,  1,  1), vec3(-1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1),
+   vec3( 1,  1, -1), vec3(-1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1),
+   vec3( 1,  1,  0), vec3(-1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0),
+   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0,  1, -1), vec3( 0, -1, -1)
+);
+float ShadowCubeMapCalculation(vec3 fragPos, vec3 lightPos)
+{
+    vec3 fragToLight = fragPos - lightPos;
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    float bias = max(0.05 * (currentDepth / farPlane), 0.005);
+
+    int samples  = 20;
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = 0.05;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(shadowCubeMap, fragToLight + sampleOffsetDirections[i] * diskRadius).r;
+        closestDepth *= farPlane;   // undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);  
+
+    return shadow;
+}
  
 
 
@@ -118,14 +150,20 @@ void main()
     // ---------------- Normal ----------------
     vec3 normal;
     if (material.hasNormalMap) {
-        vec3 normalTex = texture(material.normalMap, TexCoord).rgb;
-        normalTex = normalTex * 2.0 - 1.0;
-        normalTex.xy *= material.normalStrength;
-        normalTex.z = sqrt(1.0 - clamp(dot(normalTex.xy, normalTex.xy), 0.0, 1.0));
-        normal = normalize(TBN * normalTex);
-    } else {
-        normal = normalize(TBN[2]);
+    vec3 mapNormal = texture(material.normalMap, TexCoord).rgb;
+    mapNormal = mapNormal * 2.0 - 1.0; // [0,1] → [-1,1]
+
+    // Blend with default tangent normal
+    mapNormal.xy *= material.normalStrength;
+    mapNormal = normalize(mapNormal);
+
+    normal = normalize(TBN * mapNormal);
     }
+     else {
+    normal = normalize(TBN * vec3(0.0, 0.0, 1.0));
+    }
+
+    
 
     vec3 viewDir = normalize(viewPos - FragPos);
 
@@ -186,13 +224,13 @@ void main()
 
         float theta = dot(lightDir, normalize(-light.direction));
 
-       if (light.type == 0) {
-        // directional
+       if (light.type == 0 || light.type == 2) {
+        // directional && spotlight
         shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
     }
-        else if (light.type == 2 ) {
-        // spotlight
-        shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
+        else if (light.type == 1 ) {
+        // pointlight
+        shadow = ShadowCubeMapCalculation(FragPos, light.position);
     }
 
         finalColor += (1.0 - shadow) * (diffuse + specular);
@@ -211,7 +249,7 @@ void main()
         vec3 gold = vec3(0.25, 0.2, 0.075);
         finalColor = mix(finalColor, gold, 0.25);
         finalColor += vec3(0.12, 0.10, 0.02);
-        alpha *= 0.7;   // <-- multiply, not override
+        alpha *= 0.7;   
     }
 
 

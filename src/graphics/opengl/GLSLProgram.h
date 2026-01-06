@@ -18,6 +18,12 @@ namespace Lengine {
         ~GLSLProgram();
 
         void compileShaders(const std::string& vertexShaderFilePath, const std::string& fragmentShaderFilePath);
+        void compileShaders_3(
+            const std::string& vertexShaderFilePath,
+            const std::string& geometryShaderFilePath,
+            const std::string& fragmentShaderFilePath
+           );
+
         void linkShaders();
         void addAtrribute(const std::string& attributeName);
 
@@ -41,6 +47,7 @@ namespace Lengine {
         GLuint _programID;
         GLuint _vertexShaderID;
         GLuint _fragmentShaderID;
+        GLuint _geometryShaderID = 0;
 
 
     };

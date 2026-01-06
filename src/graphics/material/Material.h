@@ -61,6 +61,10 @@ namespace Lengine {
         std::optional<UUID> map_bump;
         std::optional<float> normalStrength;
 
+        bool use_map_kd = true;
+        bool use_map_ks = true;
+        bool use_map_bump = true;
+
 
     };
 
@@ -75,10 +79,10 @@ namespace Lengine {
         float Ni;            // OpticalDensity
         float Tr;            // Transperancy
         float Tf;            // TransmissionFilter
-        UUID map_Kd;  // DiffuseMap
-        UUID map_Ka;  // AmbientMap
+        UUID map_Kd = UUID::Null;  // DiffuseMap
+        UUID map_Ka = UUID::Null;  // AmbientMap
         UUID map_Ks = UUID::Null;  // SpecularMap
-        UUID map_bump;    // NormalMap
+        UUID map_bump = UUID::Null;    // NormalMap
         float normalStrength;
 
         float metallic;

@@ -21,6 +21,30 @@ using namespace Lengine;
         ImGui::SameLine();
         if (ImGui::Button("Fullscreen Mode"))
             viewportFullscreen = true;
+        ImGui::SameLine();
+
+        static const char* viewportModeLabels[] = {
+           "First",
+           "Second",
+           "Third"
+
+        };
+
+        ViewportMode currentMode = mode;
+        int currentModeIndex = static_cast<int>(currentMode);
+        ImGui::PushItemWidth(140.0f);   // try 120–180
+
+        if (ImGui::Combo("Viewport Mode", &currentModeIndex,
+            viewportModeLabels,
+            static_cast<int>(ViewportMode::count)))
+        {
+            camera.controlMode = static_cast<CameraControlMode>(currentModeIndex);
+            mode = static_cast<ViewportMode>(currentModeIndex);
+
+        }
+        ImGui::PopItemWidth();
+
+
 
         ImGui::Separator();
 

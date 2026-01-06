@@ -3,7 +3,7 @@
 using namespace Lengine;
 
 void ShadowMap::init() {
-   
+
     glGenFramebuffers(1, &shadowFBO);
 
     // Depth texture
@@ -44,25 +44,25 @@ void ShadowMap::init() {
     depthShader.linkShaders();
 }
 
-void ShadowMap::renderDepthMap(const Scene& scene, Light& light,  AssetManager& assetManager) {
-    
+void ShadowMap::renderDepthMap(std::vector<std::unique_ptr<Entity>>& entities, Light& light, AssetManager& assetManager) {
+
     depthShader.use();
     depthShader.setMat4("lightSpaceMatrix", light.getSpaceMatrix());
 
     glViewport(0, 0, SHADOW_RES, SHADOW_RES);
-    
+
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
 
 
-    for (auto& e : scene.getEntities())
+    for (auto& e : entities)
     {
         if (e->getType() == EntityType::Light) continue;
 
         depthShader.setMat4("model", e->getTransform().getMatrix());
         auto* mesh = assetManager.getMesh(e->getMeshID());
-        if(mesh)
-        mesh->draw();
+        if (mesh)
+            mesh->draw();
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
