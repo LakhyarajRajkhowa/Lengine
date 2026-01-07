@@ -10,13 +10,13 @@ namespace Lengine {
     {
     }
 
-    GLTexture TextureCache::getTexture(const std::string& texturePath) {
+    GLTexture TextureCache::getTexture(const std::string& texturePath, bool sRGB) {
 
         auto mit = _textureMap.find(texturePath);
 
         if (mit == _textureMap.end()) {
             //GLTexture newTexture = ImageLoader::loadPNG(texturePath);
-            GLTexture newTexture = ImageLoader::loadTexture2D(texturePath, false);
+            GLTexture newTexture = ImageLoader::loadTexture2D(texturePath, sRGB);
             std::pair<std::string, GLTexture> newPair(texturePath, newTexture);
 
             _textureMap.insert(make_pair(texturePath, newTexture));

@@ -223,6 +223,9 @@ void AssetPanel::DrawDirectory(const fs::path& path)
         if (ImGui::MenuItem("Import Texture..."))
             m_OpenImportTextureDialog = true;
 
+        if (ImGui::MenuItem("Import SRGB Texture..."))
+            m_OpenImportSRGBTextureDialog = true;
+
         ImGui::EndPopup();
     }
     
@@ -237,6 +240,10 @@ void AssetPanel::DrawDirectory(const fs::path& path)
     else if (m_OpenImportTextureDialog) {
         m_OpenImportTextureDialog = false;
         OpenImportTextureDialog();
+    }
+    else if (m_OpenImportSRGBTextureDialog) {
+        m_OpenImportSRGBTextureDialog = false;
+        OpenImportTextureDialog(true);
     }
     else if (m_OpenImportMaterialDialog) {
         m_OpenImportMaterialDialog = false;
@@ -275,7 +282,7 @@ void AssetPanel::OpenImportMeshDialog(std::string folderPath)
         assetManager.importMesh(filePath);
     }
 }
-void AssetPanel::OpenImportTextureDialog()
+void AssetPanel::OpenImportTextureDialog(bool srgb)
 {
     const char* filters[3] = { "*.png", "*.jpeg", "*.jpg"};
 
@@ -290,7 +297,7 @@ void AssetPanel::OpenImportTextureDialog()
 
     if (filePath)
     {
-        assetManager.importTexture(filePath);
+        assetManager.importTexture(filePath, srgb);
     }
 }
 void AssetPanel::OpenImportMaterialDialog()

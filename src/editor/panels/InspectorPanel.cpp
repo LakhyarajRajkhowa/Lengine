@@ -449,6 +449,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
 
                     // ---------- Helper lambda for texture slots ----------
                     auto DrawTextureSlot = [&](const char* label,
+                        bool srgb,
                         bool& useMap,
                         std::optional<UUID>& instSlot,
                         UUID baseSlot)
@@ -485,8 +486,12 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                                     const TextureDragPayload* data =
                                         static_cast<const TextureDragPayload*>(payload->Data);
 
-                                    if (!assetManager.getTexture(data->id))
-                                        assetManager.requestTextureLoad(data->id, data->path);
+                                    if (!assetManager.getTexture(data->id)) {
+                                        
+
+                                        assetManager.requestTextureLoad(data->id, data->path, srgb);
+
+                                    }
 
                                     instSlot = data->id;
                                     useMap = true; // auto-enable when dropped
@@ -506,13 +511,13 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     // ---------- Texture Maps ----------
                     if (baseMat)
                     {
-                        DrawTextureSlot("Diffuse Map",
+                        DrawTextureSlot("Diffuse Map", true,
                             inst.use_map_kd, inst.map_kd, baseMat->map_Kd);
 
-                        DrawTextureSlot("Specular Map",
+                        DrawTextureSlot("Specular Map", false,
                             inst.use_map_ks, inst.map_ks, baseMat->map_Ks);
 
-                        DrawTextureSlot("Normal Map",
+                        DrawTextureSlot("Normal Map", false,
                             inst.use_map_bump, inst.map_bump, baseMat->map_bump);
                     }
 

@@ -83,8 +83,8 @@ namespace Lengine {
 
 
 		// TEXTURES
-		UUID importTexture(const std::string& path);
-		void requestTextureLoad(const UUID& uuid, const std::string& path);
+		UUID importTexture(const std::string& path, bool srgb = false);
+		void requestTextureLoad(const UUID& uuid, const std::string& path, bool srgb = false);
 		void loadTexture(const UUID& uuid, const std::string& path);
 		GLTexture* loadImage(const std::string& name, const std::string& path);
 		void processPendingTextures(const UUID& id);

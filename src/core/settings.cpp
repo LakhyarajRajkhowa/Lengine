@@ -19,6 +19,7 @@ const bool EngineSettings::loadSettings() {
     windowHeight = j.value("windowHeight", windowHeight);
 
     msaaSamples = j.value("msaaSamples", msaaSamples);
+    HDR = j.value("HDR", HDR);
 
     resolution_X = j.value("resolution_X", resolution_X);
     resolution_Y = j.value("resolution_Y", resolution_Y);
@@ -69,6 +70,7 @@ const bool EngineSettings::saveSettings()
     }
 
     j["msaaSamples"] = msaaSamples;
+    j["HDR"] = HDR;
     j["resolution_X"] = resolution_X;
     j["resolution_Y"] = resolution_Y;
     j["shadowMapResolution"] = shadowMapResolution;

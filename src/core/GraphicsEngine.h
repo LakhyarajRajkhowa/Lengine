@@ -10,6 +10,7 @@
 
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/renderer/SceneRenderer.h"
+#include "../graphics/renderer/PostProcess/PostProcessing.h"
 
 #include "../platform/InputManager.h"
 #include "../platform/InputHandler.h"
@@ -27,14 +28,15 @@ namespace Lengine {
 		void run();
 	private:
 		EngineSettings settings;
-		Lengine::Window window;
-		Lengine::Camera3d camera;
-		Lengine::InputManager inputManager;
-		Lengine::InputHandler inputHandler;
-		Lengine::AssetManager assetManager;
-		Lengine::SceneManager sceneManager;
-		Lengine::SceneRenderer sceneRenderer;
-		Lengine::GizmoRenderer gizmoRenderer;
+		Window window;
+		Camera3d camera;
+		InputManager inputManager;
+		InputHandler inputHandler;
+		AssetManager assetManager;
+		SceneManager sceneManager;
+		SceneRenderer sceneRenderer;
+		PostProcessing postProcess;
+		GizmoRenderer gizmoRenderer;
 
 		ImGuiLayer imguiLayer;
 		EditorLayer* editorLayer = nullptr;

@@ -2,6 +2,7 @@
 
 #define MAX_LIGHTS 16
 
+
 struct Light {
     int type;               // 0 = directional, 1 = point, 2 = spotlight
 
@@ -255,5 +256,9 @@ void main()
 
     vec3 ambient = sceneAmbient * diffuseTex;
     finalColor += ambient;
+
+    // gamma correction
+    float gamma = 2.2;
+    finalColor = pow(finalColor, vec3(1.0/2.2));
     FragColor = vec4(finalColor, alpha);
 }

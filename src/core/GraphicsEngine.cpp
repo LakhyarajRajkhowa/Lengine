@@ -63,7 +63,7 @@ namespace Lengine {
 		sceneRenderer.preloadAssets();
 		sceneRenderer.initScene();
 
-
+		postProcess.initHDR();
 
 	}
 
@@ -84,21 +84,45 @@ namespace Lengine {
 
 
 			//  Framebuffer captures the frame of the game screen
-			viewportPanel.GetMSAAFramebuffer().Bind();
+			if (settings.HDR)
+			{
+				viewportPanel.GetHDRFramebuffer().Bind();
+			}
+			else
+			{
+				viewportPanel.GetFramebuffer().Bind();
+			}
 
-			sceneRenderer.clearFrame({ 0.0f, 0.0f, 0.0f, 1.0f });
-
+			sceneRenderer.clearFrame({ 0,0,0,1 });
 			sceneRenderer.renderScene(editorLayer->config);
 
-			viewportPanel.GetMSAAFramebuffer().Unbind();
+			if (settings.HDR)
+			{
+				viewportPanel.GetHDRFramebuffer().Unbind();
 
-			viewportPanel.GetMSAAFramebuffer().ResolveTo(viewportPanel.GetFramebuffer());
+				viewportPanel.GetFramebuffer().Bind();
+				viewportPanel.GetFramebuffer().useTexture(
+					viewportPanel.GetHDRFramebuffer().GetColorTexture()
+					);
+				sceneRenderer.clearFrame({ 0,0,0,1 });
+
+				postProcess.drawExposureEditor();
+				postProcess.renderToneMapping();
+
+				viewportPanel.GetFramebuffer().Unbind();
+			}
+			else
+			{
+				viewportPanel.GetFramebuffer().Unbind();
+			}
+
 
 			editorLayer->OnImGuiRender();
 
 			assetManager.drawLoadingScreens();
 
 			imguiLayer.endFrame();
+
 
 			window.swapBuffer();
 

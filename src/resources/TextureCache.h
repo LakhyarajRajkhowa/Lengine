@@ -15,7 +15,7 @@ namespace Lengine {
         TextureCache();
         ~TextureCache();
 
-        GLTexture getTexture(const std::string& texturePath);
+        GLTexture getTexture(const std::string& texturePath, bool sRGB);
         bool attachTexture(
             const std::string& texturePath,
             GLTexture* outTexture

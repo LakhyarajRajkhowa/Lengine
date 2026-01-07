@@ -58,6 +58,7 @@ namespace Lengine {
                 0
             );
 
+          
             if (!data)
                 fatalError("Failed to load image: " + filePath);
 
@@ -129,9 +130,20 @@ namespace Lengine {
         else if (channels == 3) format = GL_RGB;
         else if (channels == 4) format = GL_RGBA;
 
-        GLenum internalFormat = srgb
-            ? (format == GL_RGBA ? GL_SRGB_ALPHA : GL_SRGB)
-            : format;
+        GLenum internalFormat;
+        if (srgb)
+        {
+            internalFormat = (format == GL_RGBA)
+                ? GL_SRGB8_ALPHA8
+                : GL_SRGB8;
+        }
+        else
+        {
+            internalFormat = (format == GL_RGBA)
+                ? GL_RGBA8
+                : GL_RGB8;
+        }
+
 
         glGenTextures(1, &texture.id);
         glBindTexture(GL_TEXTURE_2D, texture.id);

@@ -12,6 +12,7 @@
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/renderer/Framebuffer.h"
 #include "../graphics/renderer/MSAAFramebuffer.h"
+#include "../graphics/renderer/HDRFramebuffer.h"
 
 
 #include "../utils/fps.h"
@@ -34,6 +35,7 @@ namespace Lengine {
         // Access framebuffer for rendering the scene
         Framebuffer& GetFramebuffer() { return m_Framebuffer; }
         MSAAFramebuffer& GetMSAAFramebuffer() { return m_MSAAFramebuffer; }
+        HDRFramebuffer& GetHDRFramebuffer() { return m_HDRFramebuffer; }
 
         // Check if the viewport has resized
         bool IsViewportFocused() const { return m_Focused; }
@@ -54,6 +56,7 @@ namespace Lengine {
 
         Framebuffer m_Framebuffer;
         MSAAFramebuffer m_MSAAFramebuffer;
+        HDRFramebuffer m_HDRFramebuffer;
 
 
         float offsetValueX = 0.14f;

@@ -33,7 +33,7 @@ namespace Lengine {
     private:
         void DrawDirectory(const std::filesystem::path& path);
         void OpenImportMeshDialog(std::string folderPath);
-        void OpenImportTextureDialog();
+        void OpenImportTextureDialog(bool srgb = false);
         void OpenImportMaterialDialog();
         void CreateNewFolder(const std::filesystem::path& path);
 
@@ -47,6 +47,7 @@ namespace Lengine {
         std::filesystem::path m_CurrentPath;
         bool  m_OpenImportMeshDialog = false;
         bool  m_OpenImportTextureDialog = false;
+        bool  m_OpenImportSRGBTextureDialog = false;
         bool  m_OpenImportMaterialDialog = false;
 
 

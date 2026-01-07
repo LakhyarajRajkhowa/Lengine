@@ -37,9 +37,12 @@ namespace Lengine {
 		void initScene();
 		void clearFrame(const glm::vec4& clearColor);
 		void renderShadowPass();
+
 		void renderScene(EditorConfig& editorConfig);
 		void endFrame();
 		Renderer renderer;
+
+		float exposure = 0.1f;
 
 	private:
 		Camera3d& camera;

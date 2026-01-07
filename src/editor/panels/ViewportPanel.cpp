@@ -5,7 +5,8 @@ using namespace Lengine;
 
     ViewportPanel::ViewportPanel(Camera3d& cam, glm::vec2 resolution)
 		: m_Framebuffer(resolution.x, resolution.y), camera(cam),
-         m_MSAAFramebuffer(resolution.x, resolution.y)
+         m_MSAAFramebuffer(resolution.x, resolution.y),
+        m_HDRFramebuffer(resolution.x, resolution.y)
     {
     }
 
@@ -32,7 +33,7 @@ using namespace Lengine;
 
         ViewportMode currentMode = mode;
         int currentModeIndex = static_cast<int>(currentMode);
-        ImGui::PushItemWidth(140.0f);   // try 120–180
+        ImGui::PushItemWidth(140.0f);   
 
         if (ImGui::Combo("Viewport Mode", &currentModeIndex,
             viewportModeLabels,

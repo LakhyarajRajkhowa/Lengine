@@ -19,6 +19,7 @@ namespace Lengine {
         int channels = 0;
         ImageData imageCPU;
 
+        bool srgb = false;
         std::string name;
         std::string path;
  

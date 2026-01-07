@@ -69,6 +69,11 @@ namespace Lengine {
         glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
     }
 
+    void Framebuffer::useTexture(const GLuint texture) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+    }
+
     void Framebuffer::Unbind() {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }

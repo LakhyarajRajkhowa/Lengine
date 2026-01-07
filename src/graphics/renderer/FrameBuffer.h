@@ -19,6 +19,8 @@ namespace Lengine {
         float GetWidth() const { return m_Width; }
         float GetHeight() const { return m_Height; }
 
+        void useTexture(const GLuint Texture);
+
     private:
         void Create();
         void Destroy();

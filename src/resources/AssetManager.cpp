@@ -193,7 +193,7 @@ bool AssetManager::loadMaterial(
     if (!materialPtr->map_Kd_path.empty()) {
         std::string texName = ExtractNameFromPath(materialPtr->map_Kd_path);
         materialPtr->map_Kd = importTexture(folderPath + "/" + materialPtr->map_Kd_path);
-        requestTextureLoad(materialPtr->map_Kd, folderPath + "/" + materialPtr->map_Kd_path);
+        requestTextureLoad(materialPtr->map_Kd, folderPath + "/" + materialPtr->map_Kd_path, true);
     }
     if (!materialPtr->map_Ks_path.empty()) {
         std::string texName = ExtractNameFromPath(materialPtr->map_Ks_path);
@@ -233,13 +233,13 @@ UUID AssetManager::getMaterialUUID(const std::string& name) {
 
 //          ----- TEXTURES -----
 
-UUID AssetManager::importTexture(const std::string& path) {
+UUID AssetManager::importTexture(const std::string& path, bool srgb) {
     MetaFile meta;
 
     std::string fileName = ExtractFileNameFromPath(path);
     if (!MetaFileSystem::HasMeta(path)) {
         meta.uuid = UUID();
-        meta.type = "texture";
+        meta.type = srgb ? "texture_srgb" : "texture";
         meta.source = NormalizePath(path);
         MetaFileSystem::Save(path, meta);
     }
@@ -250,18 +250,19 @@ UUID AssetManager::importTexture(const std::string& path) {
 
 }
 
-void AssetManager::requestTextureLoad(const UUID& uuid, const std::string& path)
+void AssetManager::requestTextureLoad(const UUID& uuid, const std::string& path, bool srgb)
 {
     auto tex = std::make_shared<GLTexture>();
     tex->name = ExtractNameFromPath(path);
     tex->path = path;
+    tex->srgb = srgb;
     std::string cleanPath = StripQuotes(path);
 
     {
         std::lock_guard<std::mutex> lock(assetMutex);
         assetStates[uuid] = AssetState::Loading;
         textures[uuid] = tex;
-        addAssetToAssetRegistry(uuid, AssetType::Texture, cleanPath);
+        addAssetToAssetRegistry(uuid, srgb? AssetType::Texture_srgb: AssetType::Texture, cleanPath);
     }
 
 
@@ -285,7 +286,7 @@ void AssetManager::loadTexture(const UUID& uuid, const std::string& path) {
     UUID id = uuid;
     std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
     std::string newPath = StripQuotes(path);
-    *tex = textureCache.getTexture(newPath);
+    *tex = textureCache.getTexture(newPath, true);
 
     if (tex) {
         std::cout << "Texture Loaded: " << path << std::endl;
@@ -319,7 +320,7 @@ GLTexture* AssetManager::loadImage(const std::string& name, const std::string& p
 
     UUID id = meta.uuid;
     std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
-    *tex = textureCache.getTexture(path);
+    *tex = textureCache.getTexture(path, false); // sRGB = false
     textures[id] = tex;
     return tex.get();
 
@@ -332,10 +333,25 @@ void AssetManager::processPendingTextures(const UUID& uuid)
     if (!tex || !tex->pendingGPUUpload)
         return;
 
-    GLenum format =
-        tex->imageCPU.channels == 4 ? GL_RGBA :
-        tex->imageCPU.channels == 3 ? GL_RGB :
-        GL_RED;
+    GLenum format = GL_RGB;
+    if (tex->imageCPU.channels  == 1) format = GL_RED;
+    else if (tex->imageCPU.channels == 3) format = GL_RGB;
+    else if (tex->imageCPU.channels == 4) format = GL_RGBA;
+
+    GLenum internalFormat;
+    if (tex->srgb)
+    {
+        internalFormat = (format == GL_RGBA)
+            ? GL_SRGB8_ALPHA8
+            : GL_SRGB8;
+    }
+    else
+    {
+        internalFormat = (format == GL_RGBA)
+            ? GL_RGBA8
+            : GL_RGB8;
+    }
+
 
     glGenTextures(1, &tex->id);
     glBindTexture(GL_TEXTURE_2D, tex->id);
@@ -343,7 +359,7 @@ void AssetManager::processPendingTextures(const UUID& uuid)
     glTexImage2D(
         GL_TEXTURE_2D,
         0,
-        format,
+        internalFormat,
         tex->imageCPU.width,
         tex->imageCPU.height,
         0,
@@ -493,7 +509,11 @@ bool AssetManager::loadAssetFromPath(const AssetRecord& record)
         return true;
 
     case AssetType::Texture:
-        loadTexture(record.uuid, record.path.string());
+        requestTextureLoad(record.uuid, record.path.string());
+        return true;
+
+    case AssetType::Texture_srgb:
+        requestTextureLoad(record.uuid, record.path.string(), true);
         return true;
 
     case AssetType::Material:
@@ -537,6 +557,7 @@ bool AssetManager::loadAssetRegistry(const std::string& filePath)
         AssetType type;
         if (typeStr == "Mesh")        type = AssetType::Mesh;
         else if (typeStr == "Texture") type = AssetType::Texture;
+        else if (typeStr == "Texture_srgb") type = AssetType::Texture_srgb;
         else if (typeStr == "Material")type = AssetType::Material;
         else if (typeStr == "Shader")  type = AssetType::Shader;
         else continue; // unknown type

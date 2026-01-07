@@ -10,9 +10,10 @@ namespace Lengine {
         Unknown = -1,
         Mesh = 0,
         Material = 1,
-        Texture = 2,
-        Shader = 3,
-        count = 4
+        Texture_srgb = 2,
+        Texture = 3,
+        Shader = 4,
+        count = 5
     };
 
     struct AssetRecord {
@@ -26,6 +27,7 @@ namespace Lengine {
         case AssetType::Mesh:     return "Mesh";
         case AssetType::Material: return "Material";
         case AssetType::Texture:  return "Texture";
+        case AssetType::Texture_srgb:  return "Texture_srgb";
         case AssetType::Shader:   return "Shader";
         default: return "Unknown";
         }

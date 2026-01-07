@@ -25,7 +25,7 @@ namespace Lengine {
         glTexImage2DMultisample(
             GL_TEXTURE_2D_MULTISAMPLE,
             m_Samples,
-            GL_RGBA8,
+            GL_RGBA16F,
             m_Width,
             m_Height,
             GL_TRUE
@@ -85,6 +85,20 @@ namespace Lengine {
         m_Width = width;
         m_Height = height;
         Create();
+    }
+
+    void MSAAFramebuffer::ResolveTo(const HDRFramebuffer& target) {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.GetID());
+
+        glBlitFramebuffer(
+            0, 0, m_Width, m_Height,
+            0, 0, m_Width, m_Height,
+            GL_COLOR_BUFFER_BIT,
+            GL_NEAREST
+        );
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void MSAAFramebuffer::ResolveTo(const Framebuffer& target) {

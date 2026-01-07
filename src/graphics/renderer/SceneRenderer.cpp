@@ -16,9 +16,12 @@ namespace Lengine {
         glDisable(GL_STENCIL_TEST);
 
         glEnable(GL_MULTISAMPLE);
+        
 
         shadowMap.init();
         shadowCubeMap.init();
+
+      
     }
 
     void SceneRenderer::preloadAssets() {
@@ -66,6 +69,12 @@ namespace Lengine {
 
     }
 
+   
+
+   
+
+   
+
     void SceneRenderer::renderScene(EditorConfig& edtitorConfig) {
 
         glDisable(GL_CULL_FACE);
@@ -79,6 +88,7 @@ namespace Lengine {
             shadowMap,
             shadowCubeMap
         );
+
     }
 
     void SceneRenderer::endFrame() {

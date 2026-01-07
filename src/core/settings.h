@@ -24,6 +24,7 @@ public:
 	WindowMode windowMode = WindowMode::BORDERLESS;
 	uint8_t msaaSamples = 4;
 	
+	int HDR = 0;
 	uint16_t resolution_X = 1280;
 	uint16_t resolution_Y = 720;
 
