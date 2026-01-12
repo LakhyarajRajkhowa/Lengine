@@ -4,10 +4,35 @@
 using namespace Lengine;
 
     ViewportPanel::ViewportPanel(Camera3d& cam, glm::vec2 resolution)
-		: m_Framebuffer(resolution.x, resolution.y), camera(cam),
-         m_MSAAFramebuffer(resolution.x, resolution.y),
-        m_HDRFramebuffer(resolution.x, resolution.y)
+		: 
+        Framebuffer(resolution.x, resolution.y), camera(cam),
+        MSAAFramebuffer(resolution.x, resolution.y),
+        HDRFramebuffer(resolution.x, resolution.y),
+        MSAAHDRFramebuffer(resolution.x, resolution.y)
     {
+    }
+    
+    void ViewportPanel::clearFrame(const glm::vec4& clearColor) {
+        glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
+
+    void ViewportPanel::ClearFramebuffers() {
+        Framebuffer.Bind();
+        clearFrame({ 0,0,0,1 });
+        Framebuffer.Unbind();
+
+        MSAAFramebuffer.Bind();
+        clearFrame({ 0,0,0,1 });
+        MSAAFramebuffer.Unbind();
+
+        HDRFramebuffer.Bind();
+        clearFrame({ 0,0,0,1 });
+        HDRFramebuffer.Unbind();
+
+        MSAAHDRFramebuffer.Bind();
+        clearFrame({ 0,0,0,1 });
+        MSAAHDRFramebuffer.Unbind();
     }
 
     void ViewportPanel::OnImGuiRender()
@@ -69,8 +94,7 @@ using namespace Lengine;
         }
         
 
-
-        GLuint texID = m_Framebuffer.GetColorAttachment();
+        GLuint texID = Framebuffer.GetColorAttachment();
         
 
          ImGui::Image(
@@ -119,7 +143,7 @@ void ViewportPanel::RenderFullscreen()
         viewportFullscreen = false;
 
     // Draw the framebuffer fullscreen
-    GLuint texID = m_Framebuffer.GetColorAttachment();
+    GLuint texID = Framebuffer.GetColorAttachment();
 
     ImGui::Image(
         (void*)(intptr_t)texID,

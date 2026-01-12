@@ -174,7 +174,7 @@ bool AssetManager::loadMaterial(
     if (materials[uuid]) return false;
     std::string materialName = ExtractNameFromPath(path);
     std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
-
+    DEBUG_LOG(shaderName);
     GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
 
     auto materialPtr = std::make_shared<Material>(materialName, shader);
@@ -730,7 +730,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
             jLight["ambient"] = { light.ambient.x,  light.ambient.y,  light.ambient.z };
             jLight["diffuse"] = { light.diffuse.x,  light.diffuse.y,  light.diffuse.z };
             jLight["specular"] = { light.specular.x, light.specular.y, light.specular.z };
-
+            jLight["intensity"] = light.intensity;
             jLight["attenuation"] = {
                 { "constant",  light.constant  },
                 { "linear",    light.linear    },
@@ -867,6 +867,8 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                     light.ambient = { amb[0],  amb[1],  amb[2] };
                     light.diffuse = { diff[0], diff[1], diff[2] };
                     light.specular = { spec[0], spec[1], spec[2] };
+
+                    light.intensity = jLight.at("intensity");
 
                     if (jLight.contains("attenuation"))
                     {

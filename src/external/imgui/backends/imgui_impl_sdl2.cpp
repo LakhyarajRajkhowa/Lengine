@@ -158,7 +158,7 @@ struct ImGui_ImplSDL2_Data
 {
     SDL_Window*             Window;
     Uint32                  WindowID;       // Stored in ImGuiViewport::PlatformHandle. Use SDL_GetWindowFromID() to get SDL_Window* from Uint32 WindowID.
-    SDL_Renderer*           Renderer;
+    SDL_Renderer*           ForwardRenderer;
     Uint64                  Time;
     char*                   ClipboardTextData;
     char                    BackendPlatformName[48];
@@ -532,7 +532,7 @@ bool ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event)
 EM_JS(void, ImGui_ImplSDL2_EmscriptenOpenURL, (char const* url), { url = url ? UTF8ToString(url) : null; if (url) window.open(url, '_blank'); });
 #endif
 
-static bool ImGui_ImplSDL2_Init(SDL_Window* window, SDL_Renderer* renderer, void* sdl_gl_context)
+static bool ImGui_ImplSDL2_Init(SDL_Window* window, SDL_Renderer* forwardRenderer, void* sdl_gl_context)
 {
     ImGuiIO& io = ImGui::GetIO();
     IMGUI_CHECKVERSION();
@@ -557,7 +557,7 @@ static bool ImGui_ImplSDL2_Init(SDL_Window* window, SDL_Renderer* renderer, void
 
     bd->Window = window;
     bd->WindowID = SDL_GetWindowID(window);
-    bd->Renderer = renderer;
+    bd->ForwardRenderer = forwardRenderer;
 
     // SDL on Linux/OSX doesn't report events for unfocused windows (see https://github.com/ocornut/imgui/issues/4960)
     // We will use 'MouseCanReportHoveredViewport' to set 'ImGuiBackendFlags_HasMouseHoveredViewport' dynamically each frame.
@@ -687,9 +687,9 @@ bool ImGui_ImplSDL2_InitForMetal(SDL_Window* window)
     return ImGui_ImplSDL2_Init(window, nullptr, nullptr);
 }
 
-bool ImGui_ImplSDL2_InitForSDLRenderer(SDL_Window* window, SDL_Renderer* renderer)
+bool ImGui_ImplSDL2_InitForSDLRenderer(SDL_Window* window, SDL_Renderer* forwardRenderer)
 {
-    return ImGui_ImplSDL2_Init(window, renderer, nullptr);
+    return ImGui_ImplSDL2_Init(window, forwardRenderer, nullptr);
 }
 
 bool ImGui_ImplSDL2_InitForOther(SDL_Window* window)
@@ -980,15 +980,15 @@ static void ImGui_ImplSDL2_UpdateMonitors()
     }
 }
 
-static void ImGui_ImplSDL2_GetWindowSizeAndFramebufferScale(SDL_Window* window, SDL_Renderer* renderer, ImVec2* out_size, ImVec2* out_framebuffer_scale)
+static void ImGui_ImplSDL2_GetWindowSizeAndFramebufferScale(SDL_Window* window, SDL_Renderer* forwardRenderer, ImVec2* out_size, ImVec2* out_framebuffer_scale)
 {
     int w, h;
     int display_w, display_h;
     SDL_GetWindowSize(window, &w, &h);
     if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
         w = h = 0;
-    if (renderer != nullptr)
-        SDL_GetRendererOutputSize(renderer, &display_w, &display_h);
+    if (forwardRenderer != nullptr)
+        SDL_GetRendererOutputSize(forwardRenderer, &display_w, &display_h);
 #if SDL_HAS_VULKAN
     else if (SDL_GetWindowFlags(window) & SDL_WINDOW_VULKAN)
         SDL_Vulkan_GetDrawableSize(window, &display_w, &display_h);
@@ -1008,7 +1008,7 @@ void ImGui_ImplSDL2_NewFrame()
     ImGuiIO& io = ImGui::GetIO();
 
     // Setup main viewport size (every frame to accommodate for window resizing)
-    ImGui_ImplSDL2_GetWindowSizeAndFramebufferScale(bd->Window, bd->Renderer, &io.DisplaySize, &io.DisplayFramebufferScale);
+    ImGui_ImplSDL2_GetWindowSizeAndFramebufferScale(bd->Window, bd->ForwardRenderer, &io.DisplaySize, &io.DisplayFramebufferScale);
 
     // Update monitors
 #ifdef WIN32

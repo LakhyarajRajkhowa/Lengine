@@ -28,10 +28,6 @@ namespace Lengine {
 
         unsigned int materialIndex;
 
-        
-
-       
-
         void computeBounds();
 
 

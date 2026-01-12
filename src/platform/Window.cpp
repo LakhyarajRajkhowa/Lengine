@@ -2,8 +2,13 @@
 #include <iostream>
 namespace Lengine {
 
-    Window::Window()
+    Window::Window(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags)
     {
+
+        SDL_Init(SDL_INIT_EVERYTHING);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+        create(windowName, screenWidth, screenHeight, currentFlags);
     }
 
     Window::~Window()

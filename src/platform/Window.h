@@ -15,7 +15,7 @@ namespace Lengine {
 	class Window
 	{
 	public:
-		Window();
+		Window(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
 		~Window();
 
 		int create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);

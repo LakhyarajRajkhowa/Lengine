@@ -21,6 +21,10 @@ namespace Lengine {
             EntityType type = EntityType::DefaultObject
         );
 
+        Entity* addEntity(std::unique_ptr<Entity> entity);
+        
+
+
         const  Entity* getEntityByName(const std::string& name) const;
         Entity* getEntityByName(const std::string& name) ;
 
@@ -53,6 +57,7 @@ namespace Lengine {
 
             return directionalLight;
         }
+
 
         Light& getMainSpotLight() {
             for (auto& l : lights)
@@ -98,6 +103,7 @@ namespace Lengine {
         */
         bool showBoundingSphere = false;
         const std::string& getName() const { return name; }
+        void rename(const std::string newName) { name = newName; }
         std::string getName() { return name; }
         UUID getUUID() const { return sceneID; }
 
@@ -113,11 +119,14 @@ namespace Lengine {
             const std::string& submeshName,
             Material* base);
         
+
+
     private:
         std::string name;
         UUID sceneID;
         std::vector<std::unique_ptr<Entity>> entities;
         std::vector<Light> lights;
+
         glm::vec3 ambient = {0.5f, 0.5f, 0.5f};
         std::unordered_map<UUID, MaterialInstance> materialInstances;
 

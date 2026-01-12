@@ -13,7 +13,7 @@ namespace Lengine {
         glm::vec3 Kd = {0.5, 0.5, 0.5};        // DiffuseColor
         glm::vec3 Ka = { 0.05, 0.05, 0.05 };        // AmbientColor
         glm::vec3 Ks = { 3.50, 3.50, 3.50 };        // SpecularColor
-        glm::vec3 Ke;        // EmissiveColor
+        glm::vec3 Ke = {0.0f, 0.0f, 0.0f};        // EmissiveColor
         float Ns = 50.0f ;            // Shininess
         float d;             // Opacity
         float Ni;            // OpticalDensity
@@ -24,6 +24,7 @@ namespace Lengine {
         UUID map_Ks = UUID::Null;  // SpecularMap
         UUID map_bump = UUID::Null;    // NormalMap
         float normalStrength = 1.0f;
+        float emissiveStrength = 1.0f;
         float metallic;
         float roughness;
 

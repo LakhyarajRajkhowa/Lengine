@@ -2,41 +2,52 @@
 
 #include <cstdint>
 
+
+#include "../graphics/geometry/FullScreenQuad.h"
+#include "../graphics/renderer/PostProcess/PingPongFrameBuffer.h"
+
 #include "../graphics/opengl/GLTexture.h"
 #include "../graphics/opengl/GLSLProgram.h"
 
 #include "../core/paths.h"
 #include <imgui.h>
-class FullscreenQuad {
-public:
-    void init();
-    void draw();
-private:
-    GLuint quadVAO = 0;
-    GLuint quadVBO = 0;
-};
+
 
 namespace Lengine {
 
     class PostProcessing
     {
     public:
-        PostProcessing();
-        void initHDR();
-        void renderToneMapping();
-        void drawExposureEditor();
-        
-        void setExposure(float exposure);
-        float getExposure() const;
+        PostProcessing::PostProcessing(RenderSettings& sett):
+            settings(sett)
+        {
 
+        }
+        void initHDR(uint32_t width, uint32_t height);
+        void renderToneMapping(const bool bloom, const float exposure);
+        
+        void renderBloom(GLuint colorBuffer, const float blurScale);
+        const GLuint* getBloomTextures() { return pingpong.colorBuffer; }
+        const GLuint getBloomColorBuffer() { return pingpong.colorBuffer[!horizontal]; }
+
+    private:
+        uint32_t width = 1280;
+        uint32_t height = 720;
     private:
         void initToneMappingResources();
+        void initBloom();
 
     private:
-        GLSLProgram m_ToneMapShader;
-        FullscreenQuad m_FullscreenQuad;
+        RenderSettings& settings;
+        GLSLProgram toneMapShader;
+        FullscreenQuad fullscreenQuad;
 
-        float m_Exposure = 1.0f;
+        GLSLProgram blurShader;
+        float bloomBlurScale = 1.0f;
+        int blurPasses = 10;
+        bool horizontal = false;
+        PingPongFramebuffer pingpong;
+
     };
 
 }

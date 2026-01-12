@@ -22,6 +22,33 @@ namespace Lengine {
         return entityPtr;
     }
 
+    Entity* Scene::addEntity(std::unique_ptr<Entity> entity)
+    {
+        if (!entity)
+            return nullptr;
+
+        // Ensure entity has a valid UUID
+        if (entity->getID().isNull())
+        {
+            entity->setID(UUID());
+        }
+
+        // Assign scene index
+        uint32_t index = static_cast<uint32_t>(entities.size());
+        entity->setIndex(index);
+
+        // Fix light ownership if entity has light
+        if (entity->hasLight())
+        {
+            entity->getLight().id = entity->getID();
+            lights.push_back(entity->getLight());
+        }
+
+        entities.push_back(std::move(entity));
+        return entities.back().get();
+    }
+
+
     void Scene::removeEntity(const UUID id)
     {
         entities.erase(

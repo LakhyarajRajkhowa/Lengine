@@ -61,6 +61,7 @@ namespace Lengine {
             }
             else {
                 editorLayer.config.editingMode = true;
+                editorLayer.deselectAllEntities();
                 
             }
         }

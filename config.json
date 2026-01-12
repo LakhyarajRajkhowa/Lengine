@@ -3,11 +3,10 @@
     "windowWidth": 1280,
     "windowHeight": 720,
     "windowMode": "borderless",
-    "msaaSamples": 4,
-    "HDR": 0,
+    
     "resolution_X": 1920,
     "resolution_Y": 1080,
-    "shadowMapResolution" : 1024,
+    "shadowMapResolution" : 256,
 
     "cameraPosX": 0,
     "cameraPosY": 0,

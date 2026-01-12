@@ -9,7 +9,6 @@
 int main(int argc, char* argv[]) {
 
     Lengine::GraphicsEngine engine;
-    engine.initSettings();
     engine.run();
 
     return 0;

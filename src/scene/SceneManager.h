@@ -18,6 +18,7 @@ namespace Lengine {
         const std::unordered_set<Scene*>& getScenes() const { return scenes; }
         std::unordered_set<Scene*>& getScenes() { return scenes; }
 
-
+        void loadScenes(const std::vector<std::string>& scenes);
+        
     };
 }

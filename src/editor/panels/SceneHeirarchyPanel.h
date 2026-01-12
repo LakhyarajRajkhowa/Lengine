@@ -11,6 +11,8 @@
 
 
 namespace Lengine {
+    
+
 
     class SceneHierarchyPanel {
     public:
@@ -23,6 +25,8 @@ namespace Lengine {
 
         void OnImGuiRender();
         void createNewModel();
+        void drawCreateScenePopup();
+        void drawRenameScenePopup();
         Entity* getSelectedEntity() { return m_SelectedEntity; }
     private:
         Camera3d& camera;
@@ -31,6 +35,7 @@ namespace Lengine {
     private:
         Entity* m_SelectedEntity;
         std::queue<UUID> deletedEntityQueue;
+        std::queue<Entity*> createdEntityQueue;
 
         Scene* activeScene;
     };

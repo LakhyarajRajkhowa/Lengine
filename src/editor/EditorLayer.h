@@ -16,14 +16,13 @@
 #include "../editor/panels/ConsolePanel.h"
 #include "../editor/panels/AssetPanel.h"
 #include "../editor/panels/PerformancePanel.h"
+#include "../editor/panels/RendererSettingsPanel.h"
 
 #include "../graphics/geometry/ray.h"
 #include "../graphics/geometry/Gizmos.h"
 
 namespace Lengine {
-    struct EditorConfig {
-        bool editingMode = false;
-    };
+   
 
     struct GizmoDragState {
         bool isDragging = false;
@@ -44,6 +43,7 @@ namespace Lengine {
             InputManager& inputManager,
             AssetManager& assetManager,
             Window& window,
+            RenderSettings& rndrSett,
             glm::vec2 resolution          
             );
         ~EditorLayer() = default;
@@ -99,6 +99,7 @@ namespace Lengine {
         ConsolePanel consolePanel;
         AssetPanel assetPanel;
         PerformancePanel performancePanel;
+        RendererSettingsPanel rendererSettingsPanel;
 
         // External engine systems (not owned)
         SceneManager& sceneManager;
@@ -107,6 +108,7 @@ namespace Lengine {
         InputManager& inputManager;
         AssetManager& assetManager;
         Window& window;
+        RenderSettings& renderSettings;
     private:
        
         std::filesystem::path exePath = std::filesystem::current_path();

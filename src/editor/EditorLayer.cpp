@@ -10,6 +10,7 @@ namespace Lengine {
         InputManager& inputMgr,
         AssetManager& assetMgr,
         Window& win,
+        RenderSettings& rndrSett,
         glm::vec2 resolution
     )
         :camera(cam),
@@ -18,12 +19,13 @@ namespace Lengine {
         inputManager(inputMgr),
         assetManager(assetMgr),
         window(win),
+        renderSettings(rndrSett),
         viewportPanel(cam, resolution),     
         hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
         inspectorPanel(scnMgr, assetMgr),
         consolePanel(buffer),
-        assetPanel(Paths::ActiveGameFolder, assetMgr)
-        
+        assetPanel(Paths::ActiveGameFolder, assetMgr),
+        rendererSettingsPanel(rndrSett)       
     {
     }
 
@@ -52,6 +54,7 @@ namespace Lengine {
             consolePanel.OnImGuiRender();
             assetPanel.OnImGuiRender();
             performancePanel.OnImGuiRender();
+            rendererSettingsPanel.OnImGuiRender();
         }
         else {
 

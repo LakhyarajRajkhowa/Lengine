@@ -6,6 +6,7 @@
 #include "../core/Errors.h"
 #include "../core/paths.h"
 
+
 #include "../external/json.hpp"
 
 using json = nlohmann::json;
@@ -16,15 +17,39 @@ enum WindowMode {
 	FULLSCREEN = 2
 };
 
+enum class RenderPath {
+	Forward,
+	Deferred
+};
+
+struct RenderSettings {
+	// RenderPath renderPath = RenderPath::Forward;
+
+	bool HDR = false;
+	float exposure = 1.0f;
+
+	bool enableBloom = false;
+	float bloomBlur = 1.0f;
+
+	bool MSAA = false;
+	int msaaSamples = 4;
+
+	bool needsReload = true;
+};
+
+struct EditorConfig {
+	bool editingMode = false;
+};
+
 class EngineSettings {
 public:
+	EngineSettings();
 	std::string windowName = "Lengine";
 	uint16_t  windowWidth = 1280;
 	uint16_t  windowHeight = 720 ;
 	WindowMode windowMode = WindowMode::BORDERLESS;
-	uint8_t msaaSamples = 4;
-	
-	int HDR = 0;
+
+
 	uint16_t resolution_X = 1280;
 	uint16_t resolution_Y = 720;
 

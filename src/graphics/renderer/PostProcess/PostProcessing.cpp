@@ -2,78 +2,79 @@
 
 using namespace Lengine;
 
-PostProcessing::PostProcessing()
-{
-}
 
-void PostProcessing::initHDR() {
+
+void PostProcessing::initHDR(uint32_t w, uint32_t h) {
+    width = w;
+    height = h;
+    fullscreenQuad.init();
+
     initToneMappingResources();
-}
-void FullscreenQuad::init() {
-    if (quadVAO == 0)
-    {
-        float quadVertices[] = {
-            // positions        // texture Coords
-            -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-             1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        };
-        // setup plane VAO
-        glGenVertexArrays(1, &quadVAO);
-        glGenBuffers(1, &quadVBO);
-        glBindVertexArray(quadVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    }
+    initBloom();
 }
 
-void FullscreenQuad::draw() {
-    glBindVertexArray(quadVAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glBindVertexArray(0);
-}
 
 void PostProcessing::initToneMappingResources() {
-	m_ToneMapShader.compileShaders(
+	toneMapShader.compileShaders(
 		Paths::Shaders + "hdrShader.vert",
 		Paths::Shaders + "hdrShader.frag"
 	);
-	m_ToneMapShader.linkShaders();
-
-    m_FullscreenQuad.init();
+	toneMapShader.linkShaders();
+    toneMapShader.use();
+    toneMapShader.setInt("hdrBuffer", 0);
+    toneMapShader.setInt("bloomBlur", 1);
     
 }
-void PostProcessing::drawExposureEditor()
-{
-    ImGui::Begin("Renderer");
 
-    ImGui::Text("HDR Settings");
-    ImGui::Separator();
+void PostProcessing::initBloom() {
+    pingpong.Create(width, height);
 
-    ImGui::SliderFloat(
-        "Exposure",
-        &m_Exposure,
-        0.01f,
-        5.0f,
-        "%.1f"
+    blurShader.compileShaders(
+        Paths::Shaders + "blur.vert",
+        Paths::Shaders + "blur.frag"
     );
+    blurShader.linkShaders();
 
-    ImGui::End();
+    blurShader.use();
+    blurShader.setInt("image", 0);
+
 }
-void PostProcessing::renderToneMapping() {
-   
 
+void PostProcessing::renderToneMapping(const bool bloom, const float exposure) {
 
+    toneMapShader.use();
+    toneMapShader.setBool("bloom", bloom);
+    toneMapShader.setFloat("exposure", exposure);
 
-    m_ToneMapShader.use();
-    m_ToneMapShader.setFloat("exposure", m_Exposure);
+    fullscreenQuad.draw();
 
-    m_FullscreenQuad.draw();
+}
+
+void PostProcessing::renderBloom(GLuint hdrColorBuffer, const float blurScale) {
+    bool horizontal = true;
+    bool firstIteration = true;
+
+    blurShader.use();
+
+    for (int i = 0; i < blurPasses; i++) {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpong.FBO[horizontal]);
+        blurShader.setBool("horizontal", horizontal);
+        blurShader.setFloat("blurScale", blurScale);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(
+            GL_TEXTURE_2D,
+            firstIteration
+            ? hdrColorBuffer        // bright-pass
+            : pingpong.colorBuffer[!horizontal]
+        );
+
+        fullscreenQuad.draw();
+
+        horizontal = !horizontal;
+        if (firstIteration) firstIteration = false;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 }

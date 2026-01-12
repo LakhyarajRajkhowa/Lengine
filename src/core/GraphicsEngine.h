@@ -24,10 +24,10 @@ namespace Lengine {
 	class GraphicsEngine {
 	public:
 		GraphicsEngine();
-		void initSettings();
 		void run();
 	private:
 		EngineSettings settings;
+		RenderSettings renderSettings;
 		Window window;
 		Camera3d camera;
 		InputManager inputManager;
@@ -39,7 +39,7 @@ namespace Lengine {
 		GizmoRenderer gizmoRenderer;
 
 		ImGuiLayer imguiLayer;
-		EditorLayer* editorLayer = nullptr;
+		EditorLayer editorLayer;
 		LogBuffer logBuffer;
 		OutputRedirect* redirect = nullptr;
 

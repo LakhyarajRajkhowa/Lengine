@@ -12,10 +12,16 @@
 namespace Lengine {
 	class ImGuiLayer {
 	public:
-		ImGuiLayer(InputManager& inputMgr, bool& run) :
+		ImGuiLayer(
+			InputManager& inputMgr,
+			bool& run,
+			SDL_Window* window,
+			SDL_GLContext glContext
+			) :
 			inputManager(inputMgr),
 			isRunning(run)
 		{
+			init(window, glContext);
 		};
 		void init(SDL_Window* window, SDL_GLContext glContext);
 		void shutdown();

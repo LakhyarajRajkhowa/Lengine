@@ -3,6 +3,9 @@
 std::filesystem::path exePath = std::filesystem::current_path();
 std::string configPath = (exePath / "../config.json").string();
 
+EngineSettings::EngineSettings() {
+    loadSettings();
+}
 
 const bool EngineSettings::loadSettings() {
     std::ifstream file(configPath);
@@ -18,8 +21,8 @@ const bool EngineSettings::loadSettings() {
     windowWidth = j.value("windowWidth", windowWidth);
     windowHeight = j.value("windowHeight", windowHeight);
 
-    msaaSamples = j.value("msaaSamples", msaaSamples);
-    HDR = j.value("HDR", HDR);
+    std::string renderPathStr = j.value("renderPath", "forward");
+
 
     resolution_X = j.value("resolution_X", resolution_X);
     resolution_Y = j.value("resolution_Y", resolution_Y);
@@ -69,8 +72,7 @@ const bool EngineSettings::saveSettings()
     case FULLSCREEN: j["windowMode"] = "fullscreen"; break;
     }
 
-    j["msaaSamples"] = msaaSamples;
-    j["HDR"] = HDR;
+   
     j["resolution_X"] = resolution_X;
     j["resolution_Y"] = resolution_Y;
     j["shadowMapResolution"] = shadowMapResolution;

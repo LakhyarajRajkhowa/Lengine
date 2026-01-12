@@ -1,7 +1,8 @@
 #version 330 core
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
 
-#define MAX_LIGHTS 16
-
+#define MAX_LIGHTS 32
 
 struct Light {
     int type;               // 0 = directional, 1 = point, 2 = spotlight
@@ -20,6 +21,10 @@ struct Light {
     // Spotlight only
     float cutOff;           // cos(inner angle)
     float outerCutOff;      // cos(outer angle)
+
+    float intensity;
+
+    bool castShadow;
 };
 
 uniform sampler2D shadowMap;
@@ -58,7 +63,8 @@ in vec3 FragPos;
 in vec2 TexCoord;
 in mat3 TBN;
 
-out vec4 FragColor;
+
+
 
 uniform vec3 viewPos;
 uniform bool isHovered;
@@ -171,13 +177,14 @@ void main()
     vec3 finalColor = vec3(0.0);
 
     // ---------------- Lighting loop ----------------
+
     for (int i = 0; i < lightCount; i++) {
 
         Light light = lights[i];
 
         vec3 lightDir;
         float attenuation = 1.0;
-        float intensity   = 1.0;
+        float intensity   = light.intensity;
 
         if (light.type == 0) {
             // Directional light
@@ -221,18 +228,25 @@ void main()
         diffuse  *= attenuation * intensity;
         specular *= attenuation * intensity;
 
+        // Shadows using shadow map
+
         float shadow = 0.0;
 
-        float theta = dot(lightDir, normalize(-light.direction));
+        
+        if(light.castShadow){
 
-       if (light.type == 0 || light.type == 2) {
-        // directional && spotlight
-        shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
-    }
+        if (light.type == 0 || light.type == 2) {
+            // directional && spotlight
+            shadow = ShadowCalculation(FragPosLightSpace, normal, lightDir);
+            }
         else if (light.type == 1 ) {
         // pointlight
         shadow = ShadowCubeMapCalculation(FragPos, light.position);
-    }
+
+        }
+
+        
+        }
 
         finalColor += (1.0 - shadow) * (diffuse + specular);
 
@@ -255,10 +269,17 @@ void main()
 
 
     vec3 ambient = sceneAmbient * diffuseTex;
-    finalColor += ambient;
+    finalColor += ambient + material.Ke;
 
     // gamma correction
     float gamma = 2.2;
     finalColor = pow(finalColor, vec3(1.0/2.2));
     FragColor = vec4(finalColor, alpha);
+
+
+    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    if(brightness > 1.0)
+        BrightColor = vec4(FragColor.rgb, 1.0);
+    else
+        BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
 }

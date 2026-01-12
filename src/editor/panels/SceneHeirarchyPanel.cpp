@@ -14,14 +14,44 @@ SceneHierarchyPanel::SceneHierarchyPanel(
 {
 }
 
+static bool openCreateScenePopup = false;
+static char NewSceneName[128] = "NewScene";
+static bool openRenameScenePopup = false;
+static char RenameSceneBuffer[128];
+static Scene* sceneToRename = nullptr;
+
 void SceneHierarchyPanel::OnImGuiRender() {
     ImGui::Begin("Hierarchy");
 
     auto& allScenes = sceneManager.getScenes();
     Scene* activeScene = sceneManager.getActiveScene();
 
+    ImGuiTreeNodeFlags rootFlags =
+        ImGuiTreeNodeFlags_DefaultOpen |
+        ImGuiTreeNodeFlags_OpenOnArrow |
+        ImGuiTreeNodeFlags_SpanFullWidth;
+
+    bool rootOpen = ImGui::TreeNodeEx("Scenes", rootFlags);
+
+    // ---- RIGHT CLICK ON ROOT NODE ----
+    if (ImGui::BeginPopupContextItem("ScenesRootPopup"))
+    {
+        if (ImGui::MenuItem("Create Scene"))
+        {
+            openCreateScenePopup = true;
+        }
+        ImGui::EndPopup();
+    }
+
+    // Attach popup to last item
+    if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+    {
+        ImGui::OpenPopup("ScenesRootPopup");
+    }
+
+
     // Root node
-    if (ImGui::TreeNodeEx("Scenes", ImGuiTreeNodeFlags_DefaultOpen))
+    if (rootOpen)
     {
         for (Scene* scene : allScenes)
         {
@@ -50,8 +80,19 @@ void SceneHierarchyPanel::OnImGuiRender() {
                     if (ImGui::MenuItem("Add Entity")) {
                         ImGui::OpenPopup("Add New Entity");
                         openModelPopup = true;
-                    }                       
+                    }    
                 }
+
+                if (ImGui::MenuItem("Rename Scene"))
+                {
+                    sceneToRename = scene;
+                    strncpy(RenameSceneBuffer,
+                        scene->getName().c_str(),
+                        IM_ARRAYSIZE(RenameSceneBuffer));
+                    openRenameScenePopup = true;
+                }
+               
+
                 ImGui::EndPopup();
             }
 
@@ -69,6 +110,13 @@ void SceneHierarchyPanel::OnImGuiRender() {
                 while (!deletedEntityQueue.empty()) {
                     scene->removeEntity(deletedEntityQueue.front());
                     deletedEntityQueue.pop();
+                }
+
+                // Create Queued Entities
+                while (!createdEntityQueue.empty()) {
+                    scene->addEntity(std::unique_ptr<Entity>(createdEntityQueue.front()));
+                    
+                    createdEntityQueue.pop();
                 }
 
                 // ----- ENTITIES -----
@@ -95,9 +143,19 @@ void SceneHierarchyPanel::OnImGuiRender() {
                             for (auto& e : activeScene->getEntities())
                                 e->isSelected = false;
                             entity->isSelected = true;
+
+                           
+                        }
+                        if (ImGui::BeginPopupContextItem(label.c_str()))
+                        {
+                            if (ImGui::MenuItem("Create Copy"))                       
+                            {
+                                Entity* clone = entity->Clone();
+                                createdEntityQueue.push(clone);
+                            }
+                            ImGui::EndPopup();
                         }
 
-                        // Right-click menu for active scene entities
                         if (ImGui::BeginPopupContextItem(label.c_str()))
                         {
                             if (ImGui::MenuItem("Delete"))
@@ -128,6 +186,10 @@ void SceneHierarchyPanel::OnImGuiRender() {
    
 
     ImGui::End();
+
+    drawRenameScenePopup();
+    drawCreateScenePopup();
+
 }
 
 
@@ -173,6 +235,85 @@ void SceneHierarchyPanel::createNewModel() {
 
         if (ImGui::Button("Cancel"))
         {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+void SceneHierarchyPanel::drawCreateScenePopup()
+{
+    if (openCreateScenePopup)
+    {
+        ImGui::OpenPopup("Create New Scene");
+        openCreateScenePopup = false;
+    }
+
+    if (ImGui::BeginPopupModal("Create New Scene", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Scene Name");
+        ImGui::InputText("##SceneName", NewSceneName, IM_ARRAYSIZE(NewSceneName));
+        ImGui::Separator();
+
+        if (ImGui::Button("Create", ImVec2(120, 0)))
+        {
+            if (strlen(NewSceneName) > 0)
+            {
+                Scene* newScene =
+                    assetManager.createScene(NewSceneName, Paths::GameScenes);
+
+                sceneManager.getScenes().insert(newScene);
+                sceneManager.setActiveScene(newScene);
+
+                strcpy(NewSceneName, "NewScene");
+                ImGui::CloseCurrentPopup();
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+void SceneHierarchyPanel::drawRenameScenePopup()
+{
+    if (openRenameScenePopup)
+    {
+        ImGui::OpenPopup("Rename Scene");
+        openRenameScenePopup = false;
+    }
+
+    if (ImGui::BeginPopupModal("Rename Scene", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("New Scene Name");
+        ImGui::InputText("##RenameScene", RenameSceneBuffer, IM_ARRAYSIZE(RenameSceneBuffer));
+        ImGui::Separator();
+
+        if (ImGui::Button("Rename", ImVec2(120, 0)))
+        {
+            if (sceneToRename && strlen(RenameSceneBuffer) > 0)
+            {
+               
+
+                sceneToRename->rename(RenameSceneBuffer);
+
+                ImGui::CloseCurrentPopup();
+                sceneToRename = nullptr;
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            sceneToRename = nullptr;
             ImGui::CloseCurrentPopup();
         }
 

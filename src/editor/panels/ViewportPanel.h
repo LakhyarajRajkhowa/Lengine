@@ -10,9 +10,10 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 #include "../graphics/camera/Camera3d.h"
-#include "../graphics/renderer/Framebuffer.h"
-#include "../graphics/renderer/MSAAFramebuffer.h"
-#include "../graphics/renderer/HDRFramebuffer.h"
+#include "../graphics/frameBuffers/Framebuffer.h"
+#include "../graphics/frameBuffers/MSAAFramebuffer.h"
+#include "../graphics/frameBuffers/HDRFramebuffer.h"
+#include "../graphics/frameBuffers/MSAAHDRFramebuffer.h"
 
 
 #include "../utils/fps.h"
@@ -33,9 +34,13 @@ namespace Lengine {
         void RenderFullscreen();
 
         // Access framebuffer for rendering the scene
-        Framebuffer& GetFramebuffer() { return m_Framebuffer; }
-        MSAAFramebuffer& GetMSAAFramebuffer() { return m_MSAAFramebuffer; }
-        HDRFramebuffer& GetHDRFramebuffer() { return m_HDRFramebuffer; }
+        Framebuffer& GetFramebuffer() { return Framebuffer; }
+        MSAAFramebuffer& GetMSAAFramebuffer() { return MSAAFramebuffer; }
+        HDRFramebuffer& GetHDRFramebuffer() { return HDRFramebuffer; }
+        MSAAHDRFramebuffer& GetMSAAHDRFramebuffer() { return MSAAHDRFramebuffer; }
+
+        void clearFrame(const glm::vec4& clearColor);
+        void ClearFramebuffers();
 
         // Check if the viewport has resized
         bool IsViewportFocused() const { return m_Focused; }
@@ -50,13 +55,14 @@ namespace Lengine {
         bool fixCamera = false;
         bool viewportFullscreen = true;
 
-
+        
     private:
         Camera3d& camera;
 
-        Framebuffer m_Framebuffer;
-        MSAAFramebuffer m_MSAAFramebuffer;
-        HDRFramebuffer m_HDRFramebuffer;
+        Framebuffer Framebuffer;
+        MSAAFramebuffer MSAAFramebuffer;
+        HDRFramebuffer HDRFramebuffer;
+        MSAAHDRFramebuffer MSAAHDRFramebuffer;
 
 
         float offsetValueX = 0.14f;

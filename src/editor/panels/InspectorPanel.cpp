@@ -195,6 +195,8 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     // Lightning
 
     if (entity->getType() == EntityType::Light) {
+
+        auto& light = entity->getLight();
         ImGui::Separator();
         ImGui::Text("Lighting");
         ImGui::Separator();
@@ -209,27 +211,50 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             
         };
 
-        LightType currentType = entity->getLight().type;
+        LightType currentType = light.type;
         int currentTypeIndex = static_cast<int>(currentType);
 
         if (ImGui::Combo("Light Type", &currentTypeIndex,
             lightTypeLabels,
             static_cast<int>(LightType::count)))
         {
-            entity->getLight().setType(static_cast<LightType>(currentTypeIndex));
+            light.setType(static_cast<LightType>(currentTypeIndex));
           
         }
 
         ImGui::Spacing();
 
-        
+        ImGui::Separator();
+        ImGui::Text("Shadows");
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button(light.castShadow ? "Cast Shadow ON" : "Cast Shadow OFF"))
+        {
+            light.castShadow = !light.castShadow;
+        }
+
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
         // ---------------- Colors ----------------
+
+        ImGui::Text("Intensity");
+        ImGui::SameLine();
+        ImGui::DragFloat(
+            "##Intensity",
+            &light.intensity,
+            0.1f, 0.0f, 100.0f
+        );
+
+        ImGui::Spacing();
 
         ImGui::Text("Diffuse");
         ImGui::SameLine();
         ImGui::ColorEdit3(
             "##LightDiffuse",
-            glm::value_ptr(entity->getLight().diffuse)
+            glm::value_ptr(light.diffuse)
         );
 
         ImGui::Spacing();
@@ -238,7 +263,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         ImGui::SameLine();
         ImGui::ColorEdit3(
             "##LightSpecular",
-            glm::value_ptr(entity->getLight().specular)
+            glm::value_ptr(light.specular)
         );
 
         ImGui::Spacing();
@@ -254,7 +279,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             ImGui::SameLine();
             ImGui::DragFloat(
                 "##AttenConstant",
-                &entity->getLight().constant,
+                &light.constant,
                 0.01f, 0.0f, 10.0f
             );
 
@@ -262,7 +287,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             ImGui::SameLine();
             ImGui::DragFloat(
                 "##AttenLinear",
-                &entity->getLight().linear,
+                &light.linear,
                 0.01f, 0.0f, 1.0f
             );
 
@@ -270,7 +295,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             ImGui::SameLine();
             ImGui::DragFloat(
                 "##AttenQuadratic",
-                &entity->getLight().quadratic,
+                &light.quadratic,
                 0.001f, 0.0f, 1.0f
             );
 
@@ -283,7 +308,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                 ImGui::SameLine();
                 ImGui::DragFloat(
                     "##InnerCutoffAngle",
-                    &entity->getLight().cutOffAngle,
+                    &light.cutOffAngle,
                     0.1f, 0.0f, 360.0f
                 );
 
@@ -291,13 +316,12 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                 ImGui::SameLine();
                 ImGui::DragFloat(
                     "##OuterCutoffAngle",
-                    &entity->getLight().outerCutOffAngle,
+                    &light.outerCutOffAngle,
                     0.1f, 0.0f, 360.0f
                 );
             }
         }
 
-        return;
     }
     else {
         ImGui::Separator();

@@ -48,6 +48,9 @@ namespace Lengine {
 		UUID getRequestedMeshID() const;
 		void clearPendingMesh();
 
+		Entity* getParent() { return parent; }
+		std::vector<Entity*> getChildrens() { return children; }
+
 		std::unordered_map<unsigned int, UUID>& getMaterialIndexInstIDs() { return materialIndexToInstID; }
 		std::unordered_map<unsigned int, UUID>& getMaterialIndexUUIDs() { return materialIndexToUUID; }
 
@@ -78,6 +81,29 @@ namespace Lengine {
 			light.value().id = ID;
 		}
 
+		Entity* Entity::Clone() const
+		{
+			Entity* e = new Entity(*this); // base copy
+
+			e->ID = UUID();
+			e->index = -1;
+			e->isSelected = false;
+			e->isDragged = false;
+
+			if (e->light.has_value())
+			{
+				e->light->id = e->ID;
+			}
+
+			e->name = name + "_" + std::to_string(e->ID);
+
+			e->transform.position += glm::vec3(0.5f, 0.0f, 0.5f);
+
+			e->meshID = this->meshID;
+			e->type = this->type;
+			return e;
+		}
+
 
 	private:
 		
@@ -89,6 +115,10 @@ namespace Lengine {
 		std::optional<Light> light;
 		UUID meshID;
 		
+
+
+		Entity* parent = nullptr;
+		std::vector<Entity*> children;
 
 		std::unordered_map<unsigned int, UUID> materialIndexToInstID; // for materialInstance
 		std::unordered_map<unsigned int, UUID> materialIndexToUUID; // for materials id from scene.json

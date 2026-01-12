@@ -12,6 +12,7 @@ Ka 0.2 0.2 0.2
 # Specular color
 Ks 0.04 0.04 0.04
 
+
 # Specular exponent (shininess)
 Ns 32.0
 
