@@ -16,25 +16,6 @@ namespace Lengine {
         type = t; 
     }
 
-    void Entity::requestMesh(const UUID& id)
-    {
-        pendingMeshID = id;
-        pendingMesh = true;
-    }
-
-    bool Entity::hasPendingMesh() const
-    {
-        return pendingMesh;
-    }
-
-    UUID Entity::getRequestedMeshID() const
-    {
-        return pendingMeshID;
-    }
-
-    void Entity::clearPendingMesh()
-    {
-        pendingMesh = false;
-    }
+   
 
 }

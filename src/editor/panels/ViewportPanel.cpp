@@ -3,7 +3,7 @@
 
 using namespace Lengine;
 
-    ViewportPanel::ViewportPanel(Camera3d& cam, glm::vec2 resolution)
+    ViewportPanel::ViewportPanel(Camera3d& cam, const glm::i32vec2 resolution)
 		: 
         Framebuffer(resolution.x, resolution.y), camera(cam),
         MSAAFramebuffer(resolution.x, resolution.y),
@@ -12,26 +12,26 @@ using namespace Lengine;
     {
     }
     
-    void ViewportPanel::clearFrame(const glm::vec4& clearColor) {
+    void ViewportPanel::ClearFrame(const glm::vec4& clearColor) {
         glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
 
     void ViewportPanel::ClearFramebuffers() {
         Framebuffer.Bind();
-        clearFrame({ 0,0,0,1 });
+        ClearFrame({ 0,0,0,1 });
         Framebuffer.Unbind();
 
         MSAAFramebuffer.Bind();
-        clearFrame({ 0,0,0,1 });
+        ClearFrame({ 0,0,0,1 });
         MSAAFramebuffer.Unbind();
 
         HDRFramebuffer.Bind();
-        clearFrame({ 0,0,0,1 });
+        ClearFrame({ 0,0,0,1 });
         HDRFramebuffer.Unbind();
 
         MSAAHDRFramebuffer.Bind();
-        clearFrame({ 0,0,0,1 });
+        ClearFrame({ 0,0,0,1 });
         MSAAHDRFramebuffer.Unbind();
     }
 
@@ -94,7 +94,7 @@ using namespace Lengine;
         }
         
 
-        GLuint texID = Framebuffer.GetColorAttachment();
+        GLuint texID = Framebuffer.GetColorBuffer();
         
 
          ImGui::Image(
@@ -103,6 +103,7 @@ using namespace Lengine;
              ImVec2(0, 1),
              ImVec2(1, 0)
          );
+
          m_Focused = ImGui::IsItemFocused();
          m_Hovered = ImGui::IsItemHovered();
          ImVec2 imagePos = ImGui::GetItemRectMin();
@@ -118,40 +119,62 @@ using namespace Lengine;
 
 
 
-void ViewportPanel::RenderFullscreen()
-{
-    camera.isFixed = false;
-    ImGuiViewport* vp = ImGui::GetMainViewport();
+    void ViewportPanel::RenderFullscreen()
+    {
+        camera.isFixed = false;
+        camera.setAspectRatio(fullscreenAspectRatio);
 
-    ImGui::SetNextWindowPos(vp->Pos);
-    ImGui::SetNextWindowSize(vp->Size);
-    ImGui::SetNextWindowViewport(vp->ID);
+        ImGuiViewport* vp = ImGui::GetMainViewport();
 
-    ImGuiWindowFlags flags =
-        ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoNavFocus |
-        ImGuiWindowFlags_NoDocking;
-        
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::SetNextWindowPos(vp->Pos);
+        ImGui::SetNextWindowSize(vp->Size);
+        ImGui::SetNextWindowViewport(vp->ID);
 
-    ImGui::Begin("ViewportFullscreen", nullptr, flags);
+        ImGuiWindowFlags flags =
+            ImGuiWindowFlags_NoDecoration |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoNavFocus |
+            ImGuiWindowFlags_NoDocking;
 
-    // ESC to exit fullscreen
-    if (ImGui::IsKeyPressed(ImGuiKey_Escape))
-        viewportFullscreen = false;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("ViewportFullscreen", nullptr, flags);
 
-    // Draw the framebuffer fullscreen
-    GLuint texID = Framebuffer.GetColorAttachment();
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+            viewportFullscreen = false;
 
-    ImGui::Image(
-        (void*)(intptr_t)texID,
-        ImGui::GetContentRegionAvail(),
-        ImVec2(0, 1),
-        ImVec2(1, 0)
-    );
+        GLuint texID = Framebuffer.GetColorBuffer();
 
-    ImGui::End();
-    ImGui::PopStyleVar();
-}
+        ImVec2 avail = ImGui::GetContentRegionAvail();
+
+        float availAspect = avail.x / avail.y;
+
+        ImVec2 imageSize;
+        if (availAspect > fullscreenAspectRatio)
+        {
+            imageSize.y = avail.y;
+            imageSize.x = avail.y * fullscreenAspectRatio;
+        }
+        else
+        {
+            imageSize.x = avail.x;
+            imageSize.y = avail.x / fullscreenAspectRatio;
+        }
+
+        ImVec2 cursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(ImVec2(
+            cursor.x + (avail.x - imageSize.x) * 0.5f,
+            cursor.y + (avail.y - imageSize.y) * 0.5f
+        ));
+
+        ImGui::Image(
+            (void*)(intptr_t)texID,
+            imageSize,
+            ImVec2(0, 1),
+            ImVec2(1, 0)
+        );
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
+

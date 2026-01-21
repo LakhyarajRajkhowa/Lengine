@@ -1,11 +1,13 @@
 #pragma once
+#include <cstdint>
 #include <GL/glew.h>
+#include "../graphics/opengl/GLTexture.h"
 
 namespace Lengine {
 
     class Framebuffer {
     public:
-        Framebuffer(float width, float height);
+        Framebuffer(const uint32_t w, const uint32_t h);
         ~Framebuffer();
 
         void Create();
@@ -14,26 +16,26 @@ namespace Lengine {
         void Bind();
         void Unbind();
 
-        void Resize(float width, float height);
+        void Resize(const uint32_t width, const uint32_t height);
 
-        GLuint GetColorAttachment() const { return m_ColorAttachment; }
+        GLuint GetColorBuffer() const { return colorBuffer; }
         GLuint GetID() const { return FBO; }
 
-        float GetWidth() const { return width; }
-        float GetHeight() const { return height; }
+        uint32_t GetWidth() const { return width; }
+        uint32_t GetHeight() const { return height; }
 
-        void useTexture(GLuint texture, GLuint slot);
+        void UseTexture(const GLuint texture, const GLuint slot);
 
     private:
        
 
     private:
         GLuint FBO = 0;
-        GLuint m_ColorAttachment = 0;
+        GLuint colorBuffer = 0;
         GLuint depthBuffer = 0;
 
-        float width = 0;
-        float height = 0;
+        uint32_t width = 0;
+        uint32_t height = 0;
     };
 
 }

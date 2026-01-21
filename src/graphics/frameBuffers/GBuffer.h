@@ -12,7 +12,7 @@
 namespace Lengine {
 	class GBuffer {
 	public:
-		GBuffer(uint32_t width, uint32_t height);
+		GBuffer(const uint32_t width, const uint32_t height);
 		~GBuffer();
 
 		
@@ -28,7 +28,7 @@ namespace Lengine {
 		FullscreenQuad fullscreenQuad;
 
 	private:
-		void create();
+		void Create();
 		void configureShaders();
 		void destroy();
 

@@ -42,6 +42,8 @@ namespace Lengine {
 		std::unordered_map<std::string, std::shared_ptr<GLSLProgram>> shaders;
 		std::unordered_map<UUID, std::shared_ptr<GLTexture>> textures;
 		std::unordered_map<UUID, std::shared_ptr<Material>> materials;
+		std::unordered_map<UUID, std::shared_ptr<PBRMaterial>> pbrMaterials;
+
 
 		TextureCache textureCache;
 		
@@ -56,7 +58,7 @@ namespace Lengine {
 		// MESH
 		UUID importMesh(const std::string& path);
 		UUID importAndLoadMesh(const std::string& name, const std::string& path);
-		void requestMeshLoad(const UUID& uuid, const std::string& path);
+		void requestMeshLoad(const UUID& uuid, const std::string& path, MeshFilter& meshFilter);
 		void loadMesh(const UUID& uuid, const std::string& path);
 		void processPendingMesh(const UUID& id);
 		Mesh* getMesh(const UUID& id);
@@ -80,6 +82,23 @@ namespace Lengine {
 		);
 		Material* getMaterial(const UUID& id);
 		UUID getMaterialUUID(const std::string& name);	
+
+		//  PBR MATERIRALS
+		UUID importPBRMaterial(
+			const std::string& path);
+		UUID importAndLoadPBRMaterial(
+			const std::string& path,
+			const std::string& vertexShaderPath = ShaderPath::pbrVertexShaderPath,
+			const std::string& fragmentShaderPath = ShaderPath::pbrFragmentShaderPath
+		);
+		bool loadPBRMaterial(
+			const UUID& uuid,
+			const std::string& path,
+			const std::string& vertexShaderPath = ShaderPath::pbrVertexShaderPath,
+			const std::string& fragmentShaderPath = ShaderPath::pbrFragmentShaderPath
+		);
+		PBRMaterial* getPBRMaterial(const UUID& id);
+		UUID getPBRMaterialUUID(const std::string& name);
 
 
 		// TEXTURES

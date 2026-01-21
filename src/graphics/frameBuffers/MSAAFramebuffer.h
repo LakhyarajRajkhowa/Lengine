@@ -6,7 +6,7 @@ namespace Lengine {
 
     class MSAAFramebuffer {
     public:
-        MSAAFramebuffer(uint32_t width, uint32_t height);
+        MSAAFramebuffer(const uint32_t width, const uint32_t height);
         ~MSAAFramebuffer();
 
         void Create();
@@ -15,21 +15,21 @@ namespace Lengine {
         void Bind();
         void Unbind();
 
-        void Resize(uint32_t width, uint32_t height);
+        void Resize(const uint32_t width, const uint32_t height);
         void ResolveTo(const Framebuffer& target);
 
-        void setMSAASamples(const uint8_t& samples) { m_Samples = samples; }
+        void SetMSAASamples(const uint32_t s) { samples = s; }
 
     private:
         
 
     private:
-        uint32_t m_Width = 0, m_Height = 0;
-        uint32_t m_Samples = 0;
+        uint32_t width = 0, height = 0;
+        uint32_t samples = 0;
 
-        GLuint m_FBO = 0;
-        GLuint m_ColorAttachment = 0;
-        GLuint m_DepthAttachment = 0;
+        GLuint FBO = 0;
+        GLuint colorBuffer = 0;
+        GLuint depthBuffer = 0;
     };
 
 }

@@ -48,6 +48,9 @@ void PostProcessing::renderToneMapping(const bool bloom, const float exposure) {
 
     fullscreenQuad.draw();
 
+    toneMapShader.unuse();
+
+
 }
 
 void PostProcessing::renderBloom(GLuint hdrColorBuffer, const float blurScale) {

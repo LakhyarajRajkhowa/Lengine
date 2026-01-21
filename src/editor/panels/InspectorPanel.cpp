@@ -71,10 +71,11 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
         static_cast<int>(EntityType::COUNT)))
     {
         entity->setType(static_cast<EntityType>(currentTypeIndex));
-        Mesh* mesh = assetManager.getMesh(entity->getMeshID());
+
+        Mesh* mesh = assetManager.getMesh(scene->MeshFilters().Get(entity->getID()).meshID);
 
         // have to do reassign materials based on new entity type
-        scene->assignDefaultMaterials(entity, mesh);
+        scene->assignDefaultPBRMaterials(entity->getID(), mesh);
     }
 
     ImGui::Spacing();
@@ -142,6 +143,11 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     
 
     // ---------------- MESH BLOCK ----------------
+
+    MeshRenderer& mr = scene->MeshRenderers().Get(entity->getID());
+    MeshFilter& mf = scene->MeshFilters().Get(entity->getID());
+
+
     ImGui::Separator();
     ImGui::Text("Mesh");
     ImGui::Separator();
@@ -152,9 +158,9 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
    
     // Mesh name string
     std::string meshName = "None";
-    UUID meshID = entity->getMeshID();
+    UUID meshID = mf.meshID;
 
-    if (!meshID.isNull() && !entity->hasPendingMesh()) {
+    if (!meshID.isNull() && !mf.HasPendingMesh()) {
         Mesh* mesh = assets.getMesh(meshID);
         meshName = mesh ? mesh->name : "Invalid Mesh";
     }
@@ -175,12 +181,13 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
            
             // if dropped mesh ID isnt loaded yet, then request for a load
             if (!mesh && assetManager.assetStates[droppedID] != AssetState::Loading) {
-                assetManager.requestMeshLoad(droppedID, meshPath);
-                entity->requestMesh(droppedID);
+                assetManager.requestMeshLoad(droppedID, meshPath, mf);
+                mf.RequestMesh(droppedID);
             }
             else {
-                entity->setMeshID(droppedID);
-                scene->assignDefaultMaterials(entity, mesh);
+                mf.meshID = droppedID;
+                scene->assignDefaultPBRMaterials(entity->getID(), mesh);
+
             }
         }
         ImGui::EndDragDropTarget();
@@ -345,8 +352,8 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
     ImGui::Text("Material");
     ImGui::Separator();
     ImGui::Spacing();
-    Mesh* mesh = assetManager.getMesh(entity->getMeshID());
-    if (!mesh || entity->hasPendingMesh()) return;
+    Mesh* mesh = assetManager.getMesh(mf.meshID);
+    if (!mesh || mf.HasPendingMesh()) return;
 
     // Submesh group based on materials
     for (int i = 0; i < mesh->materialGroups.size(); i++)
@@ -369,17 +376,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
             "%s", firstSm.getName().empty() ? "Material" : firstSm.getName().c_str()
         );
 
-        // Hover detection
-        if (ImGui::IsItemHovered()) {
-            for (auto& smIdx : materialGroup) {
-                entity->hoveredSubMeshes.insert(smIdx);
-            }
-        }
-        else {
-            for (auto& smIdx : materialGroup) {
-                entity->hoveredSubMeshes.erase(smIdx);
-            }
-        }
+      
         
         if (open) {
             // Display all submesh in a material group
@@ -402,13 +399,7 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     "%s", sm.getName().empty() ? "SubMesh" : sm.getName().c_str()
                 );
 
-                // hover detection per submesh
-                if (ImGui::IsItemHovered()) {
-                    entity->hoveredSubMeshes.insert(smIdx);
-                }
-                else {
-                    entity->hoveredSubMeshes.erase(smIdx);
-                }
+              
                 
                 
                 if (openSubmesh)
@@ -416,13 +407,13 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     
 
                     const uint32_t matIdx = sm.getMatIdx(); // matIdx could be retrived from the outer loop?        
-                    UUID instID = entity->getMaterialIndexInstIDs().at(matIdx);
-                    MaterialInstance& inst = scene->getMaterialInstance(instID);
-                    const Material* baseMat = nullptr;
+                    UUID instID = mr.materialIndexToInstID.at(matIdx);
+                    PBRMaterialInstance& inst = scene->getPbrMaterialInstance(instID);
+                    const PBRMaterial* baseMat = nullptr;
 
                     // if baseMat id exist then check if we can get it 
                     if (inst.baseMaterial != UUID::Null)
-                        baseMat = assetManager.getMaterial(inst.baseMaterial);
+                        baseMat = assetManager.getPBRMaterial(inst.baseMaterial);
 
                     // if baseMat id exist but we can't get it
                     // then reassign the material 
@@ -431,15 +422,15 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                         // assign null to the matID 
                         // becoz there is a check for null id in the assignDefaultMaterials()
                         // where if null id found the submesh just takes the material of the parent entity
-                        entity->getMaterialIndexUUIDs()[matIdx] = UUID::Null;
-                        scene->assignDefaultMaterials(entity, mesh);
+                        mr.materialIndexToUUID[matIdx] = UUID::Null;
+                        scene->assignDefaultPBRMaterials(entity->getID(), mesh);
 
-                        instID = entity->getMaterialIndexInstIDs().at(matIdx);
-                        inst = scene->getMaterialInstance(instID);
+                        instID = mr.materialIndexToInstID.at(matIdx);
+                        inst = scene->getPbrMaterialInstance(instID);
 
                         // so here the new baseMat is just the material of the parent entity
                         if (inst.baseMaterial != UUID::Null)
-                            baseMat = assetManager.getMaterial(inst.baseMaterial);
+                            baseMat = assetManager.getPBRMaterial(inst.baseMaterial);
                     }
 
                     // ---------- Base Material UI ----------
@@ -458,11 +449,11 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                                 static_cast<const TextureDragPayload*>(payload->Data);
 
                             // if material isnt loaded then load it
-                            if (!assetManager.getMaterial(data->id))
-                                assetManager.loadMaterial(data->id, data->path);
+                            if (!assetManager.getPBRMaterial(data->id))
+                                assetManager.loadPBRMaterial(data->id, data->path);
 
                             inst.baseMaterial = data->id;
-                            entity->getMaterialIndexUUIDs()[matIdx] = data->id;
+                            mr.materialIndexToUUID[matIdx] = data->id;
 
                             
                         }
@@ -470,7 +461,39 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     }
 
                     ImGui::Spacing();
+                    // ---------- Color + Scalar helpers ----------
+                    auto DrawVec3 = [&](const char* label,
+                        std::optional<glm::vec3>& instVal,
+                        const glm::vec3& baseVal)
+                        {
+                            glm::vec3 v = instVal.value_or(baseVal);
+                            if (ImGui::ColorEdit3(label, glm::value_ptr(v)))
+                                instVal = v;
 
+                            if (instVal.has_value() &&
+                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
+                                instVal.reset();
+
+                            ImGui::Spacing();
+                        };
+
+                    auto DrawFloat = [&](const char* label,
+                        std::optional<float>& instVal,
+                        float baseVal,
+                        float vel,
+                        float min,
+                        float max)
+                        {
+                            float v = instVal.value_or(baseVal);
+                            if (ImGui::DragFloat(label, &v, vel, min, max))
+                                instVal = v;
+
+                            if (instVal.has_value() &&
+                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
+                                instVal.reset();
+
+                            ImGui::Spacing();
+                        };
                     // ---------- Helper lambda for texture slots ----------
                     auto DrawTextureSlot = [&](const char* label,
                         bool srgb,
@@ -535,68 +558,48 @@ void InspectorPanel::DrawEntityInspector(Entity* entity, AssetManager& assets)
                     // ---------- Texture Maps ----------
                     if (baseMat)
                     {
-                        DrawTextureSlot("Diffuse Map", true,
-                            inst.use_map_kd, inst.map_kd, baseMat->map_Kd);
+                        DrawTextureSlot("Albedo Map", true,
+                            inst.use_map_albedo, inst.map_albedo, baseMat->map_albedo);
 
-                        DrawTextureSlot("Specular Map", false,
-                            inst.use_map_ks, inst.map_ks, baseMat->map_Ks);
+                        DrawVec3("Albedo ", inst.albedo, baseMat->albedo);
+
+
+                        DrawTextureSlot("Ambient Occlusion Map", false,
+                            inst.use_map_ao, inst.map_ao, baseMat->map_ao);
+
+                        DrawFloat("Ambient Occlusion",
+                            inst.ao,
+                            baseMat->ao,
+                            0.01f, 0.0f, 1.0f);
+
+                        DrawTextureSlot("Metallic Map", false,
+                            inst.use_map_metallic, inst.map_metallic, baseMat->map_metallic);
+
+                        DrawFloat("Metallic",
+                            inst.metallic,
+                            baseMat->metallic,
+                            0.01f, 0.0f, 1.0f);
 
                         DrawTextureSlot("Normal Map", false,
-                            inst.use_map_bump, inst.map_bump, baseMat->map_bump);
-                    }
-
-
-                    // ---------- Color + Scalar helpers ----------
-                    auto DrawVec3 = [&](const char* label,
-                        std::optional<glm::vec3>& instVal,
-                        const glm::vec3& baseVal)
-                        {
-                            glm::vec3 v = instVal.value_or(baseVal);
-                            if (ImGui::ColorEdit3(label, glm::value_ptr(v)))
-                                instVal = v;
-
-                            if (instVal.has_value() &&
-                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
-                                instVal.reset();
-
-                            ImGui::Spacing();
-                        };
-
-                    auto DrawFloat = [&](const char* label,
-                        std::optional<float>& instVal,
-                        float baseVal,
-                        float min,
-                        float max)
-                        {
-                            float v = instVal.value_or(baseVal);
-                            if (ImGui::DragFloat(label, &v, 0.1f, min, max))
-                                instVal = v;
-
-                            if (instVal.has_value() &&
-                                ImGui::SmallButton(("Reset##" + std::string(label)).c_str()))
-                                instVal.reset();
-
-                            ImGui::Spacing();
-                        };
-
-                    // ---------- Material Params ----------
-                    if (baseMat)
-                    {
-                        DrawVec3("Diffuse (Kd)", inst.Kd, baseMat->Kd);
-                        DrawVec3("Ambient (Ka)", inst.Ka, baseMat->Ka);
-                        DrawVec3("Specular (Ks)", inst.Ks, baseMat->Ks);
-                        DrawVec3("Emissive (Ke)", inst.Ke, baseMat->Ke);
+                            inst.use_map_normal, inst.map_normal, baseMat->map_normal);
 
                         DrawFloat("Normal Strength",
                             inst.normalStrength,
                             baseMat->normalStrength,
-                            -10.0f, 10.0f);
+                            0.1f, -100.0f, 100.0f);
 
-                        DrawFloat("Shininess (Ns)",
-                            inst.Ns,
-                            baseMat->Ns,
-                            0.0f, 256.0f);
+                        DrawTextureSlot("Roughness Map", false,
+                            inst.use_map_roughness, inst.map_roughness, baseMat->map_roughness);
+
+                        DrawFloat("Roughness",
+                            inst.roughness,
+                            baseMat->roughness,
+                            0.01f, 0.0f, 1.0f);
+
+                        DrawTextureSlot("Metallic Roughness Map", false,
+                            inst.use_map_metallicRoughness, inst.map_metallicRoughness, baseMat->map_metallicRoughness);
                     }
+
 
                     ImGui::TreePop();
                 }

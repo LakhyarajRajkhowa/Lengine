@@ -15,7 +15,7 @@
 
 #include "../graphics/geometry/Mesh.h"
 
-#include "../scene/EntityComponentSystem.h"
+#include "../scene/components/MeshRenderer.h"
 
 
 namespace Lengine {
@@ -124,6 +124,8 @@ namespace Lengine {
             mesh.subMeshes.emplace_back(std::move(submesh));
 
             mesh.materialGroups[aMesh->mMaterialIndex].push_back(i);
+            mesh.materialSlotCount =
+                std::max(mesh.materialSlotCount, aMesh->mMaterialIndex + 1);
             mesh.visibleMaterialGroups.push_back(true);
            
         }

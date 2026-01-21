@@ -3,7 +3,7 @@
 
 namespace Lengine {
 
-    HDRFramebuffer::HDRFramebuffer(uint32_t width, uint32_t height)
+    HDRFramebuffer::HDRFramebuffer(const uint32_t width, const uint32_t height)
         : width(width), height(height) 
     {
         Create();
@@ -47,26 +47,27 @@ namespace Lengine {
 
         glDrawBuffers(2, attachments);
 
-        glGenRenderbuffers(1, &depthRBO);
-        glBindRenderbuffer(GL_RENDERBUFFER, depthRBO);
-
+        // Create depth-stencil renderbuffer
+        glGenRenderbuffers(1, &depthBuffer);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
         glRenderbufferStorage(
             GL_RENDERBUFFER,
             GL_DEPTH24_STENCIL8,
             width,
             height
         );
-        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRBO);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+
+        // Check framebuffer completeness
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
             std::cout << "Framebuffer not complete!" << std::endl;
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void HDRFramebuffer::Destroy() {
-        if (depthRBO) {
-            glDeleteRenderbuffers(1, &depthRBO);
-            depthRBO = 0;
+        if (depthBuffer) {
+            glDeleteRenderbuffers(1, &depthBuffer);
+            depthBuffer = 0;
         } 
 
         for (uint8_t i = 0; i < 2; i++) {
@@ -91,7 +92,7 @@ namespace Lengine {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    void HDRFramebuffer::Resize(uint32_t width, uint32_t height) {
+    void HDRFramebuffer::Resize(const uint32_t width, const uint32_t height) {
         if (width == 0 || height == 0) return;
         this->width = width;
         this->height = height;

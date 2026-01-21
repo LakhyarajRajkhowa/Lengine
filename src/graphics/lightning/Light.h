@@ -72,4 +72,10 @@ namespace Lengine {
 
         bool castShadow = false;
     };
+
+    struct PBRLight {
+        glm::vec3 position;
+        glm::vec3 color; 
+    };
+
 }

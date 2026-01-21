@@ -6,7 +6,7 @@ namespace Lengine {
 
     class MSAAHDRFramebuffer {
     public:
-        MSAAHDRFramebuffer(uint32_t width, uint32_t height);
+        MSAAHDRFramebuffer(const uint32_t width, const uint32_t height);
         ~MSAAHDRFramebuffer();
 
         void Create();
@@ -15,10 +15,10 @@ namespace Lengine {
         void Bind();
         void Unbind();
 
-        void Resize(uint32_t width, uint32_t height);
+        void Resize(const uint32_t width, const uint32_t height);
         void ResolveToHDR(const HDRFramebuffer& target);
 
-        void setMSAASamples(const uint8_t n) { samples = n; }
+        void SetMSAASamples(const uint32_t n) { samples = n; }
         const GLuint* GetColorBuffers() const { return colorBuffers; }
 
     private:

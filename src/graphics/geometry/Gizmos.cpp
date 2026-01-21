@@ -64,11 +64,12 @@ void GizmoRenderer::drawGizmoSpheres() {
     gizmoSphereShader.setMat4("projection", camera.getProjectionMatrix());
     gizmoSphereShader.setVec4("color", glm::vec4(1, 1, 1, 0.1f));
 
-    for (auto& e : sceneManager.getActiveScene()->getEntities()) {
+    Scene* activeScene = sceneManager.getActiveScene();
+    for (auto& e : activeScene->getEntities()) {
         if (!e->isSelected)
             continue;
 
-        UUID meshID = e->getMeshID();
+        UUID meshID = activeScene->MeshFilters().Get(e->getID()).meshID;
         Mesh* m = meshID ? assetManager.getMesh(meshID) : nullptr;
 
         glm::vec3 pos = e->getTransform().position;
@@ -124,11 +125,12 @@ void GizmoRenderer::drawGizmoArrows()
         shader.setMat4("projection", camera.getProjectionMatrix());
     }
 
-    for (auto& e : sceneManager.getActiveScene()->getEntities()) {
+    Scene* activeScene = sceneManager.getActiveScene();
+    for (auto& e : activeScene->getEntities()) {
         if (!e->isSelected)
             continue;
 
-        UUID meshID = e->getMeshID();
+        UUID meshID = activeScene->MeshFilters().Get(e->getID()).meshID;
 
         glm::vec3 pos = e->getTransform().position;
         glm::vec3 scale = e->getTransform().scale;

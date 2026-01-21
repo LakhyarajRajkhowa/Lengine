@@ -97,6 +97,8 @@ namespace Lengine {
         void computeBounds();
         const glm::vec3& getLocalCenter() { return localCenter; }
         float& getBoundingRadius() { return boundingRadius; }
+
+        uint32_t materialSlotCount = 0;
     };
 }
 

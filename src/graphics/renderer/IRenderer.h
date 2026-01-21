@@ -15,11 +15,12 @@ namespace Lengine {
     public:
         virtual ~IRenderer() = default;
 
-        virtual void render(
+        virtual void Render(
             Scene& scene,
             const EditorConfig& editorConfig,
             ShadowMap& shadowMap,
-            ShadowCubeMap& shadowCubeMap
+            ShadowCubeMap& shadowCubeMap,
+            const GLTexture& irradianceMap
         ) = 0;
     };
     

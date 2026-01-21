@@ -14,11 +14,19 @@
 #include "../graphics/frameBuffers/MSAAFramebuffer.h"
 #include "../graphics/frameBuffers/HDRFramebuffer.h"
 #include "../graphics/frameBuffers/MSAAHDRFramebuffer.h"
+#include "../graphics/frameBuffers/SSAOFramebuffer.h"
+#include "../graphics/frameBuffers/MSAADepthNormalFramebuffer.h"
 
 
 #include "../utils/fps.h"
 #include "../utils/imGuiScreens.h"
+
+
 namespace Lengine {
+
+    using SSAOBlurFramebuffer = SSAOFramebuffer;
+
+
     enum class ViewportMode {
         first = 0,
         second,
@@ -28,8 +36,7 @@ namespace Lengine {
 
     class ViewportPanel {
     public:
-        ViewportPanel(Camera3d& camera, glm::vec2 resolution);
-
+        ViewportPanel(Camera3d& camera, const glm::i32vec2 resolution);
         void OnImGuiRender();
         void RenderFullscreen();
 
@@ -39,7 +46,14 @@ namespace Lengine {
         HDRFramebuffer& GetHDRFramebuffer() { return HDRFramebuffer; }
         MSAAHDRFramebuffer& GetMSAAHDRFramebuffer() { return MSAAHDRFramebuffer; }
 
-        void clearFrame(const glm::vec4& clearColor);
+        SSAOFramebuffer& GetSSAOFramebuffer() { return SSAOFramebuffer; }
+        SSAOBlurFramebuffer& GetSSAOBlurFramebuffer() { return SSAOBlurFramebuffer; }
+        DepthNormalFramebuffer& GetDepthNormalFramebuffer() { return depthNormalFramebuffer; }
+        MSAADepthNormalFramebuffer& GetMSAADepthNormalFramebuffer() { return MSAADepthNormalFramebuffer; }
+
+
+
+        void ClearFrame(const glm::vec4& clearColor);
         void ClearFramebuffers();
 
         // Check if the viewport has resized
@@ -49,8 +63,8 @@ namespace Lengine {
         ImVec2 GetViewportSize() const { return m_ViewportSize; }
         ImVec2 GetViewportPos() const { return m_ViewportPos; }
 
-        ImVec2 ViewportPanel::getMousePosInViewport() const { return mouseInViewport; }
-        ImVec2 ViewportPanel::getMousePosInImage() const { return mouseInImage; }
+        ImVec2 getMousePosInViewport() const { return mouseInViewport; }
+        ImVec2 getMousePosInImage() const { return mouseInImage; }
 
         bool fixCamera = false;
         bool viewportFullscreen = true;
@@ -58,11 +72,17 @@ namespace Lengine {
         
     private:
         Camera3d& camera;
+        float fullscreenAspectRatio = 16.0f / 9.0f;
 
         Framebuffer Framebuffer;
         MSAAFramebuffer MSAAFramebuffer;
         HDRFramebuffer HDRFramebuffer;
         MSAAHDRFramebuffer MSAAHDRFramebuffer;
+        
+        SSAOFramebuffer SSAOFramebuffer;
+        SSAOBlurFramebuffer SSAOBlurFramebuffer;
+        DepthNormalFramebuffer depthNormalFramebuffer;
+        MSAADepthNormalFramebuffer MSAADepthNormalFramebuffer;
 
 
         float offsetValueX = 0.14f;

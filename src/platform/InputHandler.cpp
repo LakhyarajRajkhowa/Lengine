@@ -41,7 +41,7 @@ namespace Lengine {
                 for ( Uint8 button : { SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE}) {
                     if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
                         editorLayer.selectHoveredEntity();
-                        editorLayer.beginArrowDrag();   // ✅ ONLY ON PRESS
+                        editorLayer.BeginArrowDrag();   // ✅ ONLY ON PRESS
                     }
 
                     if (inputManager.isMouseButtonDown(SDL_BUTTON_LEFT)) {

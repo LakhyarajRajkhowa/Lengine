@@ -34,18 +34,23 @@ namespace Lengine {
         {
         }
 
-        void render(
+        void Render(
             Scene& scene,
             const EditorConfig& editorConfig,
             ShadowMap& shadowMap,
-            ShadowCubeMap& shadowCubeMap
+            ShadowCubeMap& shadowCubeMap,
+            const GLTexture& irradianceMap
         ) override
         {
-            renderScene(scene, editorConfig, shadowMap, shadowCubeMap);
+            RenderScene_pbr(scene, editorConfig, shadowMap, shadowCubeMap, irradianceMap);
         }
 
-        
+        void RenderSceneDepthNormals(
+            Scene& activeScene,
+            const EditorConfig& editorConfig
+        );
 
+       
     private:
         Camera3d& camera;
         AssetManager& assetManager;
@@ -54,12 +59,29 @@ namespace Lengine {
             const Material& baseMaterial,
             const MaterialInstance& inst
         );
-        void renderScene(
+
+        ResolvedPBRMaterial resolvePBRMaterial(
+            const PBRMaterial& baseMaterial,
+            const PBRMaterialInstance& inst
+        );
+
+        void RenderScene_phong(
             Scene& activeScene,
             const EditorConfig& editorConfig,
             ShadowMap& shadowMap,
             ShadowCubeMap& shadowCubeMap
         );
+
+        void RenderScene_pbr(
+            Scene& activeScene,
+            const EditorConfig& editorConfig,
+            ShadowMap& shadowMap,
+            ShadowCubeMap& shadowCubeMap,
+            const GLTexture& irradianceMap
+
+        );
+
+
 
         void bindShadowMapUniforms(
             GLSLProgram& shader,
@@ -83,6 +105,17 @@ namespace Lengine {
             const glm::vec3& sceneAmbient,
             int index
         );
+
+        void bindPBRLights(
+            GLSLProgram& shader,
+            const std::vector<Light>& lights
+        );
+
+        void bindPBRMaterial(
+            GLSLProgram& shader,
+            const ResolvedPBRMaterial& mat
+        );
+
         void bindMaterialUniforms(
             GLSLProgram& shader,
             const ResolvedMaterial& mat
@@ -103,14 +136,12 @@ namespace Lengine {
         );
         void drawSubMesh(
             SubMesh& sm,
-            GLSLProgram& shader,
-            bool isHovered
+            GLSLProgram& shader
         );
         void drawSubMeshGroup(
             Mesh& mesh,
             const std::vector<uint32_t>& subMeshIDs,
-            GLSLProgram& shader,
-            const std::unordered_set<uint32_t>& hoveredSubMeshes
+            GLSLProgram& shader
         );
         void collectLights(std::vector<Light>& lights, const std::vector<std::unique_ptr<Entity>>& entities);
 

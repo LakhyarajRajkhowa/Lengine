@@ -17,7 +17,7 @@ namespace Lengine {
     public:
         Camera3d();
         ~Camera3d();
-        void init(float width, float height, InputManager* inputManager, glm::vec3 cameraPos, float FOV);
+        void init(const uint32_t width, const uint32_t height, InputManager* inputManager, glm::vec3 cameraPos, float FOV);
          const glm::vec3& getCameraPosition()  { return position; }
          const glm::vec3& getCameraDirection() { return front; }
          const glm::vec3& getCameraPosition() const { return position; }
@@ -57,8 +57,6 @@ namespace Lengine {
         glm::vec3 direction;
         InputManager* _inputManager;
 
-        void applyGravity();
-        bool _applyGravity;
 
         float speedFactor = 10.0f;
         float speedMultiplier = 1.0f;

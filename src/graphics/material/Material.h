@@ -91,4 +91,89 @@ namespace Lengine {
 
     };
 
+    struct PBRMaterial {
+        PBRMaterial::PBRMaterial() = default;
+
+        glm::vec3 albedo = glm::vec3(1.0f);
+        float metallic = 0.0f;
+        float roughness = 0.5f;
+        float ao = 1.0f;
+
+        std::string map_albedo_path;
+        std::string map_normal_path;
+        std::string map_metallic_path;
+        std::string map_roughness_path;
+        std::string map_ao_path;
+        std::string map_metallicRoughness_path;
+
+        UUID map_albedo = UUID::Null;
+        UUID map_normal = UUID::Null;
+        UUID map_metallic = UUID::Null;
+        UUID map_roughness = UUID::Null;
+        UUID map_ao = UUID::Null;
+        UUID map_metallicRoughness = UUID::Null;
+
+
+        float normalStrength = 1.0f;
+
+        std::string name;
+        GLSLProgram* shader = nullptr;
+
+        PBRMaterial(std::string matName, GLSLProgram* shaderProgram)
+            : name(matName), shader(shaderProgram) {
+        }
+
+        GLSLProgram* getShader() const { return shader; }
+        const std::string& getName() const { return  name; }
+    };
+
+
+    struct PBRMaterialInstance {
+        UUID baseMaterial;
+
+        std::optional<glm::vec3> albedo;
+        std::optional<float> metallic;
+        std::optional<float> roughness;
+        std::optional<float> ao;
+
+        std::optional<UUID> map_albedo;
+        std::optional<UUID> map_normal;
+        std::optional<UUID> map_metallic;
+        std::optional<UUID> map_roughness;
+        std::optional<UUID> map_ao;
+        std::optional<UUID> map_metallicRoughness;
+
+
+        std::optional<float> normalStrength;
+
+        bool use_map_albedo = true;
+        bool use_map_normal = true;
+        bool use_map_metallic = true;
+        bool use_map_roughness = true;
+        bool use_map_ao = true;
+        bool use_map_metallicRoughness = true;
+
+    };
+
+    struct ResolvedPBRMaterial {
+
+        glm::vec3 albedo ;
+        float metallic ;
+        float roughness;
+        float ao ;
+
+        UUID map_albedo = UUID::Null;
+        UUID map_normal = UUID::Null;
+        UUID map_metallic = UUID::Null;
+        UUID map_roughness = UUID::Null;
+        UUID map_ao = UUID::Null;
+        UUID map_metallicRoughness = UUID::Null;
+
+        float normalStrength;
+    };
+
+
+
+
+
 }

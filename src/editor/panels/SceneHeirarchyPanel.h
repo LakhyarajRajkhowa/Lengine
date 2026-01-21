@@ -35,7 +35,7 @@ namespace Lengine {
     private:
         Entity* m_SelectedEntity;
         std::queue<UUID> deletedEntityQueue;
-        std::queue<Entity*> createdEntityQueue;
+        std::queue<std::pair<Entity*, UUID>> createdEntityQueue;
 
         Scene* activeScene;
     };

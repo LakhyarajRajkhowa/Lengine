@@ -114,8 +114,11 @@ void SceneHierarchyPanel::OnImGuiRender() {
 
                 // Create Queued Entities
                 while (!createdEntityQueue.empty()) {
-                    scene->addEntity(std::unique_ptr<Entity>(createdEntityQueue.front()));
-                    
+                    scene->addEntity(
+                        std::unique_ptr<Entity>(createdEntityQueue.front().first),
+                        createdEntityQueue.front().second
+                    );
+
                     createdEntityQueue.pop();
                 }
 
@@ -151,7 +154,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
                             if (ImGui::MenuItem("Create Copy"))                       
                             {
                                 Entity* clone = entity->Clone();
-                                createdEntityQueue.push(clone);
+                                createdEntityQueue.push(std::pair(clone, entity->getID()));
                             }
                             ImGui::EndPopup();
                         }
@@ -223,8 +226,8 @@ void SceneHierarchyPanel::createNewModel() {
                 Entity* newEntity = activeScene->createEntity(
                     EntityName,
                     UUID(),       // meshID
-                    UUID(),        // entityID
-                    selectedType   // type
+                    selectedType,   // type
+                    UUID()       // entityID
                 );
 
                 ImGui::CloseCurrentPopup();

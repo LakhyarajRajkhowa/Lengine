@@ -9,16 +9,14 @@ namespace Lengine {
         Camera3d& cam,
         InputManager& inputMgr,
         AssetManager& assetMgr,
-        Window& win,
         RenderSettings& rndrSett,
-        glm::vec2 resolution
+        const glm::i32vec2 resolution
     )
         :camera(cam),
         sceneManager(scnMgr),
         gizmoRenderer(gizmoRndr),
         inputManager(inputMgr),
         assetManager(assetMgr),
-        window(win),
         renderSettings(rndrSett),
         viewportPanel(cam, resolution),     
         hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
@@ -65,7 +63,7 @@ namespace Lengine {
 
     }
 
-    void EditorLayer::checkForHoveredEntity() {
+    void EditorLayer::CheckForHoveredEntity() {
         hoveredEntity = nullptr;
 
         ImVec2 mouse = viewportPanel.getMousePosInViewport();
@@ -88,7 +86,13 @@ namespace Lengine {
         const auto& entities = sceneManager.getActiveScene()->getEntities();
         float closest = 999999.0f;
 
+        Scene* activeScene = sceneManager.getActiveScene();
+
         for (auto& e : entities) {
+
+            MeshRenderer& mr = activeScene->MeshRenderers().Get(e->getID());
+            MeshFilter& mf = activeScene->MeshFilters().Get(e->getID());
+
 
             glm::vec3 pos = e->getTransform().position;
             glm::vec3 scale = e->getTransform().scale;
@@ -97,7 +101,7 @@ namespace Lengine {
             // --------------------------------------------------------
             // CASE 1: Entity has NO mesh assigned
             // --------------------------------------------------------
-            if (!e->getMeshID())
+            if (!mf.meshID)
             {
                 float radius = 1.0f; // default sphere
                 if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
@@ -114,9 +118,9 @@ namespace Lengine {
 
 
             
-            else if (e->getMeshID())
+            else if (mf.meshID)
             {
-                Mesh* mesh = assetManager.getMesh(e->getMeshID());
+                Mesh* mesh = assetManager.getMesh(mf.meshID);
 
 
                 // --------------------------------------------------------
@@ -169,7 +173,7 @@ namespace Lengine {
 
     
     void EditorLayer::selectHoveredEntity() {
-        checkForHoveredEntity();
+        CheckForHoveredEntity();
         if (hoveredEntity == nullptr) {
             for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
                 entity->isSelected = false;
@@ -241,7 +245,7 @@ namespace Lengine {
         return result;
     }
     
-    void EditorLayer::beginArrowDrag()
+    void EditorLayer::BeginArrowDrag()
     {
         if (!selectedEntity) return;
 

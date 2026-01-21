@@ -1,5 +1,6 @@
 ﻿#include "SceneRenderer.h"
 
+#include "../resources/AssetImporter.h"
 namespace Lengine {
 
     void SceneRenderer::init() {
@@ -25,6 +26,7 @@ namespace Lengine {
 
     void SceneRenderer::preloadAssets() {
         assetManager.LoadAllMetaFiles(Paths::Assets);
+        AssetImporter::ImportMeshFile(Paths::Mesh + "cube.obj");
        // assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_defaultScene.json");
 
     }
@@ -33,6 +35,28 @@ namespace Lengine {
 
     void SceneRenderer::initScene() {
         gizmoRenderer.initGizmo();
+
+        /*
+        skybox.init();
+       
+        std::vector<std::string> faces
+        {
+                Paths::Default_skybox + "right.jpg",
+                Paths::Default_skybox + "left.jpg",
+                Paths::Default_skybox + "top.jpg",
+                Paths::Default_skybox + "bottom.jpg",
+                Paths::Default_skybox + "front.jpg",
+                Paths::Default_skybox + "back.jpg"
+        };
+        GLTexture cubemapTexture = ImageLoader::loadTextureCubemap(faces);
+
+        skybox.setCubemapTexture(cubemapTexture);
+        */
+        
+
+        GLTexture hdrTex = ImageLoader::LoadHDRTexture(Paths::Textures + "Hdr/" + "bambanani_sunset_4k.hdr");
+        hdrSkybox.Init(1024); // texRes 
+        hdrSkybox.SetHDRTexture(hdrTex);
 
     }
 
@@ -64,8 +88,8 @@ namespace Lengine {
         auto& ldr = viewport.GetFramebuffer();
 
         ldr.Bind();
-        viewport.clearFrame({ 0,0,0,1 });
-        renderScene(config);
+        viewport.ClearFrame({ 0,0,0,1 });
+        RenderScene_phong(config);
         ldr.Unbind();
     }
 
@@ -76,8 +100,8 @@ namespace Lengine {
 
         // 1️⃣ Render scene to MSAA framebuffer
         msaa.Bind();
-        viewport.clearFrame({ 0,0,0,1 });
-        renderScene(config); // your usual scene render
+        viewport.ClearFrame({ 0,0,0,1 });
+        RenderScene_phong(config); // your usual scene render
         msaa.Unbind();
 
         // 2️⃣ Resolve MSAA → normal LDR framebuffer
@@ -93,8 +117,8 @@ namespace Lengine {
 
         // 1. Scene → HDR
         hdr.Bind();
-        viewport.clearFrame({ 0,0,0,1 });
-        renderScene(config);
+        viewport.ClearFrame({ 0,0,0,1 });
+        RenderScene_phong(config);
         hdr.Unbind();
 
         // 2. Bloom (optional)
@@ -108,17 +132,19 @@ namespace Lengine {
 
         // 3. Tone map → LDR
         ldr.Bind();
-        ldr.useTexture(hdr.GetColorBuffers()[0], 0);
+        ldr.UseTexture(hdr.GetColorBuffers()[0], 0);
 
         if (renderSettings.enableBloom) {
-            ldr.useTexture(postProcess.getBloomColorBuffer(), 1);
+            ldr.UseTexture(postProcess.getBloomColorBuffer(), 1);
         }
 
-        viewport.clearFrame({ 0,0,0,1 });
+        viewport.ClearFrame({ 0,0,0,1 });
 
         postProcess.renderToneMapping(renderSettings.enableBloom, renderSettings.exposure);
 
         ldr.Unbind();
+
+
     }
 
     void SceneRenderer::renderHDR_MSAA(const EditorConfig& config)
@@ -129,8 +155,8 @@ namespace Lengine {
 
         // 1. Scene → MSAA HDR
         msaaHdr.Bind();
-        viewport.clearFrame({ 0,0,0,1 });
-        renderScene(config);
+        viewport.ClearFrame({ 0,0,0,1 });
+        RenderScene_phong(config);
         msaaHdr.Unbind();
 
         // 2. Resolve MSAA → HDR
@@ -149,13 +175,14 @@ namespace Lengine {
         // 4. Tone map → LDR
         ldr.Bind();
 
-        ldr.useTexture(hdr.GetColorBuffers()[0], 0);
+        ldr.UseTexture(hdr.GetColorBuffers()[0], 0);
 
         if (renderSettings.enableBloom)
-            ldr.useTexture(postProcess.getBloomColorBuffer(), 1);
+            ldr.UseTexture(postProcess.getBloomColorBuffer(), 1);
 
-        viewport.clearFrame({ 0,0,0,1 });
-
+      
+        viewport.ClearFrame({ 0,0,0,1 });
+        
         postProcess.renderToneMapping(renderSettings.enableBloom, renderSettings.exposure);
 
         ldr.Unbind();
@@ -182,7 +209,7 @@ namespace Lengine {
 
         if (renderSettings.HDR && renderSettings.MSAA)
         {
-            msaaHdr.setMSAASamples(renderSettings.msaaSamples);
+            msaaHdr.SetMSAASamples(renderSettings.msaaSamples);
             msaaHdr.Create();
             hdr.Create();
 
@@ -193,7 +220,7 @@ namespace Lengine {
         }
         else if (renderSettings.MSAA)
         {
-            msaa.setMSAASamples(renderSettings.msaaSamples);
+            msaa.SetMSAASamples(renderSettings.msaaSamples);
             msaa.Create();
         }
 
@@ -207,14 +234,15 @@ namespace Lengine {
     {
         Scene* scene = sceneManager.getActiveScene();
         auto& entities = scene->getEntities();
+        auto& mrs = scene->MeshRenderers();
 
         auto& directionalLight = scene->getMainDirectionalLight();
         auto& pointLight = scene->getMainPointLight();
 
         // TODO : Peter panning 
 
-        shadowMap.renderDepthMap(entities, directionalLight, assetManager);
-        shadowCubeMap.renderDepthCubeMap(entities, pointLight, assetManager);
+       // shadowMap.renderDepthMap(entities, mrs, directionalLight, assetManager);
+        //shadowCubeMap.renderDepthCubeMap(entities, mrs, pointLight, assetManager);
 
         glViewport(
             0, 0,
@@ -226,7 +254,7 @@ namespace Lengine {
 
 
 
-    void SceneRenderer::renderScene(const EditorConfig& edtitorConfig) {
+    void SceneRenderer::RenderScene_phong(const EditorConfig& edtitorConfig) {
 
       
         glDisable(GL_CULL_FACE);
@@ -234,12 +262,19 @@ namespace Lengine {
         gizmoRenderer.drawGizmoArrows();
         glEnable(GL_CULL_FACE);
 
-        forwardRenderer.render(
+
+        forwardRenderer.Render(
             *sceneManager.getActiveScene(),
             edtitorConfig,
             shadowMap,
-            shadowCubeMap
+            shadowCubeMap,
+            hdrSkybox.GetIrradianceMap()
         );
+
+
+        // draw skybox as last
+     // skybox.Render(camera.getViewMatrix(), camera.getProjectionMatrix());
+        hdrSkybox.Render(camera.getViewMatrix(), camera.getProjectionMatrix());
 
     }
 

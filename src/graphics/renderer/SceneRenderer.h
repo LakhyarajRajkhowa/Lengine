@@ -3,6 +3,7 @@
 #include "../graphics/geometry/Model.h"
 #include "../graphics/geometry/Gizmos.h"
 #include "../graphics/geometry/skybox.h"
+#include "../graphics/geometry/HDREnvironment.h"
 #include "../graphics/renderer/ForwardRenderer.h"
 #include "../graphics/shadowMaps/shadowMap.h"
 #include "../graphics/shadowMaps/shadowCubeMap.h"
@@ -45,7 +46,7 @@ namespace Lengine {
 		void initScene();
 		void renderShadowPass();
 
-		void renderScene(const EditorConfig& editorConfig);
+		void RenderScene_phong(const EditorConfig& editorConfig);
 		void endFrame();
 
 		ForwardRenderer forwardRenderer;
@@ -67,6 +68,9 @@ namespace Lengine {
 		Scene* activeScene;
 
 		Skybox skybox;
+
+		HDREnvironment hdrSkybox;
+
 		ShadowMap shadowMap;
 		ShadowCubeMap shadowCubeMap;
 	private:

@@ -19,16 +19,12 @@ namespace Lengine {
 		Camera,
 		COUNT
 	};
-	struct EntityMaterialState {
-		std::unordered_map<uint32_t, UUID> baseMaterials;       // per group
-		std::unordered_map<uint32_t, UUID> submeshOverrides;   // per submesh
-	};
-
+ 
 	
 	class Entity {
 	public:
-		Entity(UUID eID, const std::string& n, EntityType t, UUID mID)
-			: ID(eID), name(n), type(t), meshID(mID)
+		Entity(UUID eID, const std::string& n, EntityType t)
+			: ID(eID), name(n), type(t)
 		{
 			
 		}
@@ -40,19 +36,11 @@ namespace Lengine {
 		void setName(const std::string& newName) { name = newName; }
 		const EntityType& getType() const { return type; }
 		void setType(const EntityType& t);
-		UUID getMeshID() const { return meshID; }
-		void setMeshID(const UUID& id) { meshID = id; }
 
-		void requestMesh(const UUID& id);
-		bool hasPendingMesh() const;
-		UUID getRequestedMeshID() const;
-		void clearPendingMesh();
+
 
 		Entity* getParent() { return parent; }
 		std::vector<Entity*> getChildrens() { return children; }
-
-		std::unordered_map<unsigned int, UUID>& getMaterialIndexInstIDs() { return materialIndexToInstID; }
-		std::unordered_map<unsigned int, UUID>& getMaterialIndexUUIDs() { return materialIndexToUUID; }
 
 
 		void setTransform(const Transform& t) { transform = t;  }
@@ -68,11 +56,7 @@ namespace Lengine {
 		bool isMovable = true;
 		bool isVisible = true;
 
-		std::unordered_set<uint32_t> hoveredSubMeshes;
-		std::unordered_set<uint32_t> selectedSubMeshes;
-
-		EntityMaterialState materialState;
-
+	
 		bool hasLight() const { return light.has_value(); }
 		Light& getLight() { return *light; }
 		const Light& getLight() const { return *light; }
@@ -81,26 +65,18 @@ namespace Lengine {
 			light.value().id = ID;
 		}
 
-		Entity* Entity::Clone() const
+		Entity* Entity::Clone() 
 		{
-			Entity* e = new Entity(*this); // base copy
+			Entity* e = new Entity(UUID(), this->name + "_" + std::to_string(numCopies), type);
 
-			e->ID = UUID();
 			e->index = -1;
 			e->isSelected = false;
 			e->isDragged = false;
 
-			if (e->light.has_value())
-			{
-				e->light->id = e->ID;
-			}
+			e->transform.position = this->transform.position + glm::vec3(0.5f, 0.0f, 0.5f);
+			e->transform.scale = this->transform.scale;
 
-			e->name = name + "_" + std::to_string(e->ID);
-
-			e->transform.position += glm::vec3(0.5f, 0.0f, 0.5f);
-
-			e->meshID = this->meshID;
-			e->type = this->type;
+			numCopies++;
 			return e;
 		}
 
@@ -113,19 +89,17 @@ namespace Lengine {
 		EntityType type;
 		Transform transform;
 		std::optional<Light> light;
-		UUID meshID;
 		
 
 
 		Entity* parent = nullptr;
 		std::vector<Entity*> children;
 
-		std::unordered_map<unsigned int, UUID> materialIndexToInstID; // for materialInstance
-		std::unordered_map<unsigned int, UUID> materialIndexToUUID; // for materials id from scene.json
 
 		bool pendingMesh = false;
-		UUID pendingMeshID;
-		
+		UUID pendingMeshID;	
+
+		uint32_t numCopies = 1;
 
 	};
 }

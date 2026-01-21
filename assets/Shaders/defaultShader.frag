@@ -64,8 +64,6 @@ in vec2 TexCoord;
 in mat3 TBN;
 
 
-
-
 uniform vec3 viewPos;
 uniform bool isHovered;
 uniform bool entityEditingMode;

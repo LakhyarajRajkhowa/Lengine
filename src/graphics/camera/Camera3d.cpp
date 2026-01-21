@@ -3,11 +3,10 @@
 namespace Lengine {
     float _speed = 0.1f;
     Camera3d::Camera3d() {
-        _applyGravity = false;
     }
     Camera3d::~Camera3d() {}
 
-    void Camera3d::init(float width, float height, InputManager* inputManager, glm::vec3 cameraPos, float FOV) {
+    void Camera3d::init(const uint32_t width, const uint32_t height, InputManager* inputManager, glm::vec3 cameraPos, float FOV) {
         position = cameraPos;
         yaw = -90.0f;
         pitch = 0.0f;
@@ -16,7 +15,7 @@ namespace Lengine {
         up = glm::vec3(0.0f, 1.0f, 0.0f);
 
         fov = FOV;
-        aspectRatio = width / height;
+        aspectRatio = (static_cast<float>(width) / static_cast<float>(height));
         _inputManager = inputManager;
 
         direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

@@ -8,14 +8,14 @@ namespace Lengine {
         SDL_Init(SDL_INIT_EVERYTHING);
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-        create(windowName, screenWidth, screenHeight, currentFlags);
+        Create(windowName, screenWidth, screenHeight, currentFlags);
     }
 
     Window::~Window()
     {
     }
 
-    int Window::create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags)
+    int Window::Create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags)
     {
         Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE ;
 
@@ -31,13 +31,11 @@ namespace Lengine {
         SDL_DisplayMode mode;
         SDL_GetCurrentDisplayMode(0, &mode);
 
-        if (screenWidth > mode.w) screenWidth = mode.w;
-        if (screenHeight > mode.h) screenHeight = mode.h;
+        if (screenWidth > mode.w) this->screenWidth = mode.w;
+        if (screenHeight > mode.h) this->screenHeight = mode.h;
 
         // MSAA
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-
 
 
         _sdlWindow = SDL_CreateWindow(
@@ -62,13 +60,18 @@ namespace Lengine {
 
         SDL_GL_SetSwapInterval(0);
 
+        // FULLSCREEN without any top or bottom bar
         if (currentFlags & FULLSCREEN)
         {
-            SDL_SetWindowBordered(_sdlWindow, SDL_TRUE); 
-            SDL_SetWindowFullscreen(_sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+            SDL_DisplayMode mode;
+            SDL_GetCurrentDisplayMode(0, &mode);
+
+            SDL_SetWindowDisplayMode(_sdlWindow, &mode);
+            SDL_SetWindowFullscreen(_sdlWindow, SDL_WINDOW_FULLSCREEN);
         }
 
-        SDL_GL_GetDrawableSize(_sdlWindow, &_screenWidth, &_screenHeight);
+
+        SDL_GL_GetDrawableSize(_sdlWindow, &screenWidth, &screenHeight);
 
         
 

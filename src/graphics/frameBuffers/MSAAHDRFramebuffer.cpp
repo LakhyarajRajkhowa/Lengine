@@ -3,7 +3,7 @@
 
 namespace Lengine {
 
-    MSAAHDRFramebuffer::MSAAHDRFramebuffer(uint32_t width, uint32_t height)
+    MSAAHDRFramebuffer::MSAAHDRFramebuffer(const uint32_t width, const uint32_t height)
         : width(width), height(height)
     {
         
@@ -96,7 +96,7 @@ namespace Lengine {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    void MSAAHDRFramebuffer::Resize(uint32_t width, uint32_t height) {
+    void MSAAHDRFramebuffer::Resize(const uint32_t width, const uint32_t height) {
         if (width == 0 || height == 0) return;
         this->width = width;
         this->height = height;
@@ -117,7 +117,7 @@ namespace Lengine {
 
             glBlitFramebuffer(
                 0, 0, width,height,
-                0, 0, target.getWidth(), target.getHeight(),
+                0, 0, target.GetWidth(), target.GetHeight(),
                 GL_COLOR_BUFFER_BIT,
                 GL_NEAREST
             );

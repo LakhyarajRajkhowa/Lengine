@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <string>
@@ -18,13 +19,13 @@ namespace Lengine {
 		Window(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
 		~Window();
 
-		int create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
+		int Create(std::string windowName, int screenWidth, int screenHeight, unsigned int currentFlags);
 
 		void swapBuffer();
 		void quitWindow();
 
-		int getScreenWidth() { return _screenWidth; }
-		int getScreenHeight() { return _screenHeight; }
+		uint32_t getScreenWidth() { return screenWidth; }
+		uint32_t getScreenHeight() { return screenHeight; }
 
 		SDL_Window* getWindow() { return _sdlWindow; }
 		SDL_GLContext getGlContext() { return _glContext;  }
@@ -33,7 +34,7 @@ namespace Lengine {
 		
 		SDL_Window* _sdlWindow;
 		SDL_GLContext _glContext = nullptr;
-		int _screenWidth, _screenHeight;
+		uint32_t screenWidth, screenHeight;
 
 	};
 }

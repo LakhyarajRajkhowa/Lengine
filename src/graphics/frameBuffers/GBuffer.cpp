@@ -4,10 +4,10 @@
 
 using namespace Lengine;
 
-GBuffer::GBuffer(uint32_t width, uint32_t height)
+GBuffer::GBuffer(const uint32_t width, const uint32_t height)
     : width(width), height(height)
 {
-    create();
+    Create();
     configureShaders();
     fullscreenQuad.init();
 }
@@ -16,7 +16,7 @@ GBuffer::~GBuffer() {
     destroy();
 }
 
-void GBuffer::create() {
+void GBuffer::Create() {
 
     // position color buffer
     glGenTextures(1, &gPosition);

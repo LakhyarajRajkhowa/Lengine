@@ -3,8 +3,8 @@
 
 namespace Lengine {
 
-    Framebuffer::Framebuffer(float width, float height)
-        : width(width), height(height)
+    Framebuffer::Framebuffer(const uint32_t w, const uint32_t h)
+        : width(w), height(h)
     {
         Create();
     }
@@ -20,8 +20,8 @@ namespace Lengine {
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
         // Create color texture
-        glGenTextures(1, &m_ColorAttachment);
-        glBindTexture(GL_TEXTURE_2D, m_ColorAttachment);
+        glGenTextures(1, &colorBuffer);
+        glBindTexture(GL_TEXTURE_2D, colorBuffer);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height,
             0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
@@ -29,7 +29,7 @@ namespace Lengine {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, m_ColorAttachment, 0);
+            GL_TEXTURE_2D, colorBuffer, 0);
 
         // Create depth-stencil renderbuffer
         glGenRenderbuffers(1, &depthBuffer);
@@ -53,9 +53,9 @@ namespace Lengine {
             glDeleteRenderbuffers(1, &depthBuffer);
             depthBuffer = 0;
         }
-        if (m_ColorAttachment) {
-            glDeleteTextures(1, &m_ColorAttachment);
-            m_ColorAttachment = 0;
+        if (colorBuffer) {
+            glDeleteTextures(1, &colorBuffer);
+            colorBuffer = 0;
         }
         if (FBO) {
             glDeleteFramebuffers(1, &FBO);
@@ -67,18 +67,20 @@ namespace Lengine {
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     }
 
-    void Framebuffer::useTexture(GLuint texture, GLuint slot)
+
+    void Framebuffer::Unbind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+
+    void Framebuffer::UseTexture(const GLuint texture, const GLuint slot)
     {
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, texture);
     }
 
 
-    void Framebuffer::Unbind() {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    void Framebuffer::Resize(float width, float height) {
+    void Framebuffer::Resize(const uint32_t width, const uint32_t height) {
         if (width == 0 || height == 0)
             return;
 

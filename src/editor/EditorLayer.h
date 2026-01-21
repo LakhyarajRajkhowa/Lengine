@@ -42,9 +42,8 @@ namespace Lengine {
             Camera3d& camera,
             InputManager& inputManager,
             AssetManager& assetManager,
-            Window& window,
             RenderSettings& rndrSett,
-            glm::vec2 resolution          
+            const glm::i32vec2 resolution          
             );
         ~EditorLayer() = default;
 
@@ -57,8 +56,8 @@ namespace Lengine {
         PerformancePanel& GetPerformancePanel() { return performancePanel; }
 
         // Editor manipulation
-        void checkForHoveredEntity();
-        void beginArrowDrag();
+        void CheckForHoveredEntity();
+        void BeginArrowDrag();
         GizmoAxis getHoveredGizmoAxis();
 
         void selectHoveredEntity();
@@ -107,7 +106,6 @@ namespace Lengine {
         Camera3d& camera;
         InputManager& inputManager;
         AssetManager& assetManager;
-        Window& window;
         RenderSettings& renderSettings;
     private:
        

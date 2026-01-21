@@ -62,13 +62,41 @@ ResolvedMaterial ForwardRenderer::resolveMaterial(
     return mat;
 }
 
+
+ResolvedPBRMaterial ForwardRenderer::resolvePBRMaterial(
+    const PBRMaterial& baseMaterial,
+    const PBRMaterialInstance& inst
+) {
+    ResolvedPBRMaterial mat{};
+
+    // Scalars
+    mat.albedo = inst.albedo.value_or(baseMaterial.albedo);
+    mat.metallic = inst.metallic.value_or(baseMaterial.metallic);
+    mat.roughness = inst.roughness.value_or(baseMaterial.roughness);
+    mat.ao = inst.ao.value_or(baseMaterial.ao);
+
+    // Texture maps
+    mat.map_albedo = inst.map_albedo.value_or(baseMaterial.map_albedo);
+    mat.map_normal = inst.map_normal.value_or(baseMaterial.map_normal);
+    mat.map_metallic = inst.map_metallic.value_or(baseMaterial.map_metallic);
+    mat.map_roughness = inst.map_roughness.value_or(baseMaterial.map_roughness);
+    mat.map_ao = inst.map_ao.value_or(baseMaterial.map_ao);
+    mat.map_metallicRoughness = inst.map_metallicRoughness.value_or(baseMaterial.map_metallicRoughness);
+
+    mat.normalStrength =
+        inst.normalStrength.value_or(baseMaterial.normalStrength);
+
+    return mat;
+}
+
+
 void ForwardRenderer::bindCameraUniforms(
     GLSLProgram& shader,
     const glm::mat4& model,
     Camera3d& camera
 ) {
 
-    shader.setMat4("model", model);
+    shader.setMat4("model", model); 
     shader.setMat4("view", camera.getViewMatrix());
     shader.setMat4("projection", camera.getProjectionMatrix());
     shader.setVec3("cameraPos", camera.getCameraPosition());
@@ -133,6 +161,40 @@ void ForwardRenderer::bindLightUniforms(
 }
 
 
+void ForwardRenderer::bindPBRLights(
+    GLSLProgram& shader,
+    const std::vector<Light>& lights
+) {
+    int count = (int)lights.size();
+
+    shader.setInt("lightCount", count);
+
+    for (int i = 0; i < count; i++) {
+        shader.setVec3(
+            "lightPositions[" + std::to_string(i) + "]",
+            lights[i].position
+        );
+
+        shader.setVec3(
+            "lightColors[" + std::to_string(i) + "]",
+            lights[i].diffuse * lights[i].intensity
+        );
+    }
+}
+
+void ForwardRenderer::bindPBRMaterial(
+    GLSLProgram& shader,
+    const ResolvedPBRMaterial& mat
+) {
+    shader.setVec3("material.albedo", mat.albedo);
+    shader.setFloat("material.metallic", mat.metallic);
+    shader.setFloat("material.roughness", mat.roughness);
+    shader.setFloat("material.ao", mat.ao);
+    shader.setFloat("material.normalStrength", mat.normalStrength);
+}
+
+
+
 void ForwardRenderer::bindMaterialUniforms(
     GLSLProgram& shader,
     const ResolvedMaterial& mat
@@ -149,16 +211,19 @@ void ForwardRenderer::bindTexture(
     GLSLProgram& shader,
     AssetManager& assetManager,
     const UUID& texID,
-    const bool useTexture,
+    const bool UseTexture,
     const char* hasUniform,
     const char* samplerUniform,
     GLenum textureUnit
 ) {
-    if (!useTexture) return;
+    bool hasTexture = (texID != UUID::Null && UseTexture);
+    shader.setBool(hasUniform, hasTexture);
+
+    if (!UseTexture) return;
+
     glActiveTexture(textureUnit);
 
-    bool hasTexture = texID != UUID::Null;
-    shader.setBool(hasUniform, hasTexture);
+
 
     if (!hasTexture) {
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -186,10 +251,8 @@ void ForwardRenderer::bindEditorUniforms(
 
 void ForwardRenderer::drawSubMesh(
     SubMesh& sm,
-    GLSLProgram& shader,
-    bool isHovered
+    GLSLProgram& shader
 ) {
-    shader.setBool("isHovered", isHovered);
 
     if (!sm.isVisible)
         return;
@@ -200,18 +263,12 @@ void ForwardRenderer::drawSubMesh(
 void ForwardRenderer::drawSubMeshGroup(
     Mesh& mesh,
     const std::vector<uint32_t>& subMeshIDs,
-    GLSLProgram& shader,
-    const std::unordered_set<uint32_t>& hoveredSubMeshes
+    GLSLProgram& shader
 ) {
     for (uint32_t smID : subMeshIDs)
     {
         SubMesh& sm = mesh.subMeshes[smID];
-
-        bool hovered =
-            hoveredSubMeshes.find(smID)
-            != hoveredSubMeshes.end();
-
-        drawSubMesh(sm, shader, hovered);
+        drawSubMesh(sm, shader);
     }
 }
 void ForwardRenderer::drawMeshAllSubMeshes(
@@ -234,7 +291,8 @@ void ForwardRenderer::drawMeshAllSubMeshes(
 
 // TODO : draw call instancing / batching
 
-void ForwardRenderer::renderScene(
+/*
+void ForwardRenderer::RenderScene_phong(
     Scene& activeScene,
     const EditorConfig& editorConfig,
     ShadowMap& shadowMap,
@@ -244,6 +302,7 @@ void ForwardRenderer::renderScene(
     defaultShader = assetManager.getShader("defaultShader.vert");
 
     const auto& entities = activeScene.getEntities();
+
     auto& lights = activeScene.getLights();
     Light& mainDirectionalLight = activeScene.getMainDirectionalLight();
     Light& mainPointLight = activeScene.getMainPointLight();
@@ -274,6 +333,7 @@ void ForwardRenderer::renderScene(
         flags.entityDragged = entity->isDragged;
 
         bindCameraUniforms(*defaultShader, model, camera);
+
 
         
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
@@ -341,6 +401,211 @@ void ForwardRenderer::renderScene(
 
     defaultShader->unuse();
 }
+*/
+
+
+
+
+void ForwardRenderer::RenderScene_pbr(
+    Scene& activeScene,
+    const EditorConfig& editorConfig,
+    ShadowMap& shadowMap,
+    ShadowCubeMap& shadowCubeMap,
+    const GLTexture& irradianceMap
+) {
+    GLSLProgram* pbrShader = assetManager.getShader("pbr.vert");
+    pbrShader->use();
+    pbrShader->setInt("irradianceMap", 0);
+
+    const auto& entities = activeScene.getEntities();
+    auto& meshRenderers = activeScene.MeshRenderers();
+    auto& meshFilters = activeScene.MeshFilters();
+
+    auto& lights = activeScene.getLights();
+
+    collectLights(lights, entities);
+
+    // Bind camera once (view & projection are global)
+    pbrShader->setMat4("view", camera.getViewMatrix());
+    pbrShader->setMat4("projection", camera.getProjectionMatrix());
+    pbrShader->setVec3("cameraPos", camera.getCameraPosition());
+  
+    // bind pre-computed IBL data
+    
+    glActiveTexture(GL_TEXTURE10);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap.id);
+    pbrShader->setInt("irradianceMap", 10);
+
+
+    // Bind lights
+    bindPBRLights(*pbrShader, lights);
+
+
+    for (const auto& entityPtr : entities) { 
+        Entity* entity = entityPtr.get();
+        if (!entity || !entity->isVisible) continue;
+
+        auto& mr = meshRenderers.Get(entity->getID());
+        auto& mf = meshFilters.Get(entity->getID());
+
+
+        Mesh* mesh = assetManager.getMesh(mf.meshID);
+        if (!mesh || mf.HasPendingMesh()) continue;
+
+        glm::mat4 model = entity->getTransformMatrix();
+        pbrShader->setMat4("model", model);
+
+        glm::mat3 normalMatrix =
+            glm::transpose(glm::inverse(glm::mat3(model)));
+
+       // pbrShader->setMat3("normalMatrix", normalMatrix);
+
+        for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
+
+            if (!subMeshes.size()) continue;
+
+
+            if (mr.materialIndexToInstID.empty()) {
+                activeScene.assignDefaultPBRMaterials(entity->getID(), mesh);
+            }
+
+            UUID instID = mr.materialIndexToInstID.at(matIndex);
+            PBRMaterialInstance& inst = activeScene.getPbrMaterialInstance(instID);
+
+            PBRMaterial* baseMaterial = assetManager.getPBRMaterial(inst.baseMaterial);
+            if (!baseMaterial) continue;
+
+
+            ResolvedPBRMaterial finalMat = resolvePBRMaterial(*baseMaterial, inst);
+
+
+            // ---- GPU BIND ----
+            bindPBRMaterial(*pbrShader, finalMat);
+
+            bindTexture(
+                *pbrShader,
+                assetManager,
+                finalMat.map_albedo,
+                inst.use_map_albedo,
+                "material.hasAlbedoMap",
+                "material.albedoMap",
+                GL_TEXTURE1
+            );
+
+
+            bindTexture(
+                *pbrShader,
+                assetManager,
+                finalMat.map_normal,
+                inst.use_map_normal,
+                "material.hasNormalMap",
+                "material.normalMap",
+                GL_TEXTURE2
+            );
+            bindTexture(
+                *pbrShader,
+                assetManager,
+                finalMat.map_metallicRoughness,
+                inst.use_map_metallicRoughness,
+                "material.hasMetallicRoughnessMap",
+                "material.metallicRoughnessMap",
+                GL_TEXTURE3
+            );
+
+
+            bindTexture(
+                *pbrShader,
+                assetManager,
+                finalMat.map_ao,
+                inst.use_map_ao,
+                "material.hasAOMap",
+                "material.aoMap",
+                GL_TEXTURE4
+            );
+            
+            bindTexture(
+                *pbrShader,
+                assetManager,
+                finalMat.map_metallic,
+                inst.use_map_metallic,
+                "material.hasMetallicMap",
+                "material.metallicMap",
+                GL_TEXTURE5
+            );
+
+            bindTexture(
+                *pbrShader,
+                assetManager,
+                finalMat.map_roughness,
+                inst.use_map_roughness,
+                "material.hasRoughnessMap",
+                "material.roughnessMap",
+                GL_TEXTURE6
+            );
+
+
+
+            drawSubMeshGroup(
+                *mesh,
+                subMeshes,
+                *pbrShader
+            );
+        }
+    }
+
+    pbrShader->unuse();
+}
+
+
+/*
+ 
+ TODO : SSAO 
+
+void ForwardRenderer::renderSceneDepthNormals(
+    Scene& activeScene,
+    const EditorConfig& editorConfig
+) {
+    auto depthNormalShader =
+        assetManager.getShader("depthNormalShader.vert");
+
+    depthNormalShader->use();
+
+    // Camera matrices
+    depthNormalShader->setMat4("uView", camera.getViewMatrix());
+    depthNormalShader->setMat4("uProjection", camera.getProjectionMatrix());
+
+    const auto& entities = activeScene.getEntities();
+
+    for (const auto& entityPtr : entities) {
+
+        Entity* entity = entityPtr.get();
+        if (!entity || !entity->isVisible)
+            continue;
+
+        UUID meshID = entity->getMeshID();
+        Mesh* mesh = assetManager.getMesh(meshID);
+        if (!mesh || entity->hasPendingMesh())
+            continue;
+
+        glm::mat4 model = entity->getTransformMatrix();
+        depthNormalShader->setMat4("uModel", model);
+
+        // IMPORTANT: no materials, no textures
+        for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
+            if (!subMeshes.size()) continue;
+
+            drawSubMeshGroup(
+                *mesh,
+                subMeshes,
+                *depthNormalShader,
+                {} // no hovered submesh highlight
+            );
+        }
+    }
+
+    depthNormalShader->unuse();
+}
+*/
 
 /*
 void Renderer::initOutlineShader() {

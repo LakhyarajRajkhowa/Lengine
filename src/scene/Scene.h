@@ -3,7 +3,8 @@
 #include "../resources/TextureCache.h"
 
 #include "../scene/Entity.h"
-#include "../scene/EntityComponentSystem.h"
+#include "../scene/components/MeshRendererStorage.h"
+#include "../scene/components/MeshFilterStorage.h"
 #include "../assets/MaterialRegistry.h"
 namespace Lengine {
     class Scene {
@@ -16,15 +17,13 @@ namespace Lengine {
   
         Entity* createEntity(
             const std::string& name,
-            UUID meshID,
-            UUID entityID = UUID(),
-            EntityType type = EntityType::DefaultObject
+            const UUID meshID,
+            EntityType type = EntityType::DefaultObject,
+            UUID entityID = UUID()
         );
 
-        Entity* addEntity(std::unique_ptr<Entity> entity);
+        Entity* addEntity(std::unique_ptr<Entity> entity, const UUID originalEntityId);
         
-
-
         const  Entity* getEntityByName(const std::string& name) const;
         Entity* getEntityByName(const std::string& name) ;
 
@@ -109,17 +108,37 @@ namespace Lengine {
 
 
         MaterialInstance& getMaterialInstance(UUID id);
+        PBRMaterialInstance& getPbrMaterialInstance(UUID id);
+
         const MaterialInstance& getMaterialInstance(UUID id) const;
+        const PBRMaterialInstance& getPbrMaterialInstance(UUID id) const;
+
         UUID createMaterialInstance(UUID baseMaterial);
+        UUID createPbrMaterialInstance(UUID baseMaterial);
         void destroyMaterialInstance(UUID id);
         void assignDefaultMaterials(Entity* entity,Mesh* mesh);
+        void assignDefaultPBRMaterials(const UUID entityID, Mesh* mesh);
         const void assignDefaultMaterials(Entity* entity, Mesh* mesh) const ;
         ResolvedMaterial getMaterialForSubmesh(
             Entity* entity,
             const std::string& submeshName,
             Material* base);
         
+        const MeshRendererStorage& MeshRenderers() const {
+            return meshRenderers;
+        }
 
+        MeshRendererStorage& MeshRenderers() {
+            return meshRenderers;
+        }
+
+        const MeshFilterStorage& MeshFilters() const {
+            return meshFilters;
+        }
+
+        MeshFilterStorage& MeshFilters() {
+            return meshFilters;
+        }
 
     private:
         std::string name;
@@ -129,9 +148,10 @@ namespace Lengine {
 
         glm::vec3 ambient = {0.5f, 0.5f, 0.5f};
         std::unordered_map<UUID, MaterialInstance> materialInstances;
+        std::unordered_map<UUID, PBRMaterialInstance> pbrMaterialInstances;
 
-       // std::unordered_map<uint32_t, MeshRendererComponent> meshRenderers; // entityIdx, mrc
-       
+        MeshRendererStorage meshRenderers;
+        MeshFilterStorage meshFilters;
 
     };
 }

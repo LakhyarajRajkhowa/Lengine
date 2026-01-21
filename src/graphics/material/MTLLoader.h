@@ -1,4 +1,8 @@
 #pragma once
+
+#include <../external/json.hpp>
+using json = nlohmann::json;
+
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -141,6 +145,71 @@ namespace Lengine {
 
         file.close();
     }
+
+
+
+    static inline bool load_pbrmat(
+        const std::string& filepath,
+        PBRMaterial& mat
+    ) {
+        std::ifstream file(filepath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open PBR material: " << filepath << "\n";
+            return false;
+        }
+
+        json j;
+        file >> j;
+
+        // ---------- Scalars ----------
+        if (j.contains("albedo")) {
+            auto& a = j["albedo"];
+            mat.albedo = glm::vec3(a[0], a[1], a[2]);
+        }
+
+        if (j.contains("metallic"))
+            mat.metallic = j["metallic"];
+
+        if (j.contains("roughness"))
+            mat.roughness = j["roughness"];
+
+        if (j.contains("ao"))
+            mat.ao = j["ao"];
+
+        // ---------- Textures ----------
+        if (j.contains("textures")) {
+            auto& t = j["textures"];
+
+            if (t.contains("albedo"))
+                mat.map_albedo_path = t["albedo"];
+
+            if (t.contains("normal"))
+                mat.map_normal_path = t["normal"];
+
+            if (t.contains("metallic"))
+                mat.map_metallic_path = t["metallic"];
+
+            if (t.contains("roughness"))
+                mat.map_roughness_path = t["roughness"];
+
+            if (t.contains("ao"))
+                mat.map_ao_path = t["ao"];
+
+            if (t.contains("metallicRoughness"))
+                mat.map_metallicRoughness_path = t["metallicRoughness"];
+        }
+
+        // reset GPU handles (assigned later by AssetManager)
+        mat.map_albedo = UUID::Null;
+        mat.map_normal = UUID::Null;
+        mat.map_metallic = UUID::Null;
+        mat.map_roughness = UUID::Null;
+        mat.map_ao = UUID::Null;
+        mat.map_metallicRoughness = UUID::Null;
+
+        return true;
+    }
+
 
 }
 

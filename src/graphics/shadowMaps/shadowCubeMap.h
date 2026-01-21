@@ -17,6 +17,7 @@ namespace Lengine {
 
 		void renderDepthCubeMap(
 			std::vector<std::unique_ptr<Entity>>& entities,
+			MeshRendererStorage& mrs,
 			Light& light,
 			AssetManager& assetManager);
 

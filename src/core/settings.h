@@ -25,7 +25,7 @@ enum class RenderPath {
 struct RenderSettings {
 	// RenderPath renderPath = RenderPath::Forward;
 
-	bool HDR = false;
+	bool HDR = true;
 	float exposure = 1.0f;
 
 	bool enableBloom = false;
@@ -45,15 +45,15 @@ class EngineSettings {
 public:
 	EngineSettings();
 	std::string windowName = "Lengine";
-	uint16_t  windowWidth = 1280;
-	uint16_t  windowHeight = 720 ;
+	uint32_t  windowWidth = 1280;
+	uint32_t  windowHeight = 720 ;
 	WindowMode windowMode = WindowMode::BORDERLESS;
 
 
-	uint16_t resolution_X = 1280;
-	uint16_t resolution_Y = 720;
+	uint32_t resolution_X = 1280;
+	uint32_t resolution_Y = 720;
 
-	uint16_t shadowMapResolution = 1024;
+	uint32_t shadowMapResolution = 1024;
 
 
 	float cameraPosX = 0;

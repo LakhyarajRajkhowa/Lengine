@@ -25,7 +25,6 @@ namespace Lengine {
 			camera,
 			inputManager,
 			assetManager,
-			window,
 			renderSettings,
 			glm::vec2(
 				settings.resolution_X,
@@ -77,8 +76,6 @@ namespace Lengine {
 
 		std::vector <std::string> scenesTobeLoaded;
 		scenesTobeLoaded.push_back("defaultScene");
-		scenesTobeLoaded.push_back("sponza");
-
 
 		sceneManager.loadScenes(scenesTobeLoaded);
 		sceneRenderer.init();
@@ -98,7 +95,6 @@ namespace Lengine {
 			inputManager.update();
 
 			inputHandler.handleInputs(imguiLayer, editorLayer);
-
 			assetManager.processGpuUploads();
 			assetManager.syncAssetsToScene(*sceneManager.getActiveScene());
 

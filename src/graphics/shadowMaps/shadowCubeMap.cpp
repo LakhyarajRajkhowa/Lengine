@@ -53,42 +53,12 @@ void ShadowCubeMap::updateTransforms(const glm::vec3& lightPos)
 		glm::lookAt(lightPos, lightPos + glm::vec3(0, 0, -1), glm::vec3(0, -1, 0)));
 }
 
+
 void ShadowCubeMap::renderDepthCubeMap(
 	std::vector<std::unique_ptr<Entity>>& entities,
+	MeshRendererStorage& mrs,
 	Light& light,
 	AssetManager& assetManager)
 {
-	if (!light.castShadow) return;
-	depthCubeMapShader.use();
-	glm::vec3& lightPos = light.position;
-	// Upload shadow matrices
-	updateTransforms(lightPos);
-	const auto& matrices = shadowTransforms;
-	for (int i = 0; i < 6; ++i) {
-		depthCubeMapShader.setMat4(
-			"shadowMatrices[" + std::to_string(i) + "]",
-			matrices[i]
-		);
-	}
-
-	depthCubeMapShader.setVec3("lightPos", light.position);
-	depthCubeMapShader.setFloat("farPlane", farPlane);
-
-	glViewport(0, 0, SHADOW_RES, SHADOW_RES);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	for (auto& e : entities)
-	{
-		if (e->getType() == EntityType::Light || !e->isVisible)
-			continue;
-
-		depthCubeMapShader.setMat4("model", e->getTransform().getMatrix());
-
-		auto* mesh = assetManager.getMesh(e->getMeshID());
-		if (mesh)
-			mesh->draw();
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
 }

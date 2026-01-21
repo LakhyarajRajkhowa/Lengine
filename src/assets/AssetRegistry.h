@@ -9,11 +9,12 @@ namespace Lengine {
     enum class AssetType {
         Unknown = -1,
         Mesh = 0,
-        Material = 1,
-        Texture_srgb = 2,
-        Texture = 3,
-        Shader = 4,
-        count = 5
+        Material_pbr = 1,
+        Material = 2,
+        Texture_srgb = 3,
+        Texture = 4,
+        Shader = 5,
+        count = 6
     };
 
     struct AssetRecord {
@@ -24,11 +25,12 @@ namespace Lengine {
 
     inline std::string AssetTypeToString(AssetType type) {
         switch (type) {
-        case AssetType::Mesh:     return "Mesh";
-        case AssetType::Material: return "Material";
-        case AssetType::Texture:  return "Texture";
-        case AssetType::Texture_srgb:  return "Texture_srgb";
-        case AssetType::Shader:   return "Shader";
+        case AssetType::Mesh:            return "Mesh";
+        case AssetType::Material_pbr:    return "Material_pbr";
+        case AssetType::Material:        return "Material";
+        case AssetType::Texture:         return "Texture";
+        case AssetType::Texture_srgb:    return "Texture_srgb";
+        case AssetType::Shader:          return "Shader";
         default: return "Unknown";
         }
     }

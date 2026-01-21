@@ -30,6 +30,9 @@ void AssetManager::LoadAllMetaFiles(const fs::path& root)
         if (assetPath.extension() == ".mtl") {
             loadMaterial(meta.uuid, assetPath.string());
         }
+        if (assetPath.extension() == ".pbrmat") {
+            loadPBRMaterial(meta.uuid, assetPath.string());
+        }
         
     }
 }
@@ -59,7 +62,7 @@ UUID AssetManager::importAndLoadMesh(const std::string& name, const std::string&
     return id;
 }
 
-void AssetManager::requestMeshLoad(const UUID& uuid, const std::string& path)
+void AssetManager::requestMeshLoad(const UUID& uuid, const std::string& path, MeshFilter& meshFilter)
 {
     std::string meshName = ExtractNameFromPath(path);
     auto mesh = std::make_shared<Mesh>();
@@ -72,11 +75,12 @@ void AssetManager::requestMeshLoad(const UUID& uuid, const std::string& path)
         std::lock_guard<std::mutex> lock(assetMutex);
         assetStates[uuid] = AssetState::Loading;
         meshes[uuid] = mesh;
+        meshFilter.meshID = uuid;
         addAssetToAssetRegistry(uuid, AssetType::Mesh, cleanPath);
     }
 
 
-    std::thread([this, uuid, mesh, cleanPath]() {
+    std::thread([this, uuid, mesh, meshFilter, cleanPath]() {
 
         bool ok = assimpLoader(cleanPath, *mesh);
 
@@ -94,12 +98,13 @@ void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
     std::string newPath = StripQuotes(path);
 
     std::shared_ptr<Mesh> ptr;
-    MeshRendererComponent mrc;
     Model model;
 
     model.loadModel(meshName, newPath, ptr);
 
     meshes[uuid] = ptr;
+
+    
 
     addAssetToAssetRegistry(uuid, AssetType::Mesh, newPath);
 }
@@ -174,7 +179,6 @@ bool AssetManager::loadMaterial(
     if (materials[uuid]) return false;
     std::string materialName = ExtractNameFromPath(path);
     std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
-    DEBUG_LOG(shaderName);
     GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
 
     auto materialPtr = std::make_shared<Material>(materialName, shader);
@@ -230,6 +234,105 @@ UUID AssetManager::getMaterialUUID(const std::string& name) {
 
     return UUID::Null;
 }
+
+//  ------ PBR MATERIALS ------
+
+UUID AssetManager::importPBRMaterial(const std::string& path) {
+    MetaFile meta;
+
+    std::string fileName = ExtractFileNameFromPath(path);
+    if (!MetaFileSystem::HasMeta(path)) {
+        meta.uuid = UUID();
+        meta.type = "material_pbr";
+        meta.source = NormalizePath(path);
+
+        MetaFileSystem::Save(path, meta);
+    }
+    else {
+        meta = MetaFileSystem::Load(path);
+    }
+
+    return meta.uuid;
+}
+
+UUID AssetManager::importAndLoadPBRMaterial(
+    const std::string& path,
+    const std::string& vertexShaderPath,
+    const std::string& fragmentShaderPath
+) {
+
+    UUID id = importPBRMaterial(path);
+    loadPBRMaterial( id, path, vertexShaderPath, fragmentShaderPath);
+    return id;
+}
+
+// also put shaders to the material
+bool AssetManager::loadPBRMaterial(
+    const UUID& uuid,
+    const std::string& path,
+    const std::string& vertexShaderPath,
+    const std::string& fragmentShaderPath
+)
+{
+    if (materials[uuid]) return false;
+    std::string materialName = ExtractNameFromPath(path);
+    std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
+    GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
+
+    auto materialPtr = std::make_shared<PBRMaterial>(materialName, shader);
+    std::string folderPath = GetFolderPath(path);
+    std::string newPath = StripQuotes(path);
+    bool matLoaded = load_pbrmat(newPath, *materialPtr);
+
+    if (matLoaded) {
+        std::cout << "Material Loaded: " << path << std::endl;
+    }
+    else {
+        std::cout << "Failed to load Material: " << path << std::endl;
+        return false;
+    }
+
+    if (!materialPtr->map_albedo_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_albedo_path);
+        materialPtr->map_albedo = importTexture(folderPath + "/" + materialPtr->map_albedo_path);
+        requestTextureLoad(materialPtr->map_albedo, folderPath + "/" + materialPtr->map_albedo_path, true);
+    }
+    if (!materialPtr->map_ao_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_ao_path);
+        materialPtr->map_ao = importTexture(folderPath + "/" + materialPtr->map_ao_path);
+        requestTextureLoad(materialPtr->map_ao, folderPath + "/" + materialPtr->map_ao_path);
+    }
+    if (!materialPtr->map_metallic_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_metallic_path);
+        materialPtr->map_metallic = importTexture(folderPath + "/" + materialPtr->map_metallic_path);
+        requestTextureLoad(materialPtr->map_metallic, folderPath + "/" + materialPtr->map_metallic_path);
+    }
+    if (!materialPtr->map_normal_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_normal_path);
+        materialPtr->map_normal = importTexture(folderPath + "/" + materialPtr->map_normal_path);
+        requestTextureLoad(materialPtr->map_normal, folderPath + "/" + materialPtr->map_normal_path);
+    }
+    if (!materialPtr->map_roughness_path.empty()) {
+        std::string texName = ExtractNameFromPath(materialPtr->map_roughness_path);
+        materialPtr->map_roughness = importTexture(folderPath + "/" + materialPtr->map_roughness_path);
+        requestTextureLoad(materialPtr->map_roughness, folderPath + "/" + materialPtr->map_roughness_path);
+    }
+
+    pbrMaterials[uuid] = materialPtr;
+    addAssetToAssetRegistry(uuid, AssetType::Material_pbr, newPath);
+    return true;
+}
+
+PBRMaterial* AssetManager::getPBRMaterial(const UUID& id)
+{
+    auto it = pbrMaterials.find(id);
+    if (it == pbrMaterials.end())
+        return nullptr;
+
+    return it->second.get();
+}
+
+
 
 //          ----- TEXTURES -----
 
@@ -457,24 +560,38 @@ void AssetManager::saveSceneAssetRegistryForScene(
     for (const auto& entityPtr : scene.getEntities()) {
         Entity* entity = entityPtr.get();
 
-        if (!entity->getMeshID().isNull())
-            usedAssets.insert(entity->getMeshID());
+        const MeshRenderer& mr = scene.MeshRenderers().Get(entity->getID());
+        const MeshFilter& mf = scene.MeshFilters().Get(entity->getID());
 
-        for (auto& [matIdx, matUUID] : entity->getMaterialIndexUUIDs()) {
+
+        if (!mf.meshID.isNull())
+            usedAssets.insert(mf.meshID);
+
+        for (auto& [matIdx, matUUID] : mr.materialIndexToUUID) {
             if (matUUID != UUID::Null)
                 usedAssets.insert(matUUID);
         }
 
-        for (auto& [matIdx, matUUID] : entity->getMaterialIndexInstIDs()) {
-            auto& inst = scene.getMaterialInstance(matUUID);
+        for (auto& [matIdx, matUUID] : mr.materialIndexToInstID) {
+            auto& inst = scene.getPbrMaterialInstance(matUUID);
 
-            if (inst.map_kd.has_value()) {
-                usedAssets.insert(inst.map_kd.value());
+            if (inst.map_albedo.has_value()) {
+                usedAssets.insert(inst.map_albedo.value());
             }
-            if (inst.map_ks.has_value()) {
-                usedAssets.insert(inst.map_ks.value());
-            }if (inst.map_bump.has_value()) {
-                usedAssets.insert(inst.map_bump.value());
+            if (inst.map_ao.has_value()) {
+                usedAssets.insert(inst.map_ao.value());
+            }
+            if (inst.map_metallic.has_value()) {
+                usedAssets.insert(inst.map_metallic.value());
+            }
+            if (inst.map_normal.has_value()) {
+                usedAssets.insert(inst.map_normal.value());
+            }
+            if (inst.map_roughness.has_value()) {
+                usedAssets.insert(inst.map_roughness.value());
+            }
+            if (inst.map_metallicRoughness.has_value()) {
+                usedAssets.insert(inst.map_metallicRoughness.value());
             }
         }
 
@@ -654,12 +771,16 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
     for (const auto& entityPtr : entities)
     {
         Entity* entity = entityPtr.get();
+        const MeshRenderer& mr = scene.MeshRenderers().Get(entity->getID());
+        const MeshFilter& mf = scene.MeshFilters().Get(entity->getID());
+
+
         json jEntity;
 
         jEntity["entityID"] = entity->getID().toUint64();
         jEntity["name"] = entity->getName();
         jEntity["type"] = entity->getType();
-        jEntity["meshID"] = entity->getMeshID().toUint64();
+        jEntity["meshID"] = mf.meshID.toUint64();
 
         const auto& transform = entity->getTransform();
         jEntity["transform"] = {
@@ -669,7 +790,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
         };
 
         // ---------- SAVE MATERIALS (NEW) ----------
-        const auto& matUUIDs = entity->getMaterialIndexUUIDs();
+        const auto& matUUIDs = mr.materialIndexToUUID;
         if (!matUUIDs.empty())
         {
             json jMaterials = json::object();
@@ -684,7 +805,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
         // ------------------------------------------
 
         // ---------- SAVE MATERIAL OVERRIDES ----------
-        const auto& overrides = entity->getMaterialIndexInstIDs();
+        const auto& overrides = mr.materialIndexToInstID;
 
         if (!overrides.empty())
         {
@@ -693,19 +814,22 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
             for (const auto& [matIndex, inst] : overrides)
             {
                 UUID instID = overrides.at(matIndex);
-                const MaterialInstance& inst = scene.getMaterialInstance(instID);
+                const PBRMaterialInstance& inst = scene.getPbrMaterialInstance(instID);
 
                 json jInst = json::object();
 
-                if (inst.Kd) jInst["Kd"] = vec3ToJson(*inst.Kd);
-                if (inst.Ka) jInst["Ka"] = vec3ToJson(*inst.Ka);
-                if (inst.Ks) jInst["Ks"] = vec3ToJson(*inst.Ks);
-                if (inst.Ke) jInst["Ke"] = vec3ToJson(*inst.Ke);
-                if (inst.Ns) jInst["Ns"] = *inst.Ns;
+                if (inst.albedo) jInst["albedo"] = vec3ToJson(*inst.albedo);
+                if (inst.ao) jInst["ao"] = (*inst.ao);
+                if (inst.metallic) jInst["metallic"] = (*inst.metallic);
+                if (inst.roughness) jInst["roughness"] = (*inst.roughness);
 
-                if (inst.map_kd) jInst["map_Kd"] = inst.map_kd->toUint64();
-                if (inst.map_ks) jInst["map_Ks"] = inst.map_ks->toUint64();
-                if (inst.map_bump) jInst["map_bump"] = inst.map_bump->toUint64();
+                if (inst.map_albedo) jInst["map_albedo"] = inst.map_albedo->toUint64();
+                if (inst.map_ao) jInst["map_ao"] = inst.map_ao->toUint64();
+                if (inst.map_metallic) jInst["map_metallic"] = inst.map_metallic->toUint64();
+                if (inst.map_normal) jInst["map_normal"] = inst.map_normal->toUint64();
+                if (inst.map_roughness) jInst["map_roughness"] = inst.map_roughness->toUint64();
+                if (inst.map_metallicRoughness) jInst["map_metallicRoughness"] = inst.map_metallicRoughness->toUint64();
+
                 if (inst.normalStrength) jInst["normalStrength"] = *inst.normalStrength;
 
                 if (!jInst.empty())
@@ -831,7 +955,9 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                     meshUUID = UUID(jEntity.at("meshID").get<uint64_t>());
                 }
 
-                Entity* entity = scene->createEntity(entityName, meshUUID, UUID(entityID), entityType);
+                Entity* entity = scene->createEntity(entityName, meshUUID,  entityType, UUID(entityID));
+                MeshRenderer& mr = scene->MeshRenderers().Get(entity->getID());
+
                 auto t = jEntity.at("transform");
                 auto pos = t.at("position");
                 auto rot = t.at("rotation");
@@ -901,12 +1027,13 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                             unsigned int matIndex = std::stoul(it.key());
                             UUID matUUID(it.value().get<uint64_t>());
 
-                            entity->getMaterialIndexUUIDs()[matIndex] = matUUID;
+                            mr.materialIndexToUUID[matIndex] = matUUID;
 
                         }
                     }
 
-                    scene->assignDefaultMaterials(entity, mesh);
+                    scene->assignDefaultPBRMaterials(entity->getID(), mesh);
+
 
                     // ---------- LOAD MATERIAL OVERRIDES ----------
                     if (jEntity.contains("materialOverrides"))
@@ -918,36 +1045,39 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                             unsigned int matIndex = std::stoul(it.key());
                             const json& jInst = it.value();
 
-                            auto& instID = entity->getMaterialIndexInstIDs()[matIndex];
-                            auto& inst = scene->getMaterialInstance(instID);
+                            auto& instID = mr.materialIndexToInstID[matIndex];
+                            auto& inst = scene->getPbrMaterialInstance(instID);
 
-                            if (jInst.contains("Kd"))
-                                inst.Kd = glm::vec3(
-                                    jInst["Kd"][0], jInst["Kd"][1], jInst["Kd"][2]);
+                            if (jInst.contains("albedo"))
+                                inst.albedo = glm::vec3(
+                                    jInst["albedo"][0], jInst["albedo"][1], jInst["albedo"][2]);
+                           
+                            if (jInst.contains("ao"))
+                                inst.ao = jInst["ao"].get<float>();
 
-                            if (jInst.contains("Ka"))
-                                inst.Ka = glm::vec3(
-                                    jInst["Ka"][0], jInst["Ka"][1], jInst["Ka"][2]);
+                            if (jInst.contains("metallic"))
+                                inst.metallic = jInst["metallic"].get<float>();
 
-                            if (jInst.contains("Ks"))
-                                inst.Ks = glm::vec3(
-                                    jInst["Ks"][0], jInst["Ks"][1], jInst["Ks"][2]);
+                            if (jInst.contains("roughness"))
+                                inst.roughness = jInst["roughness"].get<float>();
 
-                            if (jInst.contains("Ke"))
-                                inst.Ke = glm::vec3(
-                                    jInst["Ke"][0], jInst["Ke"][1], jInst["Ke"][2]);
+                            if (jInst.contains("map_albedo"))
+                                inst.map_albedo = UUID(jInst["map_albedo"].get<uint64_t>());
 
-                            if (jInst.contains("Ns"))
-                                inst.Ns = jInst["Ns"].get<float>();
+                            if (jInst.contains("map_ao"))
+                                inst.map_ao = UUID(jInst["map_ao"].get<uint64_t>());
 
-                            if (jInst.contains("map_Kd"))
-                                inst.map_kd = UUID(jInst["map_Kd"].get<uint64_t>());
+                            if (jInst.contains("map_metallic"))
+                                inst.map_metallic = UUID(jInst["map_metallic"].get<uint64_t>());
 
-                            if (jInst.contains("map_Ks"))
-                                inst.map_ks = UUID(jInst["map_Ks"].get<uint64_t>());
+                            if (jInst.contains("map_normal"))
+                                inst.map_normal = UUID(jInst["map_normal"].get<uint64_t>());
 
-                            if (jInst.contains("map_bump"))
-                                inst.map_bump = UUID(jInst["map_bump"].get<uint64_t>());
+                            if (jInst.contains("map_roughness"))
+                                inst.map_roughness = UUID(jInst["map_roughness"].get<uint64_t>());
+
+                            if (jInst.contains("map_metallicRoughness"))
+                                inst.map_metallicRoughness = UUID(jInst["map_metallicRoughness"].get<uint64_t>());
 
                             if (jInst.contains("normalStrength"))
                                 inst.normalStrength = jInst["normalStrength"].get<float>();
@@ -1022,18 +1152,22 @@ void AssetManager::syncAssetsToScene(Scene& activeScene)
     for (auto& e : activeScene.getEntities())
     {
         Entity* entity = e.get();
+        MeshRenderer& mr = activeScene.MeshRenderers().Get(entity->getID());
+        MeshFilter& mf = activeScene.MeshFilters().Get(entity->getID());
 
-        if (!entity->hasPendingMesh())
+
+        if (!mf.HasPendingMesh())
             continue;
 
-        UUID id = entity->getRequestedMeshID();
+        UUID id = mf.GetRequestedMeshID();
 
         if (assetStates[id] == AssetState::LoadedToGPU)
         {
             Mesh* mesh = getMesh(id);
-            entity->setMeshID(id);
-            activeScene.assignDefaultMaterials(entity, mesh);
-            entity->clearPendingMesh();
+            mf.meshID = id;
+            activeScene.assignDefaultPBRMaterials(entity->getID(), mesh);
+
+            mf.ClearPendingMesh();
 
             assetStates[id] == AssetState::Loaded;
         }
@@ -1114,6 +1248,7 @@ AssetType AssetManager::getAssetType(const UUID& id) {
    
     if (getMesh(id)) return AssetType::Mesh;
     else if (getMaterial(id)) return AssetType::Material;
+    else if (getPBRMaterial(id)) return AssetType::Material_pbr;
     else if (getTexture(id)) return AssetType::Texture;
     else return AssetType::Unknown;
 }

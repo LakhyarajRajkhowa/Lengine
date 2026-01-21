@@ -1,24 +1,26 @@
 #pragma once 
 
 #include "../graphics/opengl/GLSLProgram.h"
+#include "../graphics/opengl/GLTexture.h"
 #include "../graphics/camera/Camera3d.h"
 #include "../core/paths.h"
+#include "../resources/ImageLoader.h"
 namespace Lengine {
 	class Skybox {
 	public:
 		void init();
-		void render(const Camera3d& camera);
+		void Render(const glm::mat4& view, const glm::mat4& projection);
 
-		const GLint getCubemapTexture() { return cubemapTexture; }
-		void setCubemapTexture(const unsigned int& tex) { cubemapTexture = tex; }
+		const GLTexture getCubemapTexture() { return cubemapTexture; }
+		void setCubemapTexture(const GLTexture& tex) { cubemapTexture = tex; }
 	private:
 		GLSLProgram skyboxShader;
-		GLuint VAO, VBO;
-		unsigned int cubemapTexture;
+		unsigned int VAO, VBO;
+		GLTexture cubemapTexture;
 		std::vector<float> skyboxVertices;
 
-		const GLenum SKYBOX_TEXTURE_UNIT = GL_TEXTURE3;
-		const GLint  SKYBOX_TEXTURE_INDEX = 3;
 
 	};
+
+
 }

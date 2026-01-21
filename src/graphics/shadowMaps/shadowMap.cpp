@@ -44,30 +44,14 @@ void ShadowMap::init() {
     depthShader.linkShaders();
 }
 
-void ShadowMap::renderDepthMap(std::vector<std::unique_ptr<Entity>>& entities, Light& light, AssetManager& assetManager) {
 
-    if (!light.castShadow) return;
-    depthShader.use();
-    depthShader.setMat4("lightSpaceMatrix", light.getSpaceMatrix());
+void ShadowMap::renderDepthMap(
+    std::vector<std::unique_ptr<Entity>>& entities,
+    MeshRendererStorage& mrs,
+    Light& light,
+    AssetManager& assetManager
+) {
 
-    glViewport(0, 0, SHADOW_RES, SHADOW_RES);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-
-
-    for (auto& e : entities)
-    {
-        // means no lightsource has shadow !?
-        if (e->getType() == EntityType::Light || !e->isVisible) continue;
-
-        depthShader.setMat4("model", e->getTransform().getMatrix());
-        auto* mesh = assetManager.getMesh(e->getMeshID());
-        if (mesh)
-            mesh->draw();
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  
 
 }

@@ -14,6 +14,7 @@ out vec4 FragPosLightSpace;
 
 uniform mat4 model;
 uniform mat4 view;
+uniform vec3 cameraPos;
 uniform mat4 projection;
 uniform mat4 lightSpaceMatrix;
 

@@ -7,6 +7,9 @@ namespace Lengine {
     {
         static inline const UUID Default = UUID(5485914302357758172);
         static inline const UUID LightSource = UUID(3324154689191414962);
+
+        static inline const UUID DefaultPbr = UUID(15620376668399102166);
+
     };
 
 }

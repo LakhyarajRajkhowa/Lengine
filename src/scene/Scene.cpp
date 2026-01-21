@@ -6,8 +6,13 @@ namespace Lengine {
 
   
 
-    Entity* Scene::createEntity (const std::string& name, UUID meshID, UUID entityID, EntityType type) {
-        auto entity = std::make_unique<Entity>(entityID, name, type, meshID);
+    Entity* Scene::createEntity (
+        const std::string& name,
+        const UUID meshID,
+        EntityType type,
+        UUID entityID
+    ) {
+        auto entity = std::make_unique<Entity>(entityID, name, type);
         Entity* entityPtr = entity.get();
 
         uint32_t index = entities.size();
@@ -19,10 +24,17 @@ namespace Lengine {
 
         }
 
+        MeshFilter mf;
+        mf.meshID = meshID;
+        meshFilters.Add(entityID, mf);
+
+        MeshRenderer mr;
+        meshRenderers.Add(entityID, mr);
+
         return entityPtr;
     }
 
-    Entity* Scene::addEntity(std::unique_ptr<Entity> entity)
+    Entity* Scene::addEntity(std::unique_ptr<Entity> entity, const UUID originalEntityId)
     {
         if (!entity)
             return nullptr;
@@ -37,12 +49,21 @@ namespace Lengine {
         uint32_t index = static_cast<uint32_t>(entities.size());
         entity->setIndex(index);
 
-        // Fix light ownership if entity has light
-        if (entity->hasLight())
-        {
-            entity->getLight().id = entity->getID();
-            lights.push_back(entity->getLight());
+        // if Type == light
+
+        if (entity->getType() == EntityType::Light) {
+            entity->addLight();
         }
+
+        // Copy mesh renderer
+        const MeshRenderer& oldMr = MeshRenderers().Get(originalEntityId);
+        MeshRenderer newMr = MeshRenderer(oldMr);
+        meshRenderers.Add(entity->getID(), newMr);
+
+        // Copy mesh filter
+        const MeshFilter& oldMf = MeshFilters().Get(originalEntityId);
+        MeshFilter newMf = MeshFilter(oldMf);
+        meshFilters.Add(entity->getID(), newMf);
 
         entities.push_back(std::move(entity));
         return entities.back().get();
@@ -62,6 +83,8 @@ namespace Lengine {
             ),
             entities.end()
         );
+
+        meshRenderers.Remove(id);
     }
 
 
@@ -106,10 +129,24 @@ namespace Lengine {
         return it->second;
     }
 
+    PBRMaterialInstance& Scene::getPbrMaterialInstance(UUID id)
+    {
+        auto it = pbrMaterialInstances.find(id);
+        assert(it != pbrMaterialInstances.end());
+        return it->second;
+    }
+
     const MaterialInstance& Scene::getMaterialInstance(UUID id) const
     {
         auto it = materialInstances.find(id);
         assert(it != materialInstances.end());
+        return it->second;
+    }
+
+    const PBRMaterialInstance& Scene::getPbrMaterialInstance(UUID id) const
+    {
+        auto it = pbrMaterialInstances.find(id);
+        assert(it != pbrMaterialInstances.end());
         return it->second;
     }
 
@@ -129,6 +166,21 @@ namespace Lengine {
         return id;
     }
 
+    UUID Scene::createPbrMaterialInstance(UUID baseMaterial)
+    {
+        UUID id;
+
+        do {
+            id = UUID();
+        } while (pbrMaterialInstances.find(id) != pbrMaterialInstances.end());
+
+        PBRMaterialInstance instance{};
+        instance.baseMaterial = baseMaterial;
+
+        pbrMaterialInstances.emplace(id, std::move(instance));
+        return id;
+    }
+
 
 
 
@@ -141,27 +193,18 @@ namespace Lengine {
         }
     }
 
-    void Scene::assignDefaultMaterials(Entity* entity, Mesh* mesh)
+    
+
+    void Scene::assignDefaultPBRMaterials(const UUID entityID, Mesh* mesh)
     {
         if (!mesh)
             return;
 
-        UUID defaultMat;
+        UUID defaultMat = MaterialID::DefaultPbr;
 
-        switch (entity->getType()) {
-        case EntityType::DefaultObject:
-            defaultMat = MaterialID::Default;
-            break;
-        case EntityType::Light:
-            defaultMat = MaterialID::LightSource;
-            break;
-        case EntityType::Camera:
-            defaultMat = MaterialID::Default;
-            break;
-        }
 
-        auto& matUUIDs = entity->getMaterialIndexUUIDs();
-        auto& instIDs = entity->getMaterialIndexInstIDs();
+        auto& matUUIDs = meshRenderers.Get(entityID).materialIndexToUUID;
+        auto& instIDs = meshRenderers.Get(entityID).materialIndexToInstID;
 
 
         for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
@@ -173,13 +216,13 @@ namespace Lengine {
                 baseMat = it_matid->second;
             }
 
-            UUID instID = createMaterialInstance(baseMat);
+            UUID instID = createPbrMaterialInstance(baseMat);
             instIDs[matIndex] = instID;
 
         }
     }
 
-   
+
 }
 
 

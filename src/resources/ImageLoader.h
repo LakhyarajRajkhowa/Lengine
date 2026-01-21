@@ -5,6 +5,8 @@
 #include "../external/picopng.h"
 #include "../platform/IOManager.h"
 #include "../core/Errors.h"
+
+#include "glm/glm.hpp"
 namespace Lengine {
    
 
@@ -22,7 +24,17 @@ namespace Lengine {
             const std::string& filePath,
             bool srgb
         );
-        static GLTexture loadTextureCubeMap(std::vector<std::string> filePaths);
+        static GLTexture loadTextureCubemap(std::vector<std::string> filePaths);
+        static GLTexture loadHDRTextureCubemap(std::vector<std::string> faces);
+
+        static GLTexture LoadHDRTexture(const std::string& path);
+        static void ConvertEquirectangularToCubemapCPU(
+            const float* hdrData,
+            int hdrWidth,
+            int hdrHeight,
+            int faceSize,
+            std::vector<float> cubemapData[6]
+        );
 
         static ImageData stbiLoader(const std::string& filePath);
         static void uploadToGPU(const ImageData& img, bool srgb);
