@@ -4,17 +4,51 @@
 #include <unordered_map>
 #include "../utils/UUID.h"
 
+#include "MaterialRegistry.h"
+#include "MeshRegistry.h"
+#include "ShaderRegistry.h"
+#include "TextureRegistry.h"
+
 namespace Lengine {
 
     enum class AssetType {
         Unknown = -1,
         Mesh = 0,
-        Material_pbr = 1,
-        Material = 2,
-        Texture_srgb = 3,
+        Submesh = 1,
+        PhongMaterial = 2,
+        Material = 3,
         Texture = 4,
         Shader = 5,
-        count = 6
+        Scene = 6,
+        Prefab = 8,
+        count = 9
+    };
+
+    enum class TextureMapType {
+        Unknown = -1,
+        Albedo = 0,
+        Normal = 1,
+        Metallic = 2,
+        Roughness = 3,
+        AmbientOcclusion = 4,
+        MetallicRoughness = 5,
+        count = 7
+    };
+
+    enum class TextureTargetType
+    {
+        GlobalMaterial,
+        MeshRendererInstance
+    };
+
+    struct TextureLoadRequest
+    {
+        UUID textureID;
+        UUID targetID;                 // materialID OR entityID
+        TextureMapType mapType;
+        TextureTargetType targetType;
+
+        bool srgb = false;
     };
 
     struct AssetRecord {
@@ -26,14 +60,29 @@ namespace Lengine {
     inline std::string AssetTypeToString(AssetType type) {
         switch (type) {
         case AssetType::Mesh:            return "Mesh";
-        case AssetType::Material_pbr:    return "Material_pbr";
+        case AssetType::Submesh:         return "SubMesh";
+        case AssetType::PhongMaterial:   return "PhongMaterial";
         case AssetType::Material:        return "Material";
         case AssetType::Texture:         return "Texture";
-        case AssetType::Texture_srgb:    return "Texture_srgb";
         case AssetType::Shader:          return "Shader";
+        case AssetType::Prefab:          return "Prefab";
         default: return "Unknown";
         }
     }
+
+    inline AssetType StringToAssetType(const std::string& str)
+    {
+        if (str == "Mesh")           return AssetType::Mesh;
+        if (str == "SubMesh")        return AssetType::Submesh;
+        if (str == "PhongMaterial")  return AssetType::PhongMaterial;
+        if (str == "Material")       return AssetType::Material;
+        if (str == "Texture")        return AssetType::Texture;
+        if (str == "Shader")         return AssetType::Shader;
+        if (str == "Prefab")         return AssetType::Prefab;
+
+        return AssetType::Unknown;
+    }
+
 
     extern std::unordered_map<UUID, AssetRecord> assetRegistry;
 }

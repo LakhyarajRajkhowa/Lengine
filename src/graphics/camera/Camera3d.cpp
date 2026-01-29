@@ -51,7 +51,7 @@ namespace Lengine {
         return glm::normalize(front);
     }
    
-    void Camera3d::update(const float& deltaTime, const glm::vec2& mouseCoords){
+    void Camera3d::Update(const float& deltaTime, const glm::vec2& mouseCoords){
 
             speedMultiplier = _inputManager->isKeyDown(SDLK_LCTRL) ? 5.0f : 1.0f;
             const float speed =  deltaTime * speedFactor * speedMultiplier;

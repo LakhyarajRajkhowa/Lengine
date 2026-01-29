@@ -1,16 +1,17 @@
 #include "SceneHeirarchyPanel.h"
+
+
+
 using namespace Lengine;
 SceneHierarchyPanel::SceneHierarchyPanel(
     Camera3d& cam,
     SceneManager& scnMgr,
-    AssetManager& assetMgr,
-    Entity* selectedEntity
+    AssetManager& assetMgr
 )
     :
     camera(cam),
     sceneManager(scnMgr),
-    assetManager(assetMgr),
-    m_SelectedEntity(selectedEntity)
+    assetManager(assetMgr)
 {
 }
 
@@ -74,7 +75,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
                 if (scene == activeScene) {
                     if (ImGui::MenuItem("Save Scene")) {
                         assetManager.saveScene(*scene, Paths::GameScenes);
-                        assetManager.saveSceneAssetRegistryForScene(*scene, Paths::GameAssetRegistryFolder);
+                        //assetManager.saveSceneAssetRegistryForScene(*scene, Paths::GameAssetRegistryFolder);
                     }
 
                     if (ImGui::MenuItem("Add Entity")) {
@@ -108,7 +109,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
             {
                 // Delete Queued Entitities
                 while (!deletedEntityQueue.empty()) {
-                    scene->removeEntity(deletedEntityQueue.front());
+                    scene->RemoveEntityRecursive(deletedEntityQueue.front());
                     deletedEntityQueue.pop();
                 }
 
@@ -123,60 +124,16 @@ void SceneHierarchyPanel::OnImGuiRender() {
                 }
 
                 // ----- ENTITIES -----
-                for (auto& entity : scene->getEntities())
+                for (auto& entityID : scene->getRootEntities())
                 {
+                    Entity* entity = scene->getEntityByID(entityID);
+
                     if (scene == activeScene)
-                    {
-                        ImGui::PushID(entity->getID());
-
-                        // SELECTABLE ENTITY
-                        bool isSelected = entity->isSelected;
-                        std::string label = entity->getName() + "##" + std::to_string(entity->getID());
-                       
-                        bool entityVisible = entity->isVisible;
-                        if (ImGui::Checkbox("##Visible", &entityVisible)) {
-                            entity->isVisible = entityVisible;
-                        }
-
-                        ImGui::SameLine();
-                        
-                        if (ImGui::Selectable(label.c_str(), isSelected))
-                        {
-                            // deselect all
-                            for (auto& e : activeScene->getEntities())
-                                e->isSelected = false;
-                            entity->isSelected = true;
-
-                           
-                        }
-                        if (ImGui::BeginPopupContextItem(label.c_str()))
-                        {
-                            if (ImGui::MenuItem("Create Copy"))                       
-                            {
-                                Entity* clone = entity->Clone();
-                                createdEntityQueue.push(std::pair(clone, entity->getID()));
-                            }
-                            ImGui::EndPopup();
-                        }
-
-                        if (ImGui::BeginPopupContextItem(label.c_str()))
-                        {
-                            if (ImGui::MenuItem("Delete"))
-                            {
-                                deletedEntityQueue.push(entity->getID());
-                                entity->isSelected = false;
-                            }
-                            ImGui::EndPopup();
-                        }
-
-                        ImGui::PopID();
-                    }
+                        DrawEntityNode(scene, entity, activeScene);
                     else
-                    {
-                        // NON-INTERACTIVE ENTITY NAME
                         ImGui::Text("%s", entity->getName().c_str());
-                    }
                 }
+
 
                 ImGui::TreePop();    
             }
@@ -195,6 +152,71 @@ void SceneHierarchyPanel::OnImGuiRender() {
 
 }
 
+void SceneHierarchyPanel::DrawEntityNode(Scene* scene, Entity* entity, Scene* activeScene)
+{
+    ImGuiTreeNodeFlags flags =
+        ImGuiTreeNodeFlags_OpenOnArrow |
+        ImGuiTreeNodeFlags_SpanFullWidth;
+
+    bool isSelected =
+        EditorSelection::HasEntity() &&
+        EditorSelection::GetEntity() == entity->getID();
+
+    if (isSelected)
+        flags |= ImGuiTreeNodeFlags_Selected;
+
+    // Leaf node?
+    if (!scene->HasChildren(entity->getID()))
+        flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+    ImGui::PushID(entity->getID());
+
+    bool opened = ImGui::TreeNodeEx(
+        entity->getName().c_str(),
+        flags
+    );
+
+    // ---- Selection ----
+    if (ImGui::IsItemClicked())
+    {
+        EditorSelection::SetEntity(entity->getID());
+        EditorSelection::ClearAssetSelection();
+    }
+
+    // ---- Context menu ----
+    if (ImGui::BeginPopupContextItem())
+    {
+        if (ImGui::MenuItem("Create Copy"))
+        {
+            Entity* clone = entity->Clone();
+            createdEntityQueue.push({ clone, entity->getID() });
+        }
+
+        if (ImGui::MenuItem("Delete"))
+        {
+            deletedEntityQueue.push(entity->getID());
+            if (isSelected)
+                EditorSelection::ClearEntitySelection();
+        }
+
+        ImGui::EndPopup();
+    }
+
+    // ---- Children ----
+    if (opened && scene->HasChildren(entity->getID()))
+    {
+        for (UUID childID : scene->GetChildren(entity->getID()))
+        {
+            Entity* child = scene->getEntityByID(childID);
+            DrawEntityNode(scene, child, activeScene);
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::PopID();
+}
+
 
 
 
@@ -211,11 +233,6 @@ void SceneHierarchyPanel::createNewModel() {
         ImGui::InputText("##name", EntityName, IM_ARRAYSIZE(EntityName));
         ImGui::Separator();
 
-        // Dropdown to select entity type
-        ImGui::Text("Select Entity Type:");
-        ImGui::Combo("##type", &entityTypeIndex, entityTypes, IM_ARRAYSIZE(entityTypes));
-
-        ImGui::Separator();
 
         if (ImGui::Button("Create"))
         {
@@ -225,9 +242,7 @@ void SceneHierarchyPanel::createNewModel() {
 
                 Entity* newEntity = activeScene->createEntity(
                     EntityName,
-                    UUID(),       // meshID
-                    selectedType,   // type
-                    UUID()       // entityID
+                    UUID()       
                 );
 
                 ImGui::CloseCurrentPopup();

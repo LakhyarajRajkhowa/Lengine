@@ -1,7 +1,8 @@
 # Ignore build directory
 build/
-assets/Textures/
 TestGameFolder/
+bin/Debug
+bin/Release
 
 # Ignore Windows executables
 *.exe

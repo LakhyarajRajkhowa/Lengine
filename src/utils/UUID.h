@@ -26,6 +26,7 @@ namespace Lengine {
         }
         uint64_t toUint64() const { return m_UUID; }
 
+
     private:
         uint64_t m_UUID;
     };

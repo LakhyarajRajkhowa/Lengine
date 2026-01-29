@@ -87,20 +87,19 @@ uniform samplerCube irradianceMap;
 
 vec3 GetNormal()
 {
-    if (material.hasNormalMap) {
-    vec3 mapNormal = texture(material.normalMap, TexCoords).rgb;
-    mapNormal = mapNormal * 2.0 - 1.0; // [0,1] → [-1,1]
-
-    mapNormal.xy *= material.normalStrength;
-    mapNormal = normalize(mapNormal);
-
-    return normalize(TBN * mapNormal);
+    if (material.hasNormalMap)
+    {
+        vec3 mapNormal = texture(material.normalMap, TexCoords).rgb;
+        mapNormal = mapNormal * 2.0 - 1.0;
+        mapNormal.xy *= material.normalStrength;
+        return normalize(TBN * mapNormal);
     }
-     else {
-    return normalize(TBN * vec3(0.0, 0.0, 1.0));
+    else
+    {
+        return normalize(TBN[2]); 
     }
-
 }
+
 
 void main()
 {

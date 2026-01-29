@@ -7,9 +7,9 @@
 #include "../utils/UUID.h"
 
 namespace Lengine {
-    class Material {
+    class PhongMaterial {
     public:
-        Material::Material() = default;
+        PhongMaterial::PhongMaterial() = default;
         glm::vec3 Kd = {0.5, 0.5, 0.5};        // DiffuseColor
         glm::vec3 Ka = { 0.05, 0.05, 0.05 };        // AmbientColor
         glm::vec3 Ks = { 3.50, 3.50, 3.50 };        // SpecularColor
@@ -36,7 +36,7 @@ namespace Lengine {
         std::string name;
         GLSLProgram* shader = nullptr;
 
-        Material(std::string matName, GLSLProgram* shaderProgram)
+        PhongMaterial(std::string matName, GLSLProgram* shaderProgram)
             : name(matName), shader(shaderProgram) {
         }
 
@@ -46,54 +46,13 @@ namespace Lengine {
 
     };
 
-    // MaterialInstance used by a Scene for each entity
-    struct MaterialInstance {
-        UUID baseMaterial;
-
-        // Overrides (only stored if changed)
-        std::optional<glm::vec3> Kd;
-        std::optional<glm::vec3> Ka;
-        std::optional<glm::vec3> Ks;
-        std::optional<glm::vec3> Ke;
-        std::optional<float> Ns;
-        
-        std::optional<UUID> map_kd;
-        std::optional<UUID> map_ks;
-        std::optional<UUID> map_bump;
-        std::optional<float> normalStrength;
-
-        bool use_map_kd = true;
-        bool use_map_ks = true;
-        bool use_map_bump = true;
 
 
-    };
 
-    // Final materiral send to GPU
-    struct ResolvedMaterial {
-        glm::vec3 Kd;        // DiffuseColor
-        glm::vec3 Ka;        // AmbientColor
-        glm::vec3 Ks;        // SpecularColor
-        glm::vec3 Ke;        // EmissiveColor
-        float Ns;            // Shininess
-        float d;             // Opacity
-        float Ni;            // OpticalDensity
-        float Tr;            // Transperancy
-        float Tf;            // TransmissionFilter
-        UUID map_Kd = UUID::Null;  // DiffuseMap
-        UUID map_Ka = UUID::Null;  // AmbientMap
-        UUID map_Ks = UUID::Null;  // SpecularMap
-        UUID map_bump = UUID::Null;    // NormalMap
-        float normalStrength;
+    struct Material {
+        Material::Material() = default;
 
-        float metallic;
-        float roughness;
-
-    };
-
-    struct PBRMaterial {
-        PBRMaterial::PBRMaterial() = default;
-
+        UUID id = UUID::Null;
         glm::vec3 albedo = glm::vec3(1.0f);
         float metallic = 0.0f;
         float roughness = 0.5f;
@@ -119,17 +78,37 @@ namespace Lengine {
         std::string name;
         GLSLProgram* shader = nullptr;
 
-        PBRMaterial(std::string matName, GLSLProgram* shaderProgram)
+        Material(std::string matName, GLSLProgram* shaderProgram)
             : name(matName), shader(shaderProgram) {
         }
 
         GLSLProgram* getShader() const { return shader; }
         const std::string& getName() const { return  name; }
+
+        bool localDirty = false;
     };
 
+    struct ResolvedMaterial {
 
-    struct PBRMaterialInstance {
-        UUID baseMaterial;
+        glm::vec3 albedo;
+        float metallic;
+        float roughness;
+        float ao;
+
+        UUID map_albedo = UUID::Null;
+        UUID map_normal = UUID::Null;
+        UUID map_metallic = UUID::Null;
+        UUID map_roughness = UUID::Null;
+        UUID map_ao = UUID::Null;
+        UUID map_metallicRoughness = UUID::Null;
+
+        float normalStrength;
+    };
+
+    struct MaterialInstance {
+        UUID baseMaterial = UUID::Null;
+        bool dirty = true;
+        ResolvedMaterial cached;
 
         std::optional<glm::vec3> albedo;
         std::optional<float> metallic;
@@ -155,24 +134,55 @@ namespace Lengine {
 
     };
 
-    struct ResolvedPBRMaterial {
-
-        glm::vec3 albedo ;
-        float metallic ;
-        float roughness;
-        float ao ;
-
-        UUID map_albedo = UUID::Null;
-        UUID map_normal = UUID::Null;
-        UUID map_metallic = UUID::Null;
-        UUID map_roughness = UUID::Null;
-        UUID map_ao = UUID::Null;
-        UUID map_metallicRoughness = UUID::Null;
-
-        float normalStrength;
-    };
 
 
+    static ResolvedMaterial ResolveMaterial(
+        const Material& base,
+        const MaterialInstance& inst)
+    {
+        ResolvedMaterial out;
+
+        out.albedo = inst.albedo.value_or(base.albedo);
+        out.metallic = inst.metallic.value_or(base.metallic);
+        out.roughness = inst.roughness.value_or(base.roughness);
+        out.ao = inst.ao.value_or(base.ao);
+
+        out.map_albedo =
+            (inst.use_map_albedo && inst.map_albedo)
+            ? *inst.map_albedo
+            : base.map_albedo;
+
+        out.map_normal =
+            (inst.use_map_normal && inst.map_normal)
+            ? *inst.map_normal
+            : base.map_normal;
+
+        out.map_ao =
+            (inst.use_map_ao && inst.map_ao)
+            ? *inst.map_ao
+            : base.map_ao;
+
+        out.map_metallic =
+            (inst.use_map_metallic && inst.map_metallic)
+            ? *inst.map_metallic
+            : base.map_metallic;
+
+        out.map_roughness =
+            (inst.use_map_roughness && inst.map_roughness)
+            ? *inst.map_roughness
+            : base.map_roughness;
+
+        out.map_metallicRoughness =
+            (inst.use_map_metallicRoughness && inst.map_metallicRoughness)
+            ? *inst.map_metallicRoughness
+            : base.map_metallicRoughness;
+
+
+        out.normalStrength =
+            inst.normalStrength.value_or(base.normalStrength);
+
+        return out;
+    }
 
 
 

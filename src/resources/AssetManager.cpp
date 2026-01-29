@@ -2,328 +2,501 @@
 
 using namespace Lengine;
 
-void AssetManager::LoadAllMetaFiles(const fs::path& root)
+
+void AssetManager::LoadAllDefaultAssets() {
+
+    for (auto id : SubmeshID::GetAllDefaults()) {
+        LoadSubmesh(id);
+    }
+
+    for (auto id : MaterialID::GetAllDefaults()) {
+        LoadMaterial(id);
+    }
+
+    for (auto shader : ShaderRegistry::GetAllDefaults()) {
+        loadShader(shader.name, shader.vertexShaderPath, shader.fragemnetShaderPath);
+    }
+
+    for (auto asset : AssetDatabase::GetAllAssets()) {
+        if (asset.second.type == AssetType::Texture) {
+            texturePathToUUID[asset.second.sourcePath.string()] = asset.second.uuid;
+        }
+    }
+}
+
+void AssetManager::Update(Scene& activeScene) {
+    UpdateAllAssetViews();
+  //  UpdateAssetStates();
+    SyncAssetsToScene(activeScene);
+    ProcessGpuUploads();
+
+}
+
+void AssetManager::UpdateAllAssetViews()
 {
-    
-    
-    if (!fs::exists(root))
+    if (!AssetDatabase::needsUpdate)
         return;
-    for (auto& entry : fs::recursive_directory_iterator(root))
+
+    submeshViews.clear();
+    pbrMaterialViews.clear();
+    TextureViews.clear();
+    PrefabViews.clear();
+
+    const auto& allAssets = AssetDatabase::GetAllAssets();
+
+    for (const auto& [uuid, meta] : allAssets)
     {
-        if (!entry.is_regular_file())
-            continue;
+        AssetView view;
+        view.uuid = uuid;
+        view.name = meta.name;
+        view.type = meta.type;
+        view.libraryPath = meta.libraryPath;
+        view.thumbnailPath = meta.thumbnailPath;
 
-        const fs::path& metaPath = entry.path();
+        switch (meta.type)
+        {
+        case AssetType::Submesh:
+            submeshViews.emplace_back(view);
+            break;
 
-        // Must end with ".meta"
-        if (metaPath.extension() != ".meta")
-            continue;
-        fs::path assetPath = metaPath;
-        assetPath.replace_extension("");
-        // Load meta (contains uuid, type, source)
-        MetaFile meta = MetaFileSystem::Load(assetPath.string());
+        case AssetType::Material:
+            pbrMaterialViews.emplace_back(view);
+            break;
 
+        case AssetType::Texture:
+            TextureViews.emplace_back(view);
+            break;
+        case AssetType::Prefab:
+            PrefabViews.emplace_back(view);
+            break;
 
-        if (assetPath.extension() == ".obj") {
-            loadMesh(meta.uuid, assetPath.string());
+        default:
+            break;
         }
-        if (assetPath.extension() == ".mtl") {
-            loadMaterial(meta.uuid, assetPath.string());
-        }
-        if (assetPath.extension() == ".pbrmat") {
-            loadPBRMaterial(meta.uuid, assetPath.string());
-        }
-        
-    }
-}
-
-//    ----- MESH ----
-
-UUID AssetManager::importMesh(const std::string& path) {
-    MetaFile meta;
-    std::string fileName = ExtractFileNameFromPath(path);
-    if (!MetaFileSystem::HasMeta(path)) {
-        meta.uuid = UUID();
-        meta.type = "mesh";
-        meta.source = NormalizePath(path);
-
-        MetaFileSystem::Save(path, meta);
-    }
-    else {
-        meta = MetaFileSystem::Load(path);
     }
 
-    return meta.uuid;
+    AssetDatabase::needsUpdate = false;
 }
 
-UUID AssetManager::importAndLoadMesh(const std::string& name, const std::string& path) {
-    UUID id = importMesh(path);
-    loadMesh(id, path);
-    return id;
-}
+    
 
-void AssetManager::requestMeshLoad(const UUID& uuid, const std::string& path, MeshFilter& meshFilter)
+
+
+//  ---- SUBMESH ---
+
+void AssetManager::RequestSubmeshLoad(const UUID& submeshID, const UUID& entityID)
 {
-    std::string meshName = ExtractNameFromPath(path);
-    auto mesh = std::make_shared<Mesh>();
-    mesh->name = meshName;
-    mesh->path = path;
-    std::string cleanPath = StripQuotes(path);
-
+    if (GetSubmesh(submeshID)) {
+        pendingSubmeshes.push({ entityID, submeshID });
+        assetStates[submeshID] = AssetState::LoadedToGPU;
+        return;
+    }
 
     {
         std::lock_guard<std::mutex> lock(assetMutex);
-        assetStates[uuid] = AssetState::Loading;
-        meshes[uuid] = mesh;
-        meshFilter.meshID = uuid;
-        addAssetToAssetRegistry(uuid, AssetType::Mesh, cleanPath);
+        assetStates[submeshID] = AssetState::Loading;
+        pendingSubmeshes.push({ entityID, submeshID });
     }
 
+    std::thread([this, submeshID]()
+        {
+            bool ok = LoadSubmesh(submeshID);
 
-    std::thread([this, uuid, mesh, meshFilter, cleanPath]() {
-
-        bool ok = assimpLoader(cleanPath, *mesh);
-
-        std::lock_guard<std::mutex> lock(assetMutex);
-        assetStates[uuid] = ok ? AssetState::LoadedToCPU
-            : AssetState::Failed;
-
+            std::lock_guard<std::mutex> lock(assetMutex);
+            assetStates[submeshID] = ok
+                ? AssetState::LoadedToCPU
+                : AssetState::Failed;
         }).detach();
 }
 
-void AssetManager::loadMesh(const UUID& uuid, const std::string& path)
-{
-    std::string meshName = ExtractNameFromPath(path);
-    UUID id = uuid;
-    std::string newPath = StripQuotes(path);
 
-    std::shared_ptr<Mesh> ptr;
-    Model model;
+bool AssetManager::LoadSubmesh(const UUID& id) {
+    auto sm = AssetDatabase::LoadAsset<Submesh>(id);
 
-    model.loadModel(meshName, newPath, ptr);
-
-    meshes[uuid] = ptr;
-
-    
-
-    addAssetToAssetRegistry(uuid, AssetType::Mesh, newPath);
-}
-
-void AssetManager::processPendingMesh(const UUID& id) {
-    auto& mesh = meshes[id];
-    for (auto& sm : mesh->subMeshes)
-        sm.setupMesh();
-
-    mesh->computeBounds();
-}
-
-Mesh* AssetManager::getMesh(const UUID& id) {
-    auto it = meshes.find(id);
-    if (it == meshes.end())
-        return nullptr; 
-
-    return it->second.get();
-}
-
-UUID AssetManager::getMeshUUID(const std::string& name) {
-    for (auto& [uuid, mesh] : meshes)
-    {
-        if (mesh && mesh->name == name)
-            return uuid;
-    }
-
-    return UUID::Null;
-}
-
-//          ----- MATERIALS -----
-
-UUID AssetManager::importMaterial(const std::string& path) {
-    MetaFile meta;
-
-    std::string fileName = ExtractFileNameFromPath(path);
-    if (!MetaFileSystem::HasMeta(path)) {
-        meta.uuid = UUID();
-        meta.type = "material";
-        meta.source = NormalizePath(path);
-
-        MetaFileSystem::Save(path, meta);
-    }
-    else {
-        meta = MetaFileSystem::Load(path);
-    }
-
-    return meta.uuid;
-}
-
-
-UUID AssetManager::importAndLoadMaterial(
-    const std::string& name,
-    const std::string& path,
-    const std::string& vertexShaderPath,
-    const std::string& fragmentShaderPath
-) {
-
-    UUID id = importMaterial(path);
-    loadMaterial(id, path, vertexShaderPath, fragmentShaderPath);
-    return id;
-}
-
-// also put shaders to the material
-bool AssetManager::loadMaterial(
-    const UUID& uuid,
-    const std::string& path,
-    const std::string& vertexShaderPath,
-    const std::string& fragmentShaderPath
-)
-{
-    if (materials[uuid]) return false;
-    std::string materialName = ExtractNameFromPath(path);
-    std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
-    GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
-
-    auto materialPtr = std::make_shared<Material>(materialName, shader);
-    std::string folderPath = GetFolderPath(path);
-    std::string newPath = StripQuotes(path);
-    bool matLoaded = loadMTL(newPath, *materialPtr);
-
-    if (matLoaded) {
-        std::cout << "Material Loaded: " << path << std::endl;
-    }
-    else {
-        std::cout << "Failed to load Material: " << path << std::endl;
+    if (sm)
+        submeshes[id] = sm;
+    else
         return false;
-    }
-
-    if (!materialPtr->map_Kd_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_Kd_path);
-        materialPtr->map_Kd = importTexture(folderPath + "/" + materialPtr->map_Kd_path);
-        requestTextureLoad(materialPtr->map_Kd, folderPath + "/" + materialPtr->map_Kd_path, true);
-    }
-    if (!materialPtr->map_Ks_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_Ks_path);
-        materialPtr->map_Ks = importTexture(folderPath + "/" + materialPtr->map_Ks_path);
-        requestTextureLoad(materialPtr->map_Ks, folderPath + "/" + materialPtr->map_Ks_path);
-    }
-    if (!materialPtr->map_bump_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_bump_path);
-        materialPtr->map_bump = importTexture(folderPath + "/" + materialPtr->map_bump_path);
-        requestTextureLoad(materialPtr->map_bump, folderPath + "/" + materialPtr->map_bump_path);
-    }
-
-    materials[uuid] = materialPtr;
-
-    addAssetToAssetRegistry(uuid, AssetType::Material, newPath);
-    return true;
 }
 
-Material* AssetManager::getMaterial(const UUID& id)
-{
-    auto it = materials.find(id);
-    if (it == materials.end())
+bool AssetManager::processPendingSubmesh(const UUID& id) {
+    
+    auto& submesh = submeshes[id];
+    if (submesh) {
+        submesh->setupMesh();
+        return true;
+    }
+
+    return false;
+
+        
+}
+
+Submesh* AssetManager::GetSubmesh(const UUID& id) {
+    auto it = submeshes.find(id);
+    if (it == submeshes.end())
         return nullptr;
 
     return it->second.get();
 }
 
-UUID AssetManager::getMaterialUUID(const std::string& name) {
-    for (auto& [uuid, material] : materials)
-    {
-        if (material && material->name == name)
-            return uuid;
-    }
+// -------- PBRMATERIAL ---------
 
-    return UUID::Null;
+void AssetManager::ImportMaterial(const std::string path) {
+    const UUID& uuid = UUID();
+    AssetImporter::ImportMaterialFile(path, uuid);
 }
 
-//  ------ PBR MATERIALS ------
-
-UUID AssetManager::importPBRMaterial(const std::string& path) {
-    MetaFile meta;
-
-    std::string fileName = ExtractFileNameFromPath(path);
-    if (!MetaFileSystem::HasMeta(path)) {
-        meta.uuid = UUID();
-        meta.type = "material_pbr";
-        meta.source = NormalizePath(path);
-
-        MetaFileSystem::Save(path, meta);
-    }
-    else {
-        meta = MetaFileSystem::Load(path);
-    }
-
-    return meta.uuid;
+UUID AssetManager::CreateMaterial(const std::string name) {
+    return MaterialCreator::Create(name);
 }
 
-UUID AssetManager::importAndLoadPBRMaterial(
-    const std::string& path,
-    const std::string& vertexShaderPath,
-    const std::string& fragmentShaderPath
-) {
+void AssetManager::SaveMaterial(const UUID& id) {
+    const Material& mat = *GetMaterial(id);
+    const std::filesystem::path libPath = GetAssetMetaData(id)->libraryPath;
 
-    UUID id = importPBRMaterial(path);
-    loadPBRMaterial( id, path, vertexShaderPath, fragmentShaderPath);
-    return id;
+    MaterialSaver::Save(mat, libPath);
 }
 
-// also put shaders to the material
-bool AssetManager::loadPBRMaterial(
-    const UUID& uuid,
-    const std::string& path,
-    const std::string& vertexShaderPath,
-    const std::string& fragmentShaderPath
-)
-{
-    if (materials[uuid]) return false;
-    std::string materialName = ExtractNameFromPath(path);
-    std::string shaderName = ExtractFileNameFromPath(vertexShaderPath);
-    GLSLProgram* shader = loadShader(shaderName, vertexShaderPath, fragmentShaderPath);
+bool AssetManager::LoadMaterial(const UUID& matID) {
 
-    auto materialPtr = std::make_shared<PBRMaterial>(materialName, shader);
-    std::string folderPath = GetFolderPath(path);
-    std::string newPath = StripQuotes(path);
-    bool matLoaded = load_pbrmat(newPath, *materialPtr);
+    if (GetMaterial(matID)) return true;
 
-    if (matLoaded) {
-        std::cout << "Material Loaded: " << path << std::endl;
+    auto mat = AssetDatabase::LoadAsset<Material>(matID);
+
+    if (mat) {
+
+        mat->id = matID;
+        pbrMaterials[matID] = mat;
+
+        // albedo
+        if (!mat->map_albedo_path.empty()) {
+
+            UUID texID = GetOrCreateTextureUUID(mat->map_albedo_path);
+
+            if (haveAssetState(texID))
+            {
+                mat->map_albedo = texID;
+            }
+            else
+            {
+                ImportTexture(mat->map_albedo_path, texID);
+
+                std::lock_guard<std::mutex> lock(assetMutex);
+                pendingTextureRequests.push({
+                    texID,
+                    matID,
+                    TextureMapType::Albedo,
+                    TextureTargetType::GlobalMaterial,
+                    true
+                    });
+            }
+        }
+
+        // normal
+        if (!mat->map_normal_path.empty()) {
+            UUID texID = GetOrCreateTextureUUID(mat->map_normal_path);
+
+            if (haveAssetState(texID))
+            {
+                mat->map_normal = texID;
+            }
+            else
+            {
+                ImportTexture(mat->map_normal_path, texID);
+
+                std::lock_guard<std::mutex> lock(assetMutex);
+                pendingTextureRequests.push({
+                    texID,
+                    matID,
+                    TextureMapType::Normal,
+                    TextureTargetType::GlobalMaterial,
+                    false
+                    });
+            }
+
+        }
+
+        // metallic
+        if (!mat->map_metallic_path.empty()) {
+            UUID texID = GetOrCreateTextureUUID(mat->map_metallic_path);
+
+            if (haveAssetState(texID))
+            {
+                mat->map_metallic = texID;
+            }
+            else
+            {
+                ImportTexture(mat->map_metallic_path, texID);
+
+                std::lock_guard<std::mutex> lock(assetMutex);
+                pendingTextureRequests.push({
+                    texID,
+                    matID,
+                    TextureMapType::Metallic,
+                    TextureTargetType::GlobalMaterial,
+                    false
+                    });
+            }
+        }
+
+        // roughness
+        if (!mat->map_roughness_path.empty()) {
+
+            UUID texID = GetOrCreateTextureUUID(mat->map_roughness_path);
+
+            if (haveAssetState(texID))
+            {
+                mat->map_roughness = texID;
+            }
+            else
+            {
+                ImportTexture(mat->map_roughness_path, texID);
+
+                std::lock_guard<std::mutex> lock(assetMutex);
+                pendingTextureRequests.push({
+                    texID,
+                    matID,
+                    TextureMapType::Roughness,
+                    TextureTargetType::GlobalMaterial,
+                    false
+                    });
+            }
+        }
+
+        // ambient occulision
+        if (!mat->map_ao_path.empty()) {
+            UUID texID = GetOrCreateTextureUUID(mat->map_ao_path);
+
+            if (haveAssetState(texID))
+            {
+                mat->map_ao = texID;
+            }
+            else
+            {
+                ImportTexture(mat->map_ao_path, texID);
+
+                std::lock_guard<std::mutex> lock(assetMutex);
+                pendingTextureRequests.push({
+                    texID,
+                    matID,
+                    TextureMapType::AmbientOcclusion,
+                    TextureTargetType::GlobalMaterial,
+                    false
+                    });
+            }
+        }
+
+        // arm
+        if (!mat->map_metallicRoughness_path.empty()) {
+            UUID texID = GetOrCreateTextureUUID(mat->map_metallicRoughness_path);
+
+            if (haveAssetState(texID))
+            {
+                mat->map_metallicRoughness = texID;
+            }
+            else
+            {
+                ImportTexture(mat->map_metallicRoughness_path, texID);
+
+                std::lock_guard<std::mutex> lock(assetMutex);
+                pendingTextureRequests.push({
+                    texID,
+                    matID,
+                    TextureMapType::MetallicRoughness,
+                    TextureTargetType::GlobalMaterial,
+                    false
+                    });
+            }
+        }
+
+        return true;
+
     }
-    else {
-        std::cout << "Failed to load Material: " << path << std::endl;
+        
+    else
         return false;
-    }
+}
 
-    if (!materialPtr->map_albedo_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_albedo_path);
-        materialPtr->map_albedo = importTexture(folderPath + "/" + materialPtr->map_albedo_path);
-        requestTextureLoad(materialPtr->map_albedo, folderPath + "/" + materialPtr->map_albedo_path, true);
-    }
-    if (!materialPtr->map_ao_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_ao_path);
-        materialPtr->map_ao = importTexture(folderPath + "/" + materialPtr->map_ao_path);
-        requestTextureLoad(materialPtr->map_ao, folderPath + "/" + materialPtr->map_ao_path);
-    }
-    if (!materialPtr->map_metallic_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_metallic_path);
-        materialPtr->map_metallic = importTexture(folderPath + "/" + materialPtr->map_metallic_path);
-        requestTextureLoad(materialPtr->map_metallic, folderPath + "/" + materialPtr->map_metallic_path);
-    }
-    if (!materialPtr->map_normal_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_normal_path);
-        materialPtr->map_normal = importTexture(folderPath + "/" + materialPtr->map_normal_path);
-        requestTextureLoad(materialPtr->map_normal, folderPath + "/" + materialPtr->map_normal_path);
-    }
-    if (!materialPtr->map_roughness_path.empty()) {
-        std::string texName = ExtractNameFromPath(materialPtr->map_roughness_path);
-        materialPtr->map_roughness = importTexture(folderPath + "/" + materialPtr->map_roughness_path);
-        requestTextureLoad(materialPtr->map_roughness, folderPath + "/" + materialPtr->map_roughness_path);
-    }
 
-    pbrMaterials[uuid] = materialPtr;
-    addAssetToAssetRegistry(uuid, AssetType::Material_pbr, newPath);
+
+
+const AssetMetadata* AssetManager::GetAssetMetaData(const UUID& uuid) const
+{
+    const auto& allAssets = AssetDatabase::GetAllAssets();
+
+    auto it = allAssets.find(uuid);
+    if (it == allAssets.end())
+        return nullptr;
+
+    return &it->second;
+}
+
+
+
+//    ----- MESH ----
+void AssetManager::ImportPrefab(const std::string& path) {
+    UUID assetID = UUID();
+    {
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[assetID] = AssetState::Importing;
+        currentImportingAsset.second = path;
+    }
+  
+    std::thread([this, path, assetID]() {
+
+        bool ok = AssetImporter::ImportPrefabFile(path, assetID);
+
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[assetID] = ok ? AssetState::Imported
+            : AssetState::Failed;
+
+        }).detach();
+
+
+}
+
+bool AssetManager::LoadPrefabToScene(const std::string& path) {
+    
+    PrefabData data = LoadPrefabFile(path);
+
+    pendingPrefabs.push(data);
+
     return true;
 }
 
-PBRMaterial* AssetManager::getPBRMaterial(const UUID& id)
+
+Entity* AssetManager::InstantiatePrefab(
+    Scene& scene,
+    const PrefabData& prefab
+)
+{
+    std::vector<Entity*> entities(prefab.nodes.size(), nullptr);
+
+    // ---- Create entities ----
+    for (const auto& node : prefab.nodes)
+    {
+        Entity* e = scene.createEntity(node.name);
+        entities[node.index] = e;
+
+        auto& t = scene.Transforms().Add(e->getID());
+
+        TransformSystem::DecomposeMatrix(
+            node.localTransform,
+            t.localPosition,
+            t.localRotation,
+            t.localScale
+        );
+
+        t.localDirty = true;
+        t.worldDirty = true;
+
+        TransformSystem::Dirty = true;
+
+        if (node.meshID != UUID::Null)
+        {
+
+
+            if (!scene.MeshFilters().Has(e->getID())) {
+                auto& mf = scene.MeshFilters().Add(e->getID());
+                RequestSubmeshLoad(node.meshID, e->getID());
+
+            }
+            else {
+                RequestSubmeshLoad(node.meshID, e->getID());
+            }
+
+            if (node.materialID != UUID::Null)
+            {
+                
+                if (!scene.MeshRenderers().Has(e->getID())) {
+                    auto& mr = scene.MeshRenderers().Add(e->getID());
+                    
+                    
+                    if (LoadMaterial(node.materialID)) {
+                        mr.inst.baseMaterial = node.materialID;
+                        mr.inst.dirty = true;
+                    }
+                }
+                else {
+                    auto& mr = scene.MeshRenderers().Get(e->getID());
+
+                    if (LoadMaterial(node.materialID)) {
+                        mr.inst.baseMaterial = node.materialID;
+                        mr.inst.dirty = true;
+
+                    }
+                }
+
+
+            }
+            else {
+                if (!scene.MeshRenderers().Has(e->getID())) {
+                    auto& mr = scene.MeshRenderers().Add(e->getID());
+                    mr.inst.baseMaterial = MaterialID::DefaultPbr;
+
+                }
+                else {
+                    auto& mr = scene.MeshRenderers().Get(e->getID());
+                    mr.inst.baseMaterial = MaterialID::DefaultPbr;
+
+                }
+            }
+       
+        }
+
+
+        
+    }
+
+    for (const auto& node : prefab.nodes)
+    {
+        if (node.parentIndex != -1)
+        {
+            scene.SetParent(
+                entities[node.index]->getID(),
+                entities[node.parentIndex]->getID()
+            );
+        }
+    }
+
+
+    return entities[0];
+}
+
+
+
+
+
+void AssetManager::ImportMesh(const std::string& path) {
+
+    UUID assetID = UUID();
+
+    {
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[assetID] = AssetState::Importing;
+        currentImportingAsset.second = path;
+
+    }
+ 
+
+    std::thread([this, path, assetID]() {
+
+        bool ok = AssetImporter::ImportMeshFile(path, assetID);
+
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[assetID] = ok ? AssetState::Imported
+            : AssetState::Failed;
+
+    }).detach();
+}
+
+
+
+
+
+
+Material* AssetManager::GetMaterial(const UUID& id)
 {
     auto it = pbrMaterials.find(id);
     if (it == pbrMaterials.end())
@@ -336,75 +509,156 @@ PBRMaterial* AssetManager::getPBRMaterial(const UUID& id)
 
 //          ----- TEXTURES -----
 
-UUID AssetManager::importTexture(const std::string& path, bool srgb) {
-    MetaFile meta;
-
-    std::string fileName = ExtractFileNameFromPath(path);
-    if (!MetaFileSystem::HasMeta(path)) {
-        meta.uuid = UUID();
-        meta.type = srgb ? "texture_srgb" : "texture";
-        meta.source = NormalizePath(path);
-        MetaFileSystem::Save(path, meta);
-    }
-    else {
-        meta = MetaFileSystem::Load(path);
-    }
-    return meta.uuid;
-
-}
-
-void AssetManager::requestTextureLoad(const UUID& uuid, const std::string& path, bool srgb)
-{
-    auto tex = std::make_shared<GLTexture>();
-    tex->name = ExtractNameFromPath(path);
-    tex->path = path;
-    tex->srgb = srgb;
-    std::string cleanPath = StripQuotes(path);
+void AssetManager::ImportTexture(const std::string& path, const UUID& assetID) {
 
     {
         std::lock_guard<std::mutex> lock(assetMutex);
-        assetStates[uuid] = AssetState::Loading;
-        textures[uuid] = tex;
-        addAssetToAssetRegistry(uuid, srgb? AssetType::Texture_srgb: AssetType::Texture, cleanPath);
+        assetStates[assetID] = AssetState::Importing;
+        currentImportingAsset.second = path;
+
     }
 
 
-    std::thread([this, uuid, tex, cleanPath]()
-        {
-            ImageData img = ImageLoader::stbiLoader(cleanPath);
+    std::thread([this, path, assetID]() {
 
-            tex->imageCPU = std::move(img);
-            tex->pendingGPUUpload = true;
+        bool ok = AssetImporter::ImportTextureFile(path, assetID);
 
-            std::lock_guard<std::mutex> lock(assetMutex);
-            assetStates[uuid] = AssetState::LoadedToCPU;
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[assetID] = ok ? AssetState::Imported
+            : AssetState::Failed;
 
         }).detach();
 }
 
+UUID AssetManager::GetOrCreateTextureUUID(const std::string& path)
+{
+    std::lock_guard<std::mutex> lock(assetMutex);
 
-void AssetManager::loadTexture(const UUID& uuid, const std::string& path) {
+    auto it = texturePathToUUID.find(path);
+    if (it != texturePathToUUID.end())
+        return it->second;
 
-    std::string textureName = ExtractNameFromPath(path);
-    UUID id = uuid;
-    std::shared_ptr<GLTexture> tex = std::make_shared<GLTexture>();
-    std::string newPath = StripQuotes(path);
-    *tex = textureCache.getTexture(newPath, true);
+    UUID newID = UUID();
+    texturePathToUUID[path] = newID;
+    return newID;
+}
 
-    if (tex) {
-        std::cout << "Texture Loaded: " << path << std::endl;
+// this one for only Global Material Asset
+void AssetManager::RequestTextureLoad(
+    const UUID& texID,
+    const UUID& matID,
+    const TextureMapType& mapType,
+    bool srgb
+)
+{
+    if (getTexture(texID)) {
+        pendingTextureRequests.push({
+           texID,
+           matID,
+           mapType,
+           TextureTargetType::GlobalMaterial
+            });
+        assetStates[texID] = AssetState::LoadedToGPU;
+        return;
+    } 
+
+    auto tex = std::make_shared<GLTexture>();
+    tex->srgb = srgb;
+
+    {
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[texID] = AssetState::Loading;
+
+        pendingTextureRequests.push({
+            texID,
+            matID,
+            mapType,
+            TextureTargetType::GlobalMaterial
+            });
     }
-    else {
-        std::cout << "Failed to load texture: " << path << std::endl;
+
+    std::thread([this, texID, tex]()
+        {
+            auto img = LoadTexture(texID);
+            if (!img) return;
+
+            tex->imageCPU = std::move(img);
+            tex->pendingGPUUpload = true;
+            textures[texID] = tex;
+
+            std::lock_guard<std::mutex> lock(assetMutex);
+            assetStates[texID] = AssetState::LoadedToCPU;
+        }).detach();
+}
+
+
+// this one for inst material per meshrenderer
+void AssetManager::RequestTextureLoad_inst(
+    const UUID& texID,
+    const UUID& entityID,
+    const TextureMapType& mapType,
+    bool srgb
+)
+{
+    if (getTexture(texID)) {
+
+        pendingTextureRequests.push({
+            texID,
+            entityID,
+            mapType,
+            TextureTargetType::MeshRendererInstance
+            });
+        assetStates[texID] = AssetState::LoadedToGPU;
         return;
     }
 
-    tex->name = textureName;
-    textures[id] = tex;
+    auto tex = std::make_shared<GLTexture>();
+    tex->srgb = srgb;
 
-    addAssetToAssetRegistry(uuid, AssetType::Texture, newPath);
+    {
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[texID] = AssetState::Loading;
 
+        pendingTextureRequests.push({
+            texID,
+            entityID,
+            mapType,
+            TextureTargetType::MeshRendererInstance
+            });
+    }
+
+    std::thread([this, texID, tex]()
+        {
+            auto img = LoadTexture(texID);
+            if (!img) {
+                textures.erase(texID);
+                return;
+            }
+
+            tex->imageCPU = std::move(img);
+            tex->pendingGPUUpload = true;
+            textures[texID] = tex;
+
+            std::lock_guard<std::mutex> lock(assetMutex);
+            assetStates[texID] = AssetState::LoadedToCPU;
+        }).detach();
 }
+
+
+std::shared_ptr<ImageData> AssetManager::LoadTexture(const UUID& id) {
+    std::shared_ptr<ImageData> img = AssetDatabase::LoadAsset<ImageData>(id);
+
+    if (!img) {
+        std::lock_guard<std::mutex> lock(assetMutex);
+
+        assetStates[id] = AssetState::Failed;
+        return nullptr;
+    }
+
+
+    return img;
+}
+
 
 GLTexture* AssetManager::loadImage(const std::string& name, const std::string& path) {
 
@@ -429,47 +683,54 @@ GLTexture* AssetManager::loadImage(const std::string& name, const std::string& p
 
 }
 
-void AssetManager::processPendingTextures(const UUID& uuid)
+bool AssetManager::processPendingTextures(const UUID& uuid)
 {
     GLTexture* tex = getTexture(uuid);
+    if (!tex || !tex->pendingGPUUpload || !tex->imageCPU)
+        return false;
 
-    if (!tex || !tex->pendingGPUUpload)
-        return;
-
-    GLenum format = GL_RGB;
-    if (tex->imageCPU.channels  == 1) format = GL_RED;
-    else if (tex->imageCPU.channels == 3) format = GL_RGB;
-    else if (tex->imageCPU.channels == 4) format = GL_RGBA;
+    GLenum format;
+    switch (tex->imageCPU->channels)
+    {
+    case 1: format = GL_RED;  break;
+    case 3: format = GL_RGB;  break;
+    case 4: format = GL_RGBA; break;
+    default:
+        assetStates[uuid] = AssetState::Failed;
+        return false;
+    }
 
     GLenum internalFormat;
     if (tex->srgb)
     {
-        internalFormat = (format == GL_RGBA)
-            ? GL_SRGB8_ALPHA8
-            : GL_SRGB8;
+        if (format == GL_RGBA) internalFormat = GL_SRGB8_ALPHA8;
+        else if (format == GL_RGB) internalFormat = GL_SRGB8;
+        else internalFormat = GL_R8;
     }
     else
     {
-        internalFormat = (format == GL_RGBA)
-            ? GL_RGBA8
-            : GL_RGB8;
+        if (format == GL_RGBA) internalFormat = GL_RGBA8;
+        else if (format == GL_RGB) internalFormat = GL_RGB8;
+        else internalFormat = GL_R8;
     }
-
 
     glGenTextures(1, &tex->id);
     glBindTexture(GL_TEXTURE_2D, tex->id);
 
     glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        internalFormat,
-        tex->imageCPU.width,
-        tex->imageCPU.height,
-        0,
-        format,
-        GL_UNSIGNED_BYTE,
-        tex->imageCPU.pixels.data()
+        GL_TEXTURE_2D, 0, internalFormat,
+        tex->imageCPU->width, tex->imageCPU->height,
+        0, format, GL_UNSIGNED_BYTE,
+        tex->imageCPU->pixels.data()
     );
+
+    if (glGetError() != GL_NO_ERROR)
+    {
+        glDeleteTextures(1, &tex->id);
+        tex->id = 0;
+        assetStates[uuid] = AssetState::Failed;
+        return false;
+    }
 
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -480,14 +741,12 @@ void AssetManager::processPendingTextures(const UUID& uuid)
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Free CPU memory
-    tex->imageCPU.pixels.clear();
-    tex->imageCPU.pixels.shrink_to_fit();
-
+    tex->imageCPU.reset();
     tex->pendingGPUUpload = false;
-    assetStates[uuid] = AssetState::LoadedToGPU;
 
+    return true;
 }
+
 
 GLTexture* AssetManager::getTexture(const UUID& id) {
     return textures[id].get();
@@ -517,189 +776,16 @@ GLSLProgram* AssetManager::getShader(const std::string& name) {
 
 //          ----- ASSET REGISTRY -----
 
-void AssetManager::addAssetToAssetRegistry(
-    const UUID& uuid,
-    AssetType type,
-    const std::string& path
-)
-{
-    std::string normalizedPath = NormalizePath(path);
 
-    // If asset already registered, do nothing
-    if (assetRegistry.find(uuid) != assetRegistry.end())
-        return;
 
-    AssetRecord record;
-    record.uuid = uuid;
-    record.type = type;
-    record.path = normalizedPath;
+// ASSET DATABASE
 
-    assetRegistry.emplace(uuid, std::move(record));
+void AssetManager::LoadAssetDatabase() {
+    AssetDatabase::LoadDatabase();
 }
 
-void AssetManager::saveSceneAssetRegistryForScene(
-    const Scene& scene,
-    const std::string& folderPath
-) {
-    namespace fs = std::filesystem;
-
-    fs::path dir(folderPath);
-    if (!fs::exists(dir))
-        fs::create_directories(dir);
-
-    // Build per-scene registry filename
-    std::string registryFileName = "assetRegistry_" + scene.getName() + ".json";
-    fs::path registryPath = dir / registryFileName;
-
-    json jRegistry;
-    jRegistry["assets"] = json::array();
-
-    std::unordered_set<UUID> usedAssets;
-
-    // Collect asset UUIDs used by the scene
-    for (const auto& entityPtr : scene.getEntities()) {
-        Entity* entity = entityPtr.get();
-
-        const MeshRenderer& mr = scene.MeshRenderers().Get(entity->getID());
-        const MeshFilter& mf = scene.MeshFilters().Get(entity->getID());
-
-
-        if (!mf.meshID.isNull())
-            usedAssets.insert(mf.meshID);
-
-        for (auto& [matIdx, matUUID] : mr.materialIndexToUUID) {
-            if (matUUID != UUID::Null)
-                usedAssets.insert(matUUID);
-        }
-
-        for (auto& [matIdx, matUUID] : mr.materialIndexToInstID) {
-            auto& inst = scene.getPbrMaterialInstance(matUUID);
-
-            if (inst.map_albedo.has_value()) {
-                usedAssets.insert(inst.map_albedo.value());
-            }
-            if (inst.map_ao.has_value()) {
-                usedAssets.insert(inst.map_ao.value());
-            }
-            if (inst.map_metallic.has_value()) {
-                usedAssets.insert(inst.map_metallic.value());
-            }
-            if (inst.map_normal.has_value()) {
-                usedAssets.insert(inst.map_normal.value());
-            }
-            if (inst.map_roughness.has_value()) {
-                usedAssets.insert(inst.map_roughness.value());
-            }
-            if (inst.map_metallicRoughness.has_value()) {
-                usedAssets.insert(inst.map_metallicRoughness.value());
-            }
-        }
-
-    }
-
-    // Serialize assets from the global assetRegistry
-    for (const UUID& uuid : usedAssets) {
-        auto it = assetRegistry.find(uuid);
-        if (it == assetRegistry.end())
-            continue;
-
-        const AssetRecord& record = it->second;
-
-        jRegistry["assets"].push_back({
-            { "uuid", record.uuid.toUint64() },
-            { "type", AssetTypeToString(record.type) },
-            { "path", record.path.string() }
-            });
-    }
-
-    // Save file
-    std::ofstream out(registryPath);
-    out << jRegistry.dump(4);
-}
-
-bool AssetManager::loadAssetFromPath(const AssetRecord& record)
-{
-    switch (record.type)
-    {
-    case AssetType::Mesh:
-        loadMesh(record.uuid, record.path.string());
-        return true;
-
-    case AssetType::Texture:
-        requestTextureLoad(record.uuid, record.path.string());
-        return true;
-
-    case AssetType::Texture_srgb:
-        requestTextureLoad(record.uuid, record.path.string(), true);
-        return true;
-
-    case AssetType::Material:
-        loadMaterial(record.uuid, record.path.string());
-        return true;
-
-    case AssetType::Shader:
-        //    loadShader(record.uuid, record.path.string());
-        return true;
-    }
-
-    return false;
-}
-
-bool AssetManager::loadAssetRegistry(const std::string& filePath)
-{
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open AssetRegistry: " << filePath << std::endl;
-        return false;
-    }
-
-    json j;
-    try {
-        file >> j;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "AssetRegistry parse error: " << e.what() << std::endl;
-        return false;
-    }
-
-    if (!j.contains("assets"))
-        return false;
-
-    for (const auto& jAsset : j["assets"])
-    {
-        UUID uuid(jAsset.at("uuid").get<uint64_t>());
-        std::string typeStr = jAsset.at("type").get<std::string>();
-        std::string path = jAsset.at("path").get<std::string>();
-
-        AssetType type;
-        if (typeStr == "Mesh")        type = AssetType::Mesh;
-        else if (typeStr == "Texture") type = AssetType::Texture;
-        else if (typeStr == "Texture_srgb") type = AssetType::Texture_srgb;
-        else if (typeStr == "Material")type = AssetType::Material;
-        else if (typeStr == "Shader")  type = AssetType::Shader;
-        else continue; // unknown type
-
-        assetRegistry.try_emplace(
-            uuid,
-            AssetRecord{ uuid, NormalizePath(path), type }
-        );
-    }
-
-    // then load everthing which is in the assetRecord
-    for (auto& record : assetRegistry) {
-        loadAssetFromPath(record.second);
-    }
-
-    return true;
-}
-
-const AssetRecord* AssetManager::getRecord(const UUID& uuid) const
-{
-    auto it = assetRegistry.find(uuid);
-    if (it == assetRegistry.end())
-        return nullptr;
-
-    return &it->second;
+void AssetManager::saveAssetDatabase() {
+    AssetDatabase::SaveDatabase();
 }
 
 
@@ -756,119 +842,70 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
     jScene["uuid"] = scene.getUUID().toUint64();
     jScene["name"] = sceneName;
 
-    json jGlobalLighting;
-    jGlobalLighting["ambient"] = {
-        scene.getAmbientLighting().x,
-        scene.getAmbientLighting().y,
-        scene.getAmbientLighting().z
-    };
-    jScene["GlobalLighting"] = jGlobalLighting;
-
     jScene["entities"] = json::array();
 
     const auto& entities = scene.getEntities();
 
     for (const auto& entityPtr : entities)
     {
-        Entity* entity = entityPtr.get();
-        const MeshRenderer& mr = scene.MeshRenderers().Get(entity->getID());
-        const MeshFilter& mf = scene.MeshFilters().Get(entity->getID());
+        const UUID entityID = entityPtr.get()->getID();
+        const std::string entityName = entityPtr.get()->getName();
+
 
 
         json jEntity;
 
-        jEntity["entityID"] = entity->getID().toUint64();
-        jEntity["name"] = entity->getName();
-        jEntity["type"] = entity->getType();
-        jEntity["meshID"] = mf.meshID.toUint64();
+        jEntity["entityID"] = entityID.toUint64();
+        jEntity["name"] = entityName;
 
-        const auto& transform = entity->getTransform();
-        jEntity["transform"] = {
-            { "position", { transform.position.x, transform.position.y, transform.position.z } },
-            { "rotation", { transform.rotation.x, transform.rotation.y, transform.rotation.z } },
-            { "scale",    { transform.scale.x,    transform.scale.y,    transform.scale.z } }
-        };
+        if (scene.Transforms().Has(entityID)) {
+            const TransformComponent& entityTransform = scene.Transforms().Get(entityID);
 
-        // ---------- SAVE MATERIALS (NEW) ----------
-        const auto& matUUIDs = mr.materialIndexToUUID;
-        if (!matUUIDs.empty())
-        {
-            json jMaterials = json::object();
-
-            for (const auto& [matIndex, matUUID] : matUUIDs)
-            {
-                jMaterials[std::to_string(matIndex)] = matUUID.toUint64();
-            }
-
-            jEntity["materials"] = jMaterials;
+            jEntity["transform"] = {
+                { "position", { entityTransform.localPosition.x, entityTransform.localPosition.y, entityTransform.localPosition.z } },
+                { "rotation", { entityTransform.localRotation.x, entityTransform.localRotation.y, entityTransform.localRotation.z } },
+                { "scale",    { entityTransform.localScale.x,    entityTransform.localScale.y,    entityTransform.localScale.z } }
+            };
         }
-        // ------------------------------------------
+       
 
-        // ---------- SAVE MATERIAL OVERRIDES ----------
-        const auto& overrides = mr.materialIndexToInstID;
+        if (scene.MeshFilters().Has(entityID)) {
+            const MeshFilter& mf = scene.MeshFilters().Get(entityID);
 
-        if (!overrides.empty())
-        {
-            json jOverrides = json::object();
+            json jMeshFilter;
 
-            for (const auto& [matIndex, inst] : overrides)
-            {
-                UUID instID = overrides.at(matIndex);
-                const PBRMaterialInstance& inst = scene.getPbrMaterialInstance(instID);
+            jMeshFilter["meshID"] = mf.submeshID.toUint64();
 
-                json jInst = json::object();
+            jEntity["meshFilter"] = jMeshFilter;
 
-                if (inst.albedo) jInst["albedo"] = vec3ToJson(*inst.albedo);
-                if (inst.ao) jInst["ao"] = (*inst.ao);
-                if (inst.metallic) jInst["metallic"] = (*inst.metallic);
-                if (inst.roughness) jInst["roughness"] = (*inst.roughness);
-
-                if (inst.map_albedo) jInst["map_albedo"] = inst.map_albedo->toUint64();
-                if (inst.map_ao) jInst["map_ao"] = inst.map_ao->toUint64();
-                if (inst.map_metallic) jInst["map_metallic"] = inst.map_metallic->toUint64();
-                if (inst.map_normal) jInst["map_normal"] = inst.map_normal->toUint64();
-                if (inst.map_roughness) jInst["map_roughness"] = inst.map_roughness->toUint64();
-                if (inst.map_metallicRoughness) jInst["map_metallicRoughness"] = inst.map_metallicRoughness->toUint64();
-
-                if (inst.normalStrength) jInst["normalStrength"] = *inst.normalStrength;
-
-                if (!jInst.empty())
-                    jOverrides[std::to_string(matIndex)] = jInst;
-            }
-
-            if (!jOverrides.empty())
-                jEntity["materialOverrides"] = jOverrides;
         }
 
-        // ---------- SAVE LIGHT ----------
-        if (entity->hasLight())
-        {
-            const Light& light = entity->getLight();
+        if (scene.MeshRenderers().Has(entityID)) {
+            const MeshRenderer& mr = scene.MeshRenderers().Get(entityID);
+
+            json jMeshRenderer;
+
+            jMeshRenderer["materialID"] = mr.inst.baseMaterial.toUint64();
+
+            jEntity["meshRenderer"] = jMeshRenderer;
+        }
+
+        if (scene.Lights().Has(entityID)) {
+            const Light& l = scene.Lights().Get(entityID);
+
             json jLight;
 
-            jLight["type"] = static_cast<int>(light.type);
+            
+            if (scene.Transforms().Has(entityID)) {
+                const TransformComponent& entityTransform = scene.Transforms().Get(entityID);
+                jLight["position"] = { entityTransform.localPosition.x,  entityTransform.localPosition.y,  entityTransform.localPosition.z };
+            }
 
-            jLight["position"] = { light.position.x,  light.position.y,  light.position.z };
-            jLight["direction"] = { light.direction.x, light.direction.y, light.direction.z };
-
-            jLight["ambient"] = { light.ambient.x,  light.ambient.y,  light.ambient.z };
-            jLight["diffuse"] = { light.diffuse.x,  light.diffuse.y,  light.diffuse.z };
-            jLight["specular"] = { light.specular.x, light.specular.y, light.specular.z };
-            jLight["intensity"] = light.intensity;
-            jLight["attenuation"] = {
-                { "constant",  light.constant  },
-                { "linear",    light.linear    },
-                { "quadratic", light.quadratic }
-            };
-
-            jLight["spot"] = {
-                { "cutOff",      light.cutOffAngle      },
-                { "outerCutOff", light.outerCutOffAngle }
-            };
+            jLight["color"] = { l.color.x, l.color.y, l.color.z };
 
             jEntity["light"] = jLight;
         }
-        // ------------------------------------------
+
 
         jScene["entities"].push_back(jEntity);
     }
@@ -885,214 +922,116 @@ Scene* AssetManager::loadScene(const std::string& filePath)
 {
     namespace fs = std::filesystem;
 
-    if (!fs::exists(filePath)) {
-        std::cerr << "Scene file not found: " << filePath << std::endl;
-        return nullptr;
-    }
+    try
+    {
+        fs::path path(filePath);
 
-    // --- READ FILE ---
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open scene file: " << filePath << std::endl;
-        return nullptr;
-    }
-
-    json jScene;
-    try {
-        file >> jScene;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "Failed to parse JSON: " << e.what() << std::endl;
-        return nullptr;
-    }
-
-    // --- EXTRACT SCENE DATA ---
-    std::string sceneName;
-    uint64_t sceneUUID = 0;
-
-    try {
-        sceneName = jScene.at("name").get<std::string>();
-        sceneUUID = jScene.at("uuid").get<uint64_t>();
-    }
-    catch (const json::exception& e) {
-        std::cerr << "Invalid scene format: " << e.what() << std::endl;
-        return nullptr;
-    }
-
-    Scene* scene = new Scene(sceneName, UUID(sceneUUID));
-
-    try {
-        if (jScene.contains("GlobalLighting")) {
-            auto jGlobalLighting = jScene.at("GlobalLighting");
-
-            if (jGlobalLighting.contains("ambient")) {
-                auto g_ambient = jGlobalLighting.at("ambient");
-                scene->setAmbientLighting({
-                    g_ambient[0].get<float>(),
-                    g_ambient[1].get<float>(),
-                    g_ambient[2].get<float>()
-                    });
-            }
+        if (!fs::exists(path))
+        {
+            std::cerr << "Scene file does not exist: " << filePath << "\n";
+            return nullptr;
         }
 
-    }
-    catch (const json::exception& e) {
-        std::cerr << "Invalid Global Lightning : " << sceneName << std::endl;
-    }
+        std::ifstream file(path);
+        if (!file.is_open())
+        {
+            std::cerr << "Failed to open scene file: " << filePath << "\n";
+            return nullptr;
+        }
 
-    // --- LOAD ENTITIES ---
-    try {
-        auto jEntities = jScene.at("entities");
+        json jScene;
+        file >> jScene;
+        file.close();
 
-        for (auto& jEntity : jEntities)
+      
+        // --- EXTRACT SCENE DATA ---
+        std::string sceneName;
+        uint64_t sceneUUID = 0;
+
+        try {
+            sceneName = jScene.at("name").get<std::string>();
+            sceneUUID = jScene.at("uuid").get<uint64_t>();
+        }
+        catch (const json::exception& e) {
+            std::cerr << "Invalid scene format: " << e.what() << std::endl;
+            return nullptr;
+        }
+
+        Scene* scene = new Scene(sceneName, UUID(sceneUUID));
+
+        // ---- Entities ----
+        const auto& jEntities = jScene.at("entities");
+
+        for (const auto& jEntity : jEntities)
         {
             try {
-                uint64_t entityID = jEntity.at("entityID").get<uint64_t>();
+                UUID entityID = UUID(jEntity.at("entityID").get<uint64_t>());
                 std::string entityName = jEntity.at("name").get<std::string>();
-                EntityType entityType = jEntity.at("type");
-                UUID meshUUID;
-                if (jEntity.contains("meshID")) {
-                    meshUUID = UUID(jEntity.at("meshID").get<uint64_t>());
+
+                Entity* entity = scene->createEntity(entityName, entityID);
+
+                // ---- Transform ----
+                if (jEntity.contains("transform"))
+                {
+                    const auto& jt = jEntity.at("transform");
+
+                    TransformComponent tr;
+
+                    tr.localPosition = {
+                        jt.at("position")[0],
+                        jt.at("position")[1],
+                        jt.at("position")[2]
+                    };
+
+                    tr.localRotation = {
+                        jt.at("rotation")[0],
+                        jt.at("rotation")[1],
+                        jt.at("rotation")[2]
+                    };
+
+                    tr.localScale = {
+                        jt.at("scale")[0],
+                        jt.at("scale")[1],
+                        jt.at("scale")[2]
+                    };
+
+
+                    scene->Transforms().Add(entityID, tr);
                 }
 
-                Entity* entity = scene->createEntity(entityName, meshUUID,  entityType, UUID(entityID));
-                MeshRenderer& mr = scene->MeshRenderers().Get(entity->getID());
 
-                auto t = jEntity.at("transform");
-                auto pos = t.at("position");
-                auto rot = t.at("rotation");
-                auto scl = t.at("scale");
+                // ---- MeshFilter ----
+                if (jEntity.contains("meshFilter"))
+                {
+                    MeshFilter mf;
+                    mf.submeshID = UUID(jEntity["meshFilter"].at("meshID").get<uint64_t>());
+                    scene->MeshFilters().Add(entityID, mf);
+                }
 
-                Transform transform;
-                transform.position = { pos[0], pos[1], pos[2] };
-                transform.rotation = { rot[0], rot[1], rot[2] };
-                transform.scale = { scl[0], scl[1], scl[2] };
+                // ---- MeshRenderer ----
+                if (jEntity.contains("meshRenderer"))
+                {
+                    MeshRenderer mr;
+                    mr.inst.baseMaterial = UUID(jEntity["meshRenderer"].at("materialID").get<uint64_t>());
+                    scene->MeshRenderers().Add(entityID, mr);
+                }
 
-                entity->setTransform(transform);
-
+                // ---- Light ----
                 if (jEntity.contains("light"))
                 {
-                    const json& jLight = jEntity.at("light");
+                    const auto& jl = jEntity.at("light");
 
-                    entity->addLight();
-                    Light& light = entity->getLight();
+                    Light light;
+                   
 
-                    light.type = static_cast<LightType>(
-                        jLight.at("type").get<int>()
-                        );
+                    light.color = {
+                        jl.at("color")[0],
+                        jl.at("color")[1],
+                        jl.at("color")[2]
+                    };
 
-                    if (jLight.contains("direction")) {
-                        auto d = jLight.at("direction");
-                        light.direction = glm::normalize(glm::vec3(d[0], d[1], d[2]));
-                    }
-
-                    auto amb = jLight.at("ambient");
-                    auto diff = jLight.at("diffuse");
-                    auto spec = jLight.at("specular");
-
-                    light.ambient = { amb[0],  amb[1],  amb[2] };
-                    light.diffuse = { diff[0], diff[1], diff[2] };
-                    light.specular = { spec[0], spec[1], spec[2] };
-
-                    light.intensity = jLight.at("intensity");
-
-                    if (jLight.contains("attenuation"))
-                    {
-                        const auto& att = jLight.at("attenuation");
-                        light.constant = att.at("constant").get<float>();
-                        light.linear = att.at("linear").get<float>();
-                        light.quadratic = att.at("quadratic").get<float>();
-                    }
-
-                    if (light.type == LightType::Spotlight && jLight.contains("spot"))
-                    {
-                        const auto& spot = jLight.at("spot");
-                        light.cutOffAngle = spot.at("cutOff").get<float>();
-                        light.outerCutOffAngle = spot.at("outerCutOff").get<float>();
-                    }
+                    scene->Lights().Add(entityID, light);
                 }
-
-
-                Mesh* mesh = getMesh(meshUUID);
-
-
-                if (mesh)
-                {
-                    if (jEntity.contains("materials"))
-                    {
-                        const json& jMaterials = jEntity.at("materials");
-
-                        for (auto it = jMaterials.begin(); it != jMaterials.end(); ++it)
-                        {
-                            unsigned int matIndex = std::stoul(it.key());
-                            UUID matUUID(it.value().get<uint64_t>());
-
-                            mr.materialIndexToUUID[matIndex] = matUUID;
-
-                        }
-                    }
-
-                    scene->assignDefaultPBRMaterials(entity->getID(), mesh);
-
-
-                    // ---------- LOAD MATERIAL OVERRIDES ----------
-                    if (jEntity.contains("materialOverrides"))
-                    {
-                        const json& jOverrides = jEntity["materialOverrides"];
-
-                        for (auto it = jOverrides.begin(); it != jOverrides.end(); ++it)
-                        {
-                            unsigned int matIndex = std::stoul(it.key());
-                            const json& jInst = it.value();
-
-                            auto& instID = mr.materialIndexToInstID[matIndex];
-                            auto& inst = scene->getPbrMaterialInstance(instID);
-
-                            if (jInst.contains("albedo"))
-                                inst.albedo = glm::vec3(
-                                    jInst["albedo"][0], jInst["albedo"][1], jInst["albedo"][2]);
-                           
-                            if (jInst.contains("ao"))
-                                inst.ao = jInst["ao"].get<float>();
-
-                            if (jInst.contains("metallic"))
-                                inst.metallic = jInst["metallic"].get<float>();
-
-                            if (jInst.contains("roughness"))
-                                inst.roughness = jInst["roughness"].get<float>();
-
-                            if (jInst.contains("map_albedo"))
-                                inst.map_albedo = UUID(jInst["map_albedo"].get<uint64_t>());
-
-                            if (jInst.contains("map_ao"))
-                                inst.map_ao = UUID(jInst["map_ao"].get<uint64_t>());
-
-                            if (jInst.contains("map_metallic"))
-                                inst.map_metallic = UUID(jInst["map_metallic"].get<uint64_t>());
-
-                            if (jInst.contains("map_normal"))
-                                inst.map_normal = UUID(jInst["map_normal"].get<uint64_t>());
-
-                            if (jInst.contains("map_roughness"))
-                                inst.map_roughness = UUID(jInst["map_roughness"].get<uint64_t>());
-
-                            if (jInst.contains("map_metallicRoughness"))
-                                inst.map_metallicRoughness = UUID(jInst["map_metallicRoughness"].get<uint64_t>());
-
-                            if (jInst.contains("normalStrength"))
-                                inst.normalStrength = jInst["normalStrength"].get<float>();
-
-
-                        }
-                    }
-
-
-                }
-                else
-                {
-                    std::cerr << "Mesh missing: UUID(" << meshUUID << ")" << std::endl;
-                }
-
             }
             catch (const json::exception& e) {
                 std::cerr << "Skipping invalid entity in scene \"" << sceneName
@@ -1102,84 +1041,228 @@ Scene* AssetManager::loadScene(const std::string& filePath)
             catch (const std::exception& e) {
                 std::cerr << "Error creating entity: " << e.what() << std::endl;
                 continue;
-            }
+            } 
         }
 
+        std::cout << "Loaded scene: " << scene->getName() << "\n";
+        return scene;
     }
-    catch (const json::exception& e) {
-        std::cerr << "Invalid entity data in scene: " << e.what() << std::endl;
-        delete scene;
+    catch (const json::exception& e)
+    {
+        std::cerr << "JSON error while loading scene: " << e.what() << "\n";
         return nullptr;
     }
-
-    std::cout << "Loaded scene \"" << sceneName
-        << "\" from: " << filePath << std::endl;
-
-    return scene;
-}
-
-
-
-void AssetManager::processGpuUploads()
-{
-    std::lock_guard<std::mutex> lock(assetMutex);
-
-    for (auto& [id, state] : assetStates) {
-        if (state == AssetState::LoadedToCPU) {
-            AssetType type = getAssetType(id);
-
-            switch (type) {
-            case AssetType::Mesh:
-            {
-                processPendingMesh(id);
-                state = AssetState::LoadedToGPU;
-            }
-                break;
-            
-            case AssetType::Texture:
-                processPendingTextures(id);
-                state = AssetState::Loaded;
-                break;
-            }    
-
-        }
-    }
-}
-
-void AssetManager::syncAssetsToScene(Scene& activeScene)
-{
-    // sync mesh
-    for (auto& e : activeScene.getEntities())
+    catch (const std::exception& e)
     {
-        Entity* entity = e.get();
-        MeshRenderer& mr = activeScene.MeshRenderers().Get(entity->getID());
-        MeshFilter& mf = activeScene.MeshFilters().Get(entity->getID());
+        std::cerr << "Error while loading scene: " << e.what() << "\n";
+        return nullptr;
+    }
+}
 
 
-        if (!mf.HasPendingMesh())
-            continue;
+void AssetManager::ProcessGpuUploads()
+{
+    std::vector<UUID> gpuReadyAssets;
 
-        UUID id = mf.GetRequestedMeshID();
+    {
+        std::lock_guard<std::mutex> lock(assetMutex);
 
-        if (assetStates[id] == AssetState::LoadedToGPU)
+        for (auto& [id, state] : assetStates)
         {
-            Mesh* mesh = getMesh(id);
-            mf.meshID = id;
-            activeScene.assignDefaultPBRMaterials(entity->getID(), mesh);
+            if (state == AssetState::LoadedToCPU)
+                gpuReadyAssets.push_back(id);
+        }
+    }
 
-            mf.ClearPendingMesh();
+    // GPU work OUTSIDE the lock
+    for (UUID id : gpuReadyAssets)
+    {
+        AssetType type = getAssetType(id);
+        bool ok = false;
 
-            assetStates[id] == AssetState::Loaded;
+        switch (type)
+        {
+        case AssetType::Submesh:
+            ok = processPendingSubmesh(id);
+            break;
+
+        case AssetType::Texture:
+            ok = processPendingTextures(id);
+            break;
+        }
+
+        std::lock_guard<std::mutex> lock(assetMutex);
+        assetStates[id] = ok
+            ? AssetState::LoadedToGPU
+            : AssetState::Failed;
+    }
+}
+
+
+
+
+void AssetManager::SyncAssetsToScene(Scene& activeScene) {
+
+    if (!pendingPrefabs.empty()) {
+        InstantiatePrefab(activeScene, pendingPrefabs.front());
+
+        pendingPrefabs.pop();
+    }
+
+
+    if (!pendingSubmeshes.empty())
+    {
+        auto req = pendingSubmeshes.front();
+
+        if (assetStates[req.submeshID] == AssetState::LoadedToGPU)
+        {
+            auto& mf = activeScene.MeshFilters().Get(req.entityID);
+            mf.submeshID = req.submeshID;
+            mf.ClearPendingSubmesh();
+
+            assetStates[req.submeshID] = AssetState::Loaded;
+            pendingSubmeshes.pop();
+        }
+        else if (assetStates[req.submeshID] == AssetState::Failed)
+        {
+            pendingSubmeshes.pop();
+        }
+    }
+
+    ProcessPendingTextureRequests(activeScene);
+
+}
+
+// this func is for clearing up the Failed or Loaded assets of assetStates 
+// as processGpuUploads() iterarate through assetStates every loop
+// it is better to keep only the assets which are needed for loading or importing
+void AssetManager::UpdateAssetStates()
+{
+    // could use std::erase_if from C++20
+    for (auto it = assetStates.begin(); it != assetStates.end(); )
+    {
+        AssetState state = it->second;
+
+        if (
+            state == AssetState::Failed ||
+            state == AssetState::Unloaded
+            )
+        {
+            it = assetStates.erase(it); 
+        }
+        else
+        {
+            ++it;
         }
     }
 }
+
+
+
+void AssetManager::ProcessPendingTextureRequests(Scene& activeScene)
+{
+    if (pendingTextureRequests.empty())
+        return;
+
+    size_t count = pendingTextureRequests.size();
+
+    while (count--)
+    {
+        TextureLoadRequest req = pendingTextureRequests.front();
+        pendingTextureRequests.pop();
+
+        AssetState state = assetStates[req.textureID];
+
+        if (state == AssetState::Importing 
+            )
+        {
+            pendingTextureRequests.push(req);
+            continue;
+        }
+
+        // 🔹 Stage 2: Imported but not loading → trigger load
+        if (state == AssetState::Imported)
+        {
+            RequestTextureLoad(
+                req.textureID,
+                req.targetID,
+                req.mapType,
+                req.srgb
+            );
+            pendingTextureRequests.push(req);
+            continue;
+        }
+
+        // 🔹 Stage 3: Waiting for GPU upload
+        if (state != AssetState::LoadedToGPU)
+        {
+            pendingTextureRequests.push(req);
+            continue;
+        }
+
+        // 🔹 Stage 4: Safe to bind
+        if (req.targetType == TextureTargetType::GlobalMaterial)
+        {
+            Material* mat = GetMaterial(req.targetID);
+            if (!mat) continue;
+
+            switch (req.mapType)
+            {
+            case TextureMapType::Albedo: mat->map_albedo = req.textureID; break;
+            case TextureMapType::Normal: mat->map_normal = req.textureID; break;
+            case TextureMapType::Metallic: mat->map_metallic = req.textureID; break;
+            case TextureMapType::Roughness: mat->map_roughness = req.textureID; break;
+            case TextureMapType::AmbientOcclusion: mat->map_ao = req.textureID; break;
+            case TextureMapType::MetallicRoughness:
+                mat->map_metallicRoughness = req.textureID;
+                break;
+            }
+
+            mat->localDirty = true;
+
+            assetStates[req.textureID] = AssetState::Loaded;
+        }
+        else
+        {
+            if (!activeScene.MeshRenderers().Has(req.targetID))
+                continue;
+
+            MeshRenderer& mr =
+                activeScene.MeshRenderers().Get(req.targetID);
+
+            MaterialInstance& inst = mr.inst;
+
+            switch (req.mapType)
+            {
+            case TextureMapType::Albedo: inst.map_albedo = req.textureID; break;
+            case TextureMapType::Normal: inst.map_normal = req.textureID; break;
+            case TextureMapType::Metallic: inst.map_metallic = req.textureID; break;
+            case TextureMapType::Roughness: inst.map_roughness = req.textureID; break;
+            case TextureMapType::AmbientOcclusion: inst.map_ao = req.textureID; break;
+            case TextureMapType::MetallicRoughness:
+                inst.map_metallicRoughness = req.textureID;
+                break;
+            }
+
+            inst.dirty = true;
+
+            assetStates[req.textureID] = AssetState::Loaded;
+        }
+    }
+}
+
+bool AssetManager::haveAssetState(const UUID& assetID)
+{
+    return assetStates.find(assetID) != assetStates.end();
+}
+
 
 bool AssetManager::hasLoadingAssets() 
 {
     for (const auto& [id, state] : assetStates)
     {
-        if (state == AssetState::Loading)
-        {
+        if (state == AssetState::Loading || state == AssetState::LoadedToCPU )
+        { 
             currentLoadingAsset = id;
             return true;
         }
@@ -1188,6 +1271,19 @@ bool AssetManager::hasLoadingAssets()
     return false;
 }
 
+bool AssetManager::hasImportingAssets()
+{
+    for (const auto& [id, state] : assetStates)
+    {
+        if (state == AssetState::Importing)
+        {
+            currentImportingAsset.first = id;
+            return true;
+        }
+    }
+    currentImportingAsset.first = UUID::Null;
+    return false;
+}
 
 float AssetManager::getLoadingProgress(const UUID& id) const
 {
@@ -1215,6 +1311,26 @@ float AssetManager::getLoadingProgress(const UUID& id) const
 
 }
 
+float AssetManager::getImportingProgress(const UUID& id) const
+{
+    auto it = assetStates.find(id);
+    if (it == assetStates.end())
+        return -1.0f;
+
+    AssetState state = it->second;
+    switch (state) {
+    case AssetState::Failed:
+        return -1.0f;
+    case AssetState::Importing:
+        return 0.25f;
+    case AssetState::Imported:
+        return 1.0f;
+    default:
+        return 0.0f;
+    }
+
+}
+
 void AssetManager::drawLoadingScreens() {
 
     // Progress bar
@@ -1225,15 +1341,15 @@ void AssetManager::drawLoadingScreens() {
         float progess = getLoadingProgress(id);
 
         LoadingSystem::LoadingUIConfig config;
-       
+
 
         switch (type) {
-        case AssetType::Mesh:
-            assetPath = getMesh(id)->path;
+        case AssetType::Submesh:
+            assetPath = GetAssetMetaData(id)->libraryPath.string();
             config.title = "Loading Mesh";
             break;
         case AssetType::Texture:
-            assetPath = getTexture(id)->path;
+            assetPath = GetAssetMetaData(id)->libraryPath.string();
             config.title = "Loading Texture";
             break;
 
@@ -1244,12 +1360,31 @@ void AssetManager::drawLoadingScreens() {
     }
 }
 
+void AssetManager::drawImportingScreens() {
+
+    // Progress bar
+    if (hasImportingAssets()) {
+        UUID id = getCurrentImportingAsset().first;
+        std::string assetPath = "Unknown";
+        float progess = getImportingProgress(id);
+
+        LoadingSystem::LoadingUIConfig config;
+
+        assetPath = getCurrentImportingAsset().second;
+        config.title = "Importing Asset";
+
+        config.message = "Importing :" + assetPath;
+        LoadingSystem::progressBarUI(progess, config);
+    }
+}
+
 AssetType AssetManager::getAssetType(const UUID& id) {
-   
-    if (getMesh(id)) return AssetType::Mesh;
-    else if (getMaterial(id)) return AssetType::Material;
-    else if (getPBRMaterial(id)) return AssetType::Material_pbr;
-    else if (getTexture(id)) return AssetType::Texture;
+    const AssetMetadata* meta = GetAssetMetaData(id);
+    if (!meta) return AssetType::Unknown;
+
+    if (meta->type == AssetType::Material) return AssetType::Material;
+    else if (meta->type == AssetType::Texture) return AssetType::Texture;
+    else if (meta->type == AssetType::Submesh) return AssetType::Submesh;
     else return AssetType::Unknown;
 }
 

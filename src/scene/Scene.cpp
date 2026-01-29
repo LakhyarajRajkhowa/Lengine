@@ -1,35 +1,21 @@
 #include "Scene.h"
-#include <cassert>
 
+#include "utils/C++20.h"
 
-namespace Lengine {
+using namespace Lengine;
 
   
 
     Entity* Scene::createEntity (
         const std::string& name,
-        const UUID meshID,
-        EntityType type,
         UUID entityID
     ) {
-        auto entity = std::make_unique<Entity>(entityID, name, type);
+        auto entity = std::make_unique<Entity>(entityID, name);
         Entity* entityPtr = entity.get();
 
-        uint32_t index = entities.size();
         entities.push_back(std::move(entity));
-        entities.back()->setIndex(index);
 
-        if (type == EntityType::Light) {
-            entities.back()->addLight();
-
-        }
-
-        MeshFilter mf;
-        mf.meshID = meshID;
-        meshFilters.Add(entityID, mf);
-
-        MeshRenderer mr;
-        meshRenderers.Add(entityID, mr);
+        rootEntities.push_back(entityID);
 
         return entityPtr;
     }
@@ -45,47 +31,110 @@ namespace Lengine {
             entity->setID(UUID());
         }
 
-        // Assign scene index
-        uint32_t index = static_cast<uint32_t>(entities.size());
-        entity->setIndex(index);
-
-        // if Type == light
-
-        if (entity->getType() == EntityType::Light) {
-            entity->addLight();
+        // Copy mesh renderer
+        if (Transforms().Has(originalEntityId)) {
+            const TransformComponent& oldTrans = Transforms().Get(originalEntityId);
+            TransformComponent newTrans = TransformComponent(oldTrans);
+            transforms.Add(entity->getID(), newTrans);
         }
 
         // Copy mesh renderer
-        const MeshRenderer& oldMr = MeshRenderers().Get(originalEntityId);
-        MeshRenderer newMr = MeshRenderer(oldMr);
-        meshRenderers.Add(entity->getID(), newMr);
+        if (MeshFilters().Has(originalEntityId)) {
+            const MeshFilter& oldMf = MeshFilters().Get(originalEntityId);
+            MeshFilter newMf = MeshFilter(oldMf);
+            meshFilters.Add(entity->getID(), newMf);
+        }
 
         // Copy mesh filter
-        const MeshFilter& oldMf = MeshFilters().Get(originalEntityId);
-        MeshFilter newMf = MeshFilter(oldMf);
-        meshFilters.Add(entity->getID(), newMf);
+        if (MeshRenderers().Has(originalEntityId)) {
+            const MeshRenderer& oldMr = MeshRenderers().Get(originalEntityId);
+            MeshRenderer newMr = MeshRenderer(oldMr);
+            meshRenderers.Add(entity->getID(), newMr);
+        }
+
+        if (Lights().Has(originalEntityId)) {
+            const Light& oldLight = Lights().Get(originalEntityId);
+            Light newLight = Light(oldLight);
+            lights.Add(entity->getID(), newLight);
+        }
+       
 
         entities.push_back(std::move(entity));
         return entities.back().get();
     }
 
 
-    void Scene::removeEntity(const UUID id)
+    void Scene::RemoveEntity(const UUID id)
     {
+        // 1️⃣ Remove from hierarchy first (important)
+        if (hierarchys.Has(id))
+        {
+            auto& h = hierarchys.Get(id);
+
+            // Detach children → make them roots
+            for (UUID child : h.children)
+            {
+                if (hierarchys.Has(child))
+                {
+                    hierarchys.Get(child).parent = UUID::Null;
+                    rootEntities.push_back(child);
+                }
+            }
+
+            // Remove from parent children list
+            if (h.parent != UUID::Null && hierarchys.Has(h.parent))
+            {
+                auto& parentH = hierarchys.Get(h.parent);
+                parentH.children.erase(
+                    std::remove(parentH.children.begin(),
+                        parentH.children.end(),
+                        id),
+                    parentH.children.end()
+                );
+            }
+
+            hierarchys.Remove(id);
+        }
+
+        // 2️⃣ Remove from rootEntities
+        rootEntities.erase(
+            std::remove(rootEntities.begin(), rootEntities.end(), id),
+            rootEntities.end()
+        );
+
+        // 3️⃣ Remove entity object
         entities.erase(
             std::remove_if(
                 entities.begin(),
                 entities.end(),
                 [&](const std::unique_ptr<Entity>& e)
                 {
-                    return e->getID() == id;     
+                    return e->getID() == id;
                 }
             ),
             entities.end()
         );
 
-        meshRenderers.Remove(id);
+        // 4️⃣ Remove components
+        if (transforms.Has(id))     transforms.Remove(id);
+        if (meshFilters.Has(id))    meshFilters.Remove(id);
+        if (meshRenderers.Has(id))  meshRenderers.Remove(id);
+        if (lights.Has(id))         lights.Remove(id);
     }
+
+    void Scene::RemoveEntityRecursive(UUID id)
+    {
+        if (hierarchys.Has(id))
+        {
+            auto children = hierarchys.Get(id).children;
+            for (UUID child : children)
+                RemoveEntityRecursive(child);
+        }
+
+        RemoveEntity(id);
+    }
+
+
 
 
     const Entity* Scene::getEntityByName(const std::string& name) const {
@@ -122,108 +171,135 @@ namespace Lengine {
         return nullptr;
     }
 
-    MaterialInstance& Scene::getMaterialInstance(UUID id)
+
+ 
+    void Scene::UpdateWorldTransformRecursive(
+        UUID entityID,
+        const glm::mat4& parentWorld,
+        bool parentWorldDirty
+    )
     {
-        auto it = materialInstances.find(id);
-        assert(it != materialInstances.end());
-        return it->second;
-    }
+        if (!transforms.Has(entityID)) return;
 
-    PBRMaterialInstance& Scene::getPbrMaterialInstance(UUID id)
-    {
-        auto it = pbrMaterialInstances.find(id);
-        assert(it != pbrMaterialInstances.end());
-        return it->second;
-    }
+        auto& t = transforms.Get(entityID);
 
-    const MaterialInstance& Scene::getMaterialInstance(UUID id) const
-    {
-        auto it = materialInstances.find(id);
-        assert(it != materialInstances.end());
-        return it->second;
-    }
-
-    const PBRMaterialInstance& Scene::getPbrMaterialInstance(UUID id) const
-    {
-        auto it = pbrMaterialInstances.find(id);
-        assert(it != pbrMaterialInstances.end());
-        return it->second;
-    }
-
-
-    UUID Scene::createMaterialInstance(UUID baseMaterial)
-    {
-        UUID id;
-
-        do {
-            id = UUID();
-        } while (materialInstances.find(id) != materialInstances.end());
-
-        MaterialInstance instance{};
-        instance.baseMaterial = baseMaterial;
-
-        materialInstances.emplace(id, std::move(instance));
-        return id;
-    }
-
-    UUID Scene::createPbrMaterialInstance(UUID baseMaterial)
-    {
-        UUID id;
-
-        do {
-            id = UUID();
-        } while (pbrMaterialInstances.find(id) != pbrMaterialInstances.end());
-
-        PBRMaterialInstance instance{};
-        instance.baseMaterial = baseMaterial;
-
-        pbrMaterialInstances.emplace(id, std::move(instance));
-        return id;
-    }
-
-
-
-
-
-    void Scene::destroyMaterialInstance(UUID id)
-    {
-        auto it = materialInstances.find(id);
-        if (it != materialInstances.end()) {
-            materialInstances.erase(it);
+        if (t.localDirty)
+        {
+            TransformSystem::RecalculateLocalMatrix(t);
+            t.localDirty = false;
         }
+
+        bool worldDirty = parentWorldDirty || t.worldDirty;
+
+        if (worldDirty)
+        {
+            t.worldMatrix = parentWorld * t.localMatrix;
+            t.worldDirty = false;
+        }
+
+        if (hierarchys.Has(entityID)) {
+            const auto& h = hierarchys.Get(entityID);
+            for (UUID child : h.children)
+                UpdateWorldTransformRecursive(child, t.worldMatrix, worldDirty);
+        }
+        
     }
 
-    
 
-    void Scene::assignDefaultPBRMaterials(const UUID entityID, Mesh* mesh)
+
+    void Scene::UpdateWorldTransforms()
     {
-        if (!mesh)
-            return;
+        if (TransformSystem::Dirty) {
+            const glm::mat4 identity(1.0f);
 
-        UUID defaultMat = MaterialID::DefaultPbr;
-
-
-        auto& matUUIDs = meshRenderers.Get(entityID).materialIndexToUUID;
-        auto& instIDs = meshRenderers.Get(entityID).materialIndexToInstID;
-
-
-        for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
-
-            UUID baseMat = defaultMat;
-
-            auto it_matid = matUUIDs.find(matIndex);
-            if (it_matid != matUUIDs.end() && it_matid->second != UUID::Null) {
-                baseMat = it_matid->second;
+            for (UUID root : rootEntities)
+            {
+                UpdateWorldTransformRecursive(root, identity, true);
             }
 
-            UUID instID = createPbrMaterialInstance(baseMat);
-            instIDs[matIndex] = instID;
+            TransformSystem::Dirty = false;
+        }
 
+
+    }
+
+
+    void Scene::Update() {
+       
+        UpdateWorldTransforms();
+    }
+    bool Scene::HasChildren(UUID entityID) const
+    {
+        if (!hierarchys.Has(entityID))
+            return false;
+
+        return !hierarchys.Get(entityID).children.empty();
+    }
+
+    const std::vector<UUID>& Scene::GetChildren(UUID entityID) const
+    {
+        static std::vector<UUID> empty;
+
+        if (!hierarchys.Has(entityID))
+            return empty;
+
+        return hierarchys.Get(entityID).children;
+    }
+
+    void Scene::SetParent(UUID child, UUID parent)
+    {
+        if (!hierarchys.Has(child))
+            hierarchys.Add(child);
+
+        if (!hierarchys.Has(parent))
+            hierarchys.Add(parent);
+
+        auto& childH = hierarchys.Get(child);
+
+        // Remove from old parent / roots
+        if (childH.parent != UUID::Null)
+        {
+            auto& oldParentH = hierarchys.Get(childH.parent);
+            std20::erase(oldParentH.children, child);
+        }
+        else
+        {
+            std20::erase(rootEntities, child);
+        }
+
+        // Attach
+        childH.parent = parent;
+        hierarchys.Get(parent).children.push_back(child);
+
+        // ---- Correct dirtiness ----
+        if (transforms.Has(child))
+        {
+            auto& t = transforms.Get(child);
+            t.worldDirty = true;   // parent space changed
         }
     }
 
 
-}
+    void Scene::MakeOrphan(UUID child)
+    {
+        if (!hierarchys.Has(child))
+            return;
+
+        auto& h = hierarchys.Get(child);
+
+        if (h.parent != UUID::Null)
+        {
+            auto& parentH = hierarchys.Get(h.parent);
+            std20::erase(parentH.children, child);
+        }
+
+        h.parent = UUID::Null;
+        rootEntities.push_back(child);
+
+        if (transforms.Has(child))
+            transforms.Get(child).localDirty = true;
+    }
+
 
 
 

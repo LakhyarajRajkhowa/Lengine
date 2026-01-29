@@ -1,6 +1,8 @@
 ﻿#include "SceneRenderer.h"
 
 #include "../resources/AssetImporter.h"
+
+#include "../utils/objReaderWriter.h"
 namespace Lengine {
 
     void SceneRenderer::init() {
@@ -25,9 +27,9 @@ namespace Lengine {
     }
 
     void SceneRenderer::preloadAssets() {
-        assetManager.LoadAllMetaFiles(Paths::Assets);
-        AssetImporter::ImportMeshFile(Paths::Mesh + "cube.obj");
-       // assetManager.loadAssetRegistry(Paths::GameAssetRegistryFolder + "assetRegistry_defaultScene.json");
+        AssetDatabase::LoadDatabase();
+
+        assetManager.LoadAllDefaultAssets();
 
     }
 
@@ -35,7 +37,9 @@ namespace Lengine {
 
     void SceneRenderer::initScene() {
         gizmoRenderer.initGizmo();
-
+        activeScene = sceneManager.getActiveScene();
+       // assetManager.ImportPrefab("C:/Users/llakh/Downloads/hallway_game_ready/scene.gltf", *activeScene);
+       // assetManager.LoadPrefabToScene("C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Prefab\\broken_brick_wall_4k.gltf\\broken_brick_wall_4k.prefab", *activeScene);
         /*
         skybox.init();
        
@@ -236,9 +240,6 @@ namespace Lengine {
         auto& entities = scene->getEntities();
         auto& mrs = scene->MeshRenderers();
 
-        auto& directionalLight = scene->getMainDirectionalLight();
-        auto& pointLight = scene->getMainPointLight();
-
         // TODO : Peter panning 
 
        // shadowMap.renderDepthMap(entities, mrs, directionalLight, assetManager);
@@ -253,6 +254,10 @@ namespace Lengine {
     }
 
 
+    void SceneRenderer::UpdateScene() {
+        activeScene = sceneManager.getActiveScene();
+        activeScene->Update();
+    }
 
     void SceneRenderer::RenderScene_phong(const EditorConfig& edtitorConfig) {
 
@@ -260,11 +265,12 @@ namespace Lengine {
         glDisable(GL_CULL_FACE);
         gizmoRenderer.drawGizmoGrid();
         gizmoRenderer.drawGizmoArrows();
+       // gizmoRenderer.drawGizmoSpheres();
         glEnable(GL_CULL_FACE);
 
 
         forwardRenderer.Render(
-            *sceneManager.getActiveScene(),
+            *activeScene,
             edtitorConfig,
             shadowMap,
             shadowCubeMap,
@@ -273,7 +279,6 @@ namespace Lengine {
 
 
         // draw skybox as last
-     // skybox.Render(camera.getViewMatrix(), camera.getProjectionMatrix());
         hdrSkybox.Render(camera.getViewMatrix(), camera.getProjectionMatrix());
 
     }

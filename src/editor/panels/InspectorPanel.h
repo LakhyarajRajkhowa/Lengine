@@ -5,6 +5,8 @@
 
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
+
+#include "../editor/EditorSelection.h"
 namespace Lengine {
 
     struct InspectorState {
@@ -20,13 +22,29 @@ namespace Lengine {
         );
 
         void OnImGuiRender();
-        void DrawEntityInspector(Entity* entity, AssetManager& assets);
-    private:
-        SceneManager& sceneManager;
-        AssetManager& assetManager;
 
-        Entity* selectedEntity = nullptr;
+
+    private:
+
+        void DrawEntityInspector(const UUID& entityID);
+        void DrawAssetInspector(const std::pair<UUID, AssetType>& asset);
+
+        void DrawMaterialEditor(const UUID& materialID);
+        void DrawEntityMaterialEditor(const UUID& entityID);
+
+
+        SceneManager& sceneManager;
+        AssetManager& assets;
+
         InspectorState inspectorState;
+
+        bool s_IsHovered = false;
+        bool isAssetSaved = true;
+        bool s_OpenSaveOrCancelPopup = false;
+
+        void DrawSaveOrCancelPopup();
+        void HandleAssetEditorClear();
+
     };
 
 }

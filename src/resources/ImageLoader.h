@@ -36,7 +36,8 @@ namespace Lengine {
             std::vector<float> cubemapData[6]
         );
 
-        static ImageData stbiLoader(const std::string& filePath);
+        static std::shared_ptr<ImageData> stbiLoader(const std::string& filePath);
+
         static void uploadToGPU(const ImageData& img, bool srgb);
        
         

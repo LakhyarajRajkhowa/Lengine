@@ -10,13 +10,6 @@
 
 namespace Lengine {
 	class Model {
-	public:
-		bool loadModel(
-			const std::string& name,
-			const std::string& path,
-			std::shared_ptr<Lengine::Mesh>& mesh
-		);
-		
-		
+	
 	};
 }

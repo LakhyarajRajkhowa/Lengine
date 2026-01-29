@@ -10,7 +10,8 @@ namespace Lengine {
         InputManager& inputMgr,
         AssetManager& assetMgr,
         RenderSettings& rndrSett,
-        const glm::i32vec2 resolution
+        const glm::i32vec2 resolution,
+        RuntimeStats& stats_
     )
         :camera(cam),
         sceneManager(scnMgr),
@@ -19,11 +20,12 @@ namespace Lengine {
         assetManager(assetMgr),
         renderSettings(rndrSett),
         viewportPanel(cam, resolution),     
-        hierarchyPanel(cam,  scnMgr,assetMgr, selectedEntity),
+        hierarchyPanel(cam,  scnMgr,assetMgr),
         inspectorPanel(scnMgr, assetMgr),
         consolePanel(buffer),
         assetPanel(Paths::ActiveGameFolder, assetMgr),
-        rendererSettingsPanel(rndrSett)       
+        rendererSettingsPanel(rndrSett),
+        performancePanel(stats_)
     {
     }
 
@@ -61,7 +63,11 @@ namespace Lengine {
             performancePanel.OnImGuiRender();
         }
 
+
     }
+
+ 
+
 
     void EditorLayer::CheckForHoveredEntity() {
         hoveredEntity = nullptr;
@@ -90,18 +96,18 @@ namespace Lengine {
 
         for (auto& e : entities) {
 
-            MeshRenderer& mr = activeScene->MeshRenderers().Get(e->getID());
+            if (!activeScene->MeshFilters().Has(e->getID())) continue;
             MeshFilter& mf = activeScene->MeshFilters().Get(e->getID());
+            TransformComponent& tf = activeScene->Transforms().Get(e->getID());
 
-
-            glm::vec3 pos = e->getTransform().position;
-            glm::vec3 scale = e->getTransform().scale;
+            glm::vec3 pos = tf.GetWorldPosition();
+            glm::vec3 scale = tf.GetWorldScale();
 
 
             // --------------------------------------------------------
             // CASE 1: Entity has NO mesh assigned
             // --------------------------------------------------------
-            if (!mf.meshID)
+            if (!mf.submeshID)
             {
                 float radius = 1.0f; // default sphere
                 if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
@@ -118,15 +124,15 @@ namespace Lengine {
 
 
             
-            else if (mf.meshID)
+            else if (mf.submeshID)
             {
-                Mesh* mesh = assetManager.getMesh(mf.meshID);
+                Submesh* submesh = assetManager.GetSubmesh(mf.submeshID);
 
 
                 // --------------------------------------------------------
                 // CASE 2: Entity HAS a mesh ID → try to get mesh
                 // --------------------------------------------------------
-                if (!mesh) {
+                if (!submesh) {
                     float radius = 1.0f;
                     if (rayIntersectsSphere(rayOrigin, rayDir, pos, radius))
                     {
@@ -142,8 +148,8 @@ namespace Lengine {
                     // --------------------------------------------------------
                     // CASE 3: Mesh exists 
                     // --------------------------------------------------------
-                    glm::vec3 localCenter = mesh->getLocalCenter();
-                    float localRadius = mesh->getBoundingRadius();
+                    glm::vec3 localCenter = submesh->getLocalCenter();
+                    float localRadius = submesh->getBoundingRadius();
 
                     // World-space conversion
                     glm::vec3 worldCenter = pos + localCenter * scale;
@@ -175,17 +181,12 @@ namespace Lengine {
     void EditorLayer::selectHoveredEntity() {
         CheckForHoveredEntity();
         if (hoveredEntity == nullptr) {
-            for (auto& entity : sceneManager.getActiveScene()->getEntities()) {
-                entity->isSelected = false;
-            }
-            selectedEntity = nullptr;        
+            selectedEntity = nullptr;
+            EditorSelection::ClearEntitySelection();
             return;
         }
-        for (auto& other : sceneManager.getActiveScene()->getEntities()) {
-            other->isSelected = false;
-        }
         selectedEntity = hoveredEntity;
-        selectedEntity->isSelected = true;       
+        EditorSelection::SetEntity(selectedEntity->getID());
     }
     GizmoAxis EditorLayer::getHoveredGizmoAxis()
     {
@@ -249,6 +250,7 @@ namespace Lengine {
     {
         if (!selectedEntity) return;
 
+        TransformComponent& tf = sceneManager.getActiveScene()->Transforms().Get(selectedEntity->getID());
        
         GizmoAxis hovered = getHoveredGizmoAxis();
         if (hovered == GizmoAxis::None)
@@ -274,7 +276,7 @@ namespace Lengine {
             glm::vec3(0, 0, 1);
 
         state.axisDir = glm::normalize(state.axisDir);
-        state.entityStartPos = selectedEntity->getTransform().position;
+        state.entityStartPos = tf.GetWorldPosition();
 
         state.dragStartWorld = computeAxisPlaneHit(
             rayOrigin,
@@ -295,6 +297,8 @@ namespace Lengine {
     {
         if (!state.isDragging || !selectedEntity)
             return;
+
+        TransformComponent& tf = sceneManager.getActiveScene()->Transforms().Get(selectedEntity->getID());
 
         ImVec2 mouse = viewportPanel.getMousePosInViewport();
         ImVec2 vpSize = viewportPanel.GetViewportSize();
@@ -319,8 +323,9 @@ namespace Lengine {
         glm::vec3 delta = hit - state.dragStartWorld;
         float movement = glm::dot(delta, state.axisDir);
 
-        selectedEntity->getTransform().position =
+        tf.GetWorldPosition() =
             state.entityStartPos + state.axisDir * movement;
+
     }
     void EditorLayer::endArrowDrag()
     {
@@ -333,19 +338,24 @@ namespace Lengine {
 
         if (!selectedEntity) return;
 
-        auto& scale = selectedEntity->getTransform().scale;
+        TransformComponent& tf = sceneManager.getActiveScene()->Transforms().Get(selectedEntity->getID());
+
+        auto& scale = tf.GetWorldScale();
 
         if (mouseWheelY > 0) {
             // scale up
             scale += (scale.x < 0.1f) ?
                 ((scale.x < 0.01f) ? glm::vec3(0.001f) : glm::vec3(0.01f)) :
                 glm::vec3(0.1f);
+
         }
         else if (mouseWheelY < 0) {
             // scale down
             scale -= (scale.x < 0.1f) ?
                 ((scale.x < 0.01f) ? glm::vec3(0.001f) : glm::vec3(0.01f)) :
                 glm::vec3(0.1f);
+
+
         }
     }
 
@@ -354,7 +364,9 @@ namespace Lengine {
     {
         if (!selectedEntity) return;
 
-        auto& pos = selectedEntity->getTransform().position;
+        TransformComponent& tf = sceneManager.getActiveScene()->Transforms().Get(selectedEntity->getID());
+
+        auto& pos = tf.GetWorldPosition();
 
         float speed = movementSpeed *
             (inputManager.isKeyDown(EditorKeys::FastMove) ? 5.0f : 1.0f);
@@ -400,7 +412,7 @@ namespace Lengine {
             switch (key)
             {
             case EditorKeys::Delete:
-                sceneManager.getActiveScene()->removeEntity(selectedEntity->getID());
+                sceneManager.getActiveScene()->RemoveEntity(selectedEntity->getID());
                 selectedEntity = nullptr;
                 break;
             }
@@ -472,21 +484,11 @@ namespace Lengine {
     }
 
     bool EditorLayer::isAnyEntitySelected() {
-        auto& entities = sceneManager.getActiveScene()->getEntities();
-
-        for (auto& e : entities) {
-            if (e->isSelected)
-                return true;
-        }
-        return false;
+        return EditorSelection::HasEntity();
     }
 
     void EditorLayer::unselectAllEntites() {
-        auto& entities = sceneManager.getActiveScene()->getEntities();
-
-        for (auto& e : entities) {
-            e->isSelected = false;
-        }
+        EditorSelection::ClearEntitySelection();
     }
 
 }

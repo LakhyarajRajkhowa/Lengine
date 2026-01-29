@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace Lengine {
-    SubMesh::SubMesh(
+    Submesh::Submesh(
         const std::string& name,
         std::vector<Vertex>&& verts,
         std::vector<uint32_t>&& inds
@@ -17,13 +17,13 @@ namespace Lengine {
 
     }
 
-    SubMesh::~SubMesh() {
+    Submesh::~Submesh() {
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
         glDeleteBuffers(1, &EBO);
     }
 
-    void SubMesh::computeBounds() {
+    void Submesh::computeBounds() {
         if (vertices.empty()) return;
 
         aabbMin = vertices[0].position;
@@ -46,7 +46,7 @@ namespace Lengine {
 
     
 
-    void SubMesh::setupMesh() {
+    void Submesh::setupMesh() {
 
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -101,22 +101,22 @@ namespace Lengine {
 
     }
 
-    void SubMesh::draw() const {
+    void Submesh::draw() const {
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
-    void SubMesh::reserve(uint32_t vCount, uint32_t iCount) {
+    void Submesh::reserve(uint32_t vCount, uint32_t iCount) {
         vertices.reserve(vCount);
         indices.reserve(iCount);
     }
 
-    void SubMesh::addVertex(const Vertex& v) {
+    void Submesh::addVertex(const Vertex& v) {
         vertices.push_back(v);
     }
 
-    void SubMesh::addIndex(uint32_t i) {
+    void Submesh::addIndex(uint32_t i) {
         indices.push_back(i);
     }
 

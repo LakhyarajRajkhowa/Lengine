@@ -33,7 +33,7 @@ namespace Lengine {
 
          glm::vec3 getRightVector();
          glm::vec3 getForwardVector();
-        void update(const float& deltaTime, const glm::vec2& mouseCoords);
+        void Update(const float& deltaTime, const glm::vec2& mouseCoords);
         void moveMouse( float xoffset,  float yoffset, float speed);
         void controlMovement(const float& speed);
 

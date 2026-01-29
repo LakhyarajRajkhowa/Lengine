@@ -9,6 +9,7 @@
 #include "../resources/AssetManager.h"
 #include "../external/tinyfiledialogs.h"
 
+#include "../editor/EditorSelection.h"
 
 namespace Lengine {
     
@@ -19,21 +20,19 @@ namespace Lengine {
         SceneHierarchyPanel(
             Camera3d& camera,
             SceneManager& sceneManager,
-            AssetManager& assetManager,
-            Entity* selectedEntity
+            AssetManager& assetManager
         );
 
         void OnImGuiRender();
+        void DrawEntityNode(Scene* scene, Entity* entity, Scene* activeScene);
         void createNewModel();
         void drawCreateScenePopup();
         void drawRenameScenePopup();
-        Entity* getSelectedEntity() { return m_SelectedEntity; }
     private:
         Camera3d& camera;
         SceneManager& sceneManager;
         AssetManager& assetManager;
     private:
-        Entity* m_SelectedEntity;
         std::queue<UUID> deletedEntityQueue;
         std::queue<std::pair<Entity*, UUID>> createdEntityQueue;
 

@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <string>
 #include <vector>
+#include <memory>
 namespace Lengine {
     struct ImageData {
         int width;
@@ -17,14 +18,12 @@ namespace Lengine {
         int width;
         int height;
         int channels = 0;
-        ImageData imageCPU;
+
+        std::shared_ptr<ImageData> imageCPU;
 
         bool srgb = false;
-        std::string name;
-        std::string path;
  
         bool pendingGPUUpload = false;
 
-       
     };
 }

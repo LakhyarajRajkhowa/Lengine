@@ -43,7 +43,8 @@ namespace Lengine {
             InputManager& inputManager,
             AssetManager& assetManager,
             RenderSettings& rndrSett,
-            const glm::i32vec2 resolution          
+            const glm::i32vec2 resolution,
+            RuntimeStats& stats
             );
         ~EditorLayer() = default;
 
@@ -68,9 +69,14 @@ namespace Lengine {
         void HandleKeyboardShortcuts(const SDL_Keycode& key);
         
         EditorConfig config;
+
+
     private:
         void BeginDockspace();
         void SetupDefaultLayout();
+
+        void HandleAssetEditorClear();
+
 
         // Selection state
         Entity* selectedEntity = nullptr;
@@ -127,7 +133,7 @@ namespace Lengine {
         GizmoDragState state;
         float closestT = FLT_MAX;
         GizmoAxis chosenAxis = GizmoAxis::None;
-
+    private:
     };
 
 }

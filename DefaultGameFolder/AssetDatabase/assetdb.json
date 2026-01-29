@@ -1,0 +1,92 @@
+{
+    "assets": [
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\sphere\\defaultobject.lsubmesh",
+            "name": "defaultobject",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\sphere\\sphere.obj",
+            "thumbnail": "../assets/icons/submesh_icon.png",
+            "type": "SubMesh",
+            "uuid": 10506254062053502876
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\cube\\cube.lmesh",
+            "name": "cube",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\cube\\cube.obj",
+            "thumbnail": "../assets/icons/mesh_icon.png",
+            "type": "Mesh",
+            "uuid": 6767912817763125907
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\sphere\\sphere.lmesh",
+            "name": "sphere",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\sphere\\sphere.obj",
+            "thumbnail": "../assets/icons/mesh_icon.png",
+            "type": "Mesh",
+            "uuid": 13342441500067095696
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\bunny\\bunny.lsubmesh",
+            "name": "bunny",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\bunny\\bunny.obj",
+            "thumbnail": "../assets/icons/submesh_icon.png",
+            "type": "SubMesh",
+            "uuid": 7332445081665043010
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\bunny\\bunny.lmesh",
+            "name": "bunny",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\bunny\\bunny.obj",
+            "thumbnail": "../assets/icons/mesh_icon.png",
+            "type": "Mesh",
+            "uuid": 18134397792780965623
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\arrow\\Arrow.lsubmesh",
+            "name": "Arrow",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\arrow\\arrow.obj",
+            "thumbnail": "../assets/icons/submesh_icon.png",
+            "type": "SubMesh",
+            "uuid": 17280307292566253951
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\cube\\Cube.lsubmesh",
+            "name": "Cube",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\cube\\cube.obj",
+            "thumbnail": "../assets/icons/submesh_icon.png",
+            "type": "SubMesh",
+            "uuid": 16424944298018889870
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\arrow\\arrow.lmesh",
+            "name": "arrow",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\arrow\\arrow.obj",
+            "thumbnail": "../assets/icons/mesh_icon.png",
+            "type": "Mesh",
+            "uuid": 10931535183563450071
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\plane\\plane.lsubmesh",
+            "name": "plane",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\plane\\plane.obj",
+            "thumbnail": "../assets/icons/submesh_icon.png",
+            "type": "SubMesh",
+            "uuid": 9601935706876165333
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Mesh\\plane\\plane.lmesh",
+            "name": "plane",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Mesh\\plane\\plane.obj",
+            "thumbnail": "../assets/icons/mesh_icon.png",
+            "type": "Mesh",
+            "uuid": 11911152108693906687
+        },
+        {
+            "library": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Library\\Assets\\Material\\defaultPbrMaterial.pbrmat",
+            "name": "defaultPbrMaterial",
+            "source": "C:\\Users\\llakh\\OneDrive\\Desktop\\Projects\\LengineGraphics3D\\TestGameFolder\\Assets\\Materials\\defaultPbrMaterial\\defaultPbrMaterial.pbrmat",
+            "thumbnail": "../assets/icons/material_icon.png",
+            "type": "Material",
+            "uuid": 421013474112522599
+        }
+    ]
+}

@@ -5,6 +5,7 @@
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
 
+#include "../editor/EditorSelection.h"
 
 namespace Lengine {
 
@@ -25,7 +26,7 @@ namespace Lengine {
 	};
 
 	struct GizmoArrows {
-		Mesh* gizmoArrow = nullptr;
+		Submesh* gizmoArrow = nullptr;
 		GLSLProgram gizmoArrowShader;
 		glm::vec3 axis;
 		glm::vec4 color;
@@ -73,10 +74,10 @@ namespace Lengine {
 		SceneManager& sceneManager;
 		Camera3d& camera;
 
-		Mesh* gizmoSphere = nullptr;
+		Submesh* gizmoSphere = nullptr;
 		GLSLProgram gizmoSphereShader;
 
-		Mesh* gizmoGrid = nullptr;
+		Submesh* gizmoGrid = nullptr;
 		GLSLProgram gizmoGridShader;
 
 		

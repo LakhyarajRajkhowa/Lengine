@@ -5,7 +5,7 @@
 #include "../scene/SceneManager.h"
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/camera/Camera3d.h"
-#include "../graphics/lightning/Light.h"
+#include "../scene/components/Light.h"
 #include "../graphics/renderer/IRenderer.h"
 #include "../graphics/shadowMaps/shadowMap.h"
 #include "../graphics/shadowMaps/shadowCubeMap.h"
@@ -55,22 +55,14 @@ namespace Lengine {
         Camera3d& camera;
         AssetManager& assetManager;
 
-        ResolvedMaterial resolveMaterial(
+
+
+        ResolvedMaterial resolvePBRMaterial(
             const Material& baseMaterial,
             const MaterialInstance& inst
         );
 
-        ResolvedPBRMaterial resolvePBRMaterial(
-            const PBRMaterial& baseMaterial,
-            const PBRMaterialInstance& inst
-        );
 
-        void RenderScene_phong(
-            Scene& activeScene,
-            const EditorConfig& editorConfig,
-            ShadowMap& shadowMap,
-            ShadowCubeMap& shadowCubeMap
-        );
 
         void RenderScene_pbr(
             Scene& activeScene,
@@ -113,13 +105,10 @@ namespace Lengine {
 
         void bindPBRMaterial(
             GLSLProgram& shader,
-            const ResolvedPBRMaterial& mat
-        );
-
-        void bindMaterialUniforms(
-            GLSLProgram& shader,
             const ResolvedMaterial& mat
         );
+
+
         void bindTexture(
             GLSLProgram& shader,
             AssetManager& assetManager,
@@ -129,13 +118,9 @@ namespace Lengine {
             const char* samplerUniform,
             GLenum textureUnit
         );
-        void bindEditorUniforms(
-            GLSLProgram& shader,
-            const RenderFlags& mat,
-            const EditorConfig& editorConfig
-        );
+
         void drawSubMesh(
-            SubMesh& sm,
+            Submesh& sm,
             GLSLProgram& shader
         );
         void drawSubMeshGroup(
@@ -143,7 +128,6 @@ namespace Lengine {
             const std::vector<uint32_t>& subMeshIDs,
             GLSLProgram& shader
         );
-        void collectLights(std::vector<Light>& lights, const std::vector<std::unique_ptr<Entity>>& entities);
 
         GLSLProgram outlineShader;
         void ForwardRenderer::drawMeshAllSubMeshes(

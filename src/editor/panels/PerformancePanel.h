@@ -8,15 +8,14 @@
 namespace Lengine {
 	class PerformancePanel {
 	public:
-		PerformancePanel();
+		PerformancePanel(RuntimeStats& stats);
 		
 		void OnImGuiRender();
-		float getDeltaTime() const { return deltaTime; }
+
 
 	private:
-		int targetFPS = 144; // my 144 Hz monitor
-		float deltaTime;
-		bool limitFPS = true;
+		RuntimeStats& stats;
+
 		float smoothedFPS = 0.0f;
 		float smoothedMs = 0.0f;
 

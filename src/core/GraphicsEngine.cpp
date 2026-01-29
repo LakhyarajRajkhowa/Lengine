@@ -29,7 +29,8 @@ namespace Lengine {
 			glm::vec2(
 				settings.resolution_X,
 				settings.resolution_Y
-			)
+			),
+			runtimeStats
 		),
 
 		sceneManager(assetManager),
@@ -63,6 +64,7 @@ namespace Lengine {
 
 	void GraphicsEngine::initSystems() {
 		InitTimer();
+
 		
 		redirect = new OutputRedirect(logBuffer);
 		
@@ -75,7 +77,7 @@ namespace Lengine {
 		);
 
 		std::vector <std::string> scenesTobeLoaded;
-		scenesTobeLoaded.push_back("defaultScene");
+		scenesTobeLoaded.push_back("emptyScene");
 
 		sceneManager.loadScenes(scenesTobeLoaded);
 		sceneRenderer.init();
@@ -91,12 +93,14 @@ namespace Lengine {
 
 
 		while (isRunning) {
+			
+			UpdateTimer();
 
-			inputManager.update();
+			inputManager.Update();
+			assetManager.Update(*sceneManager.getActiveScene());
+			inputHandler.handleInputs(imguiLayer, editorLayer, runtimeStats.frameStats.deltaTime);
 
-			inputHandler.handleInputs(imguiLayer, editorLayer);
-			assetManager.processGpuUploads();
-			assetManager.syncAssetsToScene(*sceneManager.getActiveScene());
+			sceneRenderer.UpdateScene();
 
 			sceneRenderer.renderShadowPass();
 			imguiLayer.beginFrame();
@@ -107,15 +111,31 @@ namespace Lengine {
 			editorLayer.OnImGuiRender();
 
 			assetManager.drawLoadingScreens();
-
+			assetManager.drawImportingScreens();
 			imguiLayer.endFrame();
 			window.swapBuffer();
+
+			
 
 		}
 
 	}
 
+
+	void GraphicsEngine::UpdateTimer() {
+
+		runtimeStats.frameStats	= LimitFPS(runtimeStats.targetFPS, runtimeStats.limitFPS);
+		deltaTime = runtimeStats.frameStats.deltaTime;
+
+	}
+
 	void GraphicsEngine::shutDown() {
+
+		// saving all imported assetmetadata to assetdb.json 
+		// otherwise they will just be imported to librray and 
+		// next time i load they wont show in asset panel
+		assetManager.saveAssetDatabase();
+
 		imguiLayer.shutdown();
 		window.quitWindow();
 	}

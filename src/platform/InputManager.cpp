@@ -6,7 +6,7 @@ namespace Lengine {
 	InputManager::InputManager() : _mouseCoords(0, 0) {}
 	InputManager::~InputManager() {}
 
-	void InputManager::update() {
+	void InputManager::Update() {
 		for (auto& it : _keyMap) {
 			_previousKeyMap[it.first] = it.second;
 		}

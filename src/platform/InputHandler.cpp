@@ -8,7 +8,9 @@ namespace Lengine {
     
     void InputHandler::handleInputs(
         ImGuiLayer& imguiLayer,
-        EditorLayer& editorLayer)
+        EditorLayer& editorLayer,
+        const float deltaTime
+    )
     {
 
         bool imguiCapturesMouse = imguiLayer.wantsCaptureMouse();
@@ -17,7 +19,7 @@ namespace Lengine {
         bool viewportFocused = editorLayer.GetViewportPanel().IsViewportFocused();
         bool viewportHovered = editorLayer.GetViewportPanel().IsViewportHovered();
 
-        const float dt = editorLayer.GetPerformancePanel().getDeltaTime();
+        const float dt = deltaTime;
 
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -87,7 +89,7 @@ namespace Lengine {
                 if (mx != clampedX || my != clampedY)
                     SDL_WarpMouseInWindow(window.getWindow(), clampedX, clampedY);
 
-                camera.update(dt, relativeMouseCoords);
+                camera.Update(dt, relativeMouseCoords);
             }
 
 
@@ -99,7 +101,7 @@ namespace Lengine {
                 glm::vec2 relativeMouseCoords = { mx,my };
 
 
-                camera.update(dt, relativeMouseCoords);
+                camera.Update(dt, relativeMouseCoords);
                 // reset each frame otherwise the scroll activates in next frame
                 inputManager.resetScroll();
 

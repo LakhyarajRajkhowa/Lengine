@@ -7,31 +7,32 @@ namespace Lengine
 
     struct MeshFilter
     {
-        UUID meshID = UUID::Null;
+
+        UUID submeshID = UUID::Null;
 
         // async / deferred loading support
-        bool pendingMesh = false;
-        UUID pendingMeshID = UUID::Null;
+        bool pendingSubmesh = false;
+        UUID pendingSubmeshID = UUID::Null;
 
-        void RequestMesh(const UUID& id)
+        void RequestSubmesh(const UUID& id)
         {
-            pendingMeshID = id;
-            pendingMesh = true;
+            pendingSubmeshID = id;
+            pendingSubmesh = true;
         }
 
-        bool HasPendingMesh() const
+        bool HasPendingSubmesh() const
         {
-            return pendingMesh;
+            return pendingSubmesh;
         }
 
-        UUID GetRequestedMeshID() const
+        UUID GetRequestedSubmeshID() const
         {
-            return pendingMeshID;
+            return pendingSubmeshID;
         }
 
-        void ClearPendingMesh()
+        void ClearPendingSubmesh()
         {
-            pendingMesh = false;
+            pendingSubmesh = false;
         }
     };
 

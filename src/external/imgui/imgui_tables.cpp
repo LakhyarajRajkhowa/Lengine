@@ -3033,8 +3033,8 @@ void ImGui::TableSortSpecsSanitize(ImGuiTable* table)
 
 void ImGui::TableSortSpecsBuild(ImGuiTable* table)
 {
-    bool dirty = table->IsSortSpecsDirty;
-    if (dirty)
+    bool localDirty = table->IsSortSpecsDirty;
+    if (localDirty)
     {
         TableSortSpecsSanitize(table);
         table->SortSpecsMulti.resize(table->SortSpecsCount <= 1 ? 0 : table->SortSpecsCount);
@@ -3045,7 +3045,7 @@ void ImGui::TableSortSpecsBuild(ImGuiTable* table)
     // Write output
     // May be able to move all SortSpecs data from table (48 bytes) to ImGuiTableTempData if we decide to write it back on every BeginTable()
     ImGuiTableColumnSortSpecs* sort_specs = (table->SortSpecsCount == 0) ? NULL : (table->SortSpecsCount == 1) ? &table->SortSpecsSingle : table->SortSpecsMulti.Data;
-    if (dirty && sort_specs != NULL)
+    if (localDirty && sort_specs != NULL)
         for (int column_n = 0; column_n < table->ColumnsCount; column_n++)
         {
             ImGuiTableColumn* column = &table->Columns[column_n];

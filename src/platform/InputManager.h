@@ -14,7 +14,7 @@ namespace Lengine {
 		InputManager();
 		~InputManager();
 
-		void update();
+		void Update();
 
 		void pressKey(unsigned int keyID);
 		void releaseKey(unsigned int keyID);

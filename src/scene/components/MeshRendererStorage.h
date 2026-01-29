@@ -5,8 +5,8 @@
 namespace Lengine {
     class MeshRendererStorage {
     public:
-        void Add(UUID e, const MeshRenderer& mr) {
-            m_Data[e] = mr;
+        MeshRenderer& Add(UUID e, const MeshRenderer& renderer = MeshRenderer()) {
+            return m_Data[e] = renderer;
         }
 
         void Remove(UUID e) {
@@ -25,6 +25,10 @@ namespace Lengine {
         }
 
         const std::unordered_map<UUID, MeshRenderer>& All() const {
+            return m_Data;
+        }
+
+         std::unordered_map<UUID, MeshRenderer>& All()  {
             return m_Data;
         }
 

@@ -3,13 +3,13 @@
 using namespace Lengine;
 
 void GizmoRenderer::initGizmoGrid() {
-    gizmoGrid = assetManager.getMesh(MeshID::Plane); 
+    gizmoGrid = assetManager.GetSubmesh(SubmeshID::Plane); 
     gizmoGridShader.compileShaders(Paths::Shaders + "grid.vert", Paths::Shaders + "grid.frag");
     gizmoGridShader.linkShaders();
 
 }
 void GizmoRenderer::initGizmoSpheres() {
-	gizmoSphere = assetManager.getMesh(MeshID::Sphere); // uuid of sphere
+	gizmoSphere = assetManager.GetSubmesh(SubmeshID::Sphere); // uuid of sphere
 	gizmoSphereShader.compileShaders(Paths::Shaders + "boundingSphere.vert", Paths::Shaders + "boundingSphere.frag");
 	gizmoSphereShader.linkShaders();
 
@@ -17,7 +17,7 @@ void GizmoRenderer::initGizmoSpheres() {
 
 void GizmoRenderer::initGizmoArrows()
 {
-    Mesh* arrowMesh = assetManager.getMesh(MeshID::Arrow);
+    Submesh* arrowMesh = assetManager.GetSubmesh(SubmeshID::Arrow);
 
     // X Axis (Red)
     arrowX.gizmoArrow = arrowMesh;
@@ -51,7 +51,7 @@ void GizmoRenderer::drawGizmoGrid(){
     gizmoGridShader.setVec4("color", glm::vec4(0, 1, 0, 0.2));
     glm::mat4 model(1.0f);
     gizmoGridShader.setMat4("model", model);
-    gizmoGrid->draw();
+    if(gizmoGrid) gizmoGrid->draw();
     gizmoGridShader.unuse();
 
 
@@ -59,57 +59,74 @@ void GizmoRenderer::drawGizmoGrid(){
 
 
 void GizmoRenderer::drawGizmoSpheres() {
+
+    if (EditorSelection::GetEntity() == UUID::Null) return;
+
+    Scene* activeScene = sceneManager.getActiveScene();
+
+    Entity* e = activeScene->getEntityByID(EditorSelection::GetEntity());
+
+    if (!e) return;
+    if (!activeScene->Transforms().Has(e->getID())) return;
+
+    TransformComponent& tr = activeScene->Transforms().Get(e->getID());
+
     gizmoSphereShader.use();
     gizmoSphereShader.setMat4("view", camera.getViewMatrix());
     gizmoSphereShader.setMat4("projection", camera.getProjectionMatrix());
     gizmoSphereShader.setVec4("color", glm::vec4(1, 1, 1, 0.1f));
 
-    Scene* activeScene = sceneManager.getActiveScene();
-    for (auto& e : activeScene->getEntities()) {
-        if (!e->isSelected)
-            continue;
 
-        UUID meshID = activeScene->MeshFilters().Get(e->getID()).meshID;
-        Mesh* m = meshID ? assetManager.getMesh(meshID) : nullptr;
+    glm::vec3 center = tr.GetWorldPosition();
+    float radius = 1.0f; // fallback radius
 
-        glm::vec3 pos = e->getTransform().position;
-        glm::vec3 scale = e->getTransform().scale;
+    // -------------------------------
+    // Try mesh-based bounds
+    // -------------------------------
+    if (activeScene->MeshFilters().Has(e->getID()))
+    {
+        UUID meshID = activeScene->MeshFilters().Get(e->getID()).submeshID;
+        if (!meshID.isNull())
+        {
+            if (Submesh* m = assetManager.GetSubmesh(meshID))
+            {
+                glm::vec3 scaledCenter = m->getLocalCenter() * tr.localScale;
 
-        // --------------------------------------------
-        // CASE 1: No mesh
-        // --------------------------------------------
-        if (!m) {
-            float r = 1.0f;
+                float maxScale = glm::max(tr.localScale.x,
+                    glm::max(tr.localScale.y, tr.localScale.z));
 
-            glm::mat4 model(1.0f);
-            model = glm::translate(model, pos);
-            model = glm::scale(model, glm::vec3(r) * scale);
+                center += scaledCenter;
+                radius = m->getBoundingRadius() * maxScale;
+            }
 
-            gizmoSphereShader.setMat4("model", model);
-            gizmoSphere->draw();
-            continue;
+            if (Submesh* m = assetManager.GetSubmesh(meshID))
+            {
+                glm::vec3 localCenter = m->getLocalCenter();
+
+                glm::vec3 worldCenter =
+                    glm::vec3(tr.worldMatrix * glm::vec4(localCenter, 1.0f));
+
+                glm::vec3 worldScale = tr.GetWorldScale();
+                float maxScale = glm::max(worldScale.x, glm::max(worldScale.y, worldScale.z));
+
+                center = worldCenter;
+                radius = m->getBoundingRadius() * maxScale;
+            }
+
         }
-
-        // --------------------------------------------
-        // CASE 2: Mesh-level bounding sphere
-        // --------------------------------------------
-        float r = m->getBoundingRadius();
-        glm::vec3 localCenter = m->getLocalCenter();
-
-        // Scale center (local → world)
-        glm::vec3 scaledCenter = localCenter * scale;
-
-        // IMPORTANT: radius must use max scale component
-        float maxScale = glm::max(scale.x, glm::max(scale.y, scale.z));
-        float worldRadius = r * maxScale;
-
-        glm::mat4 model(1.0f);
-        model = glm::translate(model, pos + scaledCenter);
-        model = glm::scale(model, glm::vec3(worldRadius));
-
-        gizmoSphereShader.setMat4("model", model);
-        gizmoSphere->draw();
     }
+
+    // -------------------------------
+    // Build model matrix ONCE
+    // -------------------------------
+    glm::mat4 model(1.0f);
+    model = glm::translate(model, center);
+    model = glm::scale(model, glm::vec3(radius));
+
+    gizmoSphereShader.setMat4("model", model);
+    if (gizmoSphere)
+        gizmoSphere->draw();
+    
 
     gizmoSphereShader.unuse();
 }
@@ -117,6 +134,15 @@ void GizmoRenderer::drawGizmoSpheres() {
 
 void GizmoRenderer::drawGizmoArrows()
 {
+    if (EditorSelection::GetEntity() == UUID::Null) return;
+
+    Scene* activeScene = sceneManager.getActiveScene();
+
+    Entity* e = activeScene->getEntityByID(EditorSelection::GetEntity());
+
+    if (!e) return;
+    if (!activeScene->Transforms().Has(e->getID())) return;
+
     // Activate shaders once
     for (GizmoArrows* a : { &arrowX, &arrowY, &arrowZ }) {
         GLSLProgram& shader = a->gizmoArrowShader;
@@ -125,82 +151,66 @@ void GizmoRenderer::drawGizmoArrows()
         shader.setMat4("projection", camera.getProjectionMatrix());
     }
 
-    Scene* activeScene = sceneManager.getActiveScene();
-    for (auto& e : activeScene->getEntities()) {
-        if (!e->isSelected)
-            continue;
+   
+    TransformComponent& tr = activeScene->Transforms().Get(e->getID());
+    glm::vec3 scale = tr.GetWorldScale();
 
-        UUID meshID = activeScene->MeshFilters().Get(e->getID()).meshID;
+    // -------------------------------
+    // Decide gizmo source
+    // -------------------------------
+    glm::vec3 center = tr.GetWorldPosition();
+    float baseRadius = 1.0f; // fallback radius
 
-        glm::vec3 pos = e->getTransform().position;
-        glm::vec3 scale = e->getTransform().scale;
+    bool hasValidMesh = false;
 
-        Mesh* m = meshID ? assetManager.getMesh(meshID) : nullptr;
+    if (activeScene->MeshFilters().Has(e->getID()))
+    {
+        UUID meshID = activeScene->MeshFilters().Get(e->getID()).submeshID;
+        if (!meshID.isNull())
+        {
+            if (Submesh* m = assetManager.GetSubmesh(meshID))
+            {
+                hasValidMesh = true;
+                center = glm::vec3(
+                    tr.worldMatrix * glm::vec4(m->getLocalCenter(), 1.0f)
+                );
 
-        // --------------------------------------------
-        // CASE 1: No mesh or meshID
-        // --------------------------------------------
-        if (!m) {
-            float r = 1.0f;
-            float maxScale = glm::max(scale.x, glm::max(scale.y, scale.z));
-            float arrowSize = r * maxScale;
-
-            drawSingleArrow(arrowX, pos, arrowSize, capX.hovered);
-            drawSingleArrow(arrowY, pos, arrowSize, capY.hovered);
-            drawSingleArrow(arrowZ, pos, arrowSize, capZ.hovered);
-
-            float capsuleRadius = (arrowSize > 1.0f) ? 1.0f : arrowSize;
-            float capsuleLength = arrowSize;
-
-            capX.start = pos;
-            capX.radius = capsuleRadius;
-            capX.end = pos + glm::vec3(1, 0, 0) * capsuleLength;
-
-            capY.start = pos;
-            capY.radius = capsuleRadius;
-            capY.end = pos + glm::vec3(0, 1, 0) * capsuleLength;
-
-            capZ.start = pos;
-            capZ.radius = capsuleRadius;
-            capZ.end = pos + glm::vec3(0, 0, 1) * capsuleLength;
-
-            continue;
+                baseRadius = m->getBoundingRadius();
+            }
         }
-
-
-        // --------------------------------------------
-        // CASE 2: Mesh-level gizmo
-        // --------------------------------------------
-        glm::vec3 localCenter =  m->getLocalCenter();
-        float localRadius = m->getBoundingRadius();
-
-        glm::vec3 worldCenter = pos + localCenter * scale;
-
-        float maxScale = glm::max(scale.x, glm::max(scale.y, scale.z));
-        float arrowSize = localRadius * maxScale;
-
-        drawSingleArrow(arrowX, worldCenter, arrowSize, capX.hovered);
-        drawSingleArrow(arrowY, worldCenter, arrowSize, capY.hovered);
-        drawSingleArrow(arrowZ, worldCenter, arrowSize, capZ.hovered);
-
-
-        float capsuleRadius = (arrowSize > 1.0f) ? 1.0f : arrowSize;     // tweak visually
-        float capsuleLength = (arrowSize > 1.0f) ? 1.0f : arrowSize;      // arrow body length
-
-        capX.start = worldCenter;
-        capX.radius = capsuleRadius;
-        capX.end = worldCenter + glm::vec3(1, 0, 0) * capsuleLength;
-        
-        capY.start = worldCenter;
-        capY.radius = capsuleRadius;
-        capY.end = worldCenter + glm::vec3(0, 1, 0) * capsuleLength;
-
-        capZ.start = worldCenter;
-        capZ.radius = capsuleRadius;
-        capZ.end = worldCenter + glm::vec3(0, 0, 1) * capsuleLength;
- 
-
     }
+
+    // -------------------------------
+    // Compute final gizmo size
+    // -------------------------------
+    float maxScale = glm::max(scale.x, glm::max(scale.y, scale.z));
+    float arrowSize = baseRadius * maxScale;
+
+    float capsuleRadius = glm::min(1.0f, arrowSize);
+    float capsuleLength = arrowSize;
+
+    // -------------------------------
+    // Draw arrows
+    // -------------------------------
+    drawSingleArrow(arrowX, center, arrowSize, capX.hovered);
+    drawSingleArrow(arrowY, center, arrowSize, capY.hovered);
+    drawSingleArrow(arrowZ, center, arrowSize, capZ.hovered);
+
+    // -------------------------------
+    // Setup capsules
+    // -------------------------------
+    capX.start = center;
+    capX.radius = capsuleRadius;
+    capX.end = center + glm::vec3(1, 0, 0) * capsuleLength;
+
+    capY.start = center;
+    capY.radius = capsuleRadius;
+    capY.end = center + glm::vec3(0, 1, 0) * capsuleLength;
+
+    capZ.start = center;
+    capZ.radius = capsuleRadius;
+    capZ.end = center + glm::vec3(0, 0, 1) * capsuleLength;
+    
 
     // Deactivate shaders once
     for (GizmoArrows* a : { &arrowX, &arrowY, &arrowZ }) {
@@ -242,7 +252,7 @@ void GizmoRenderer::drawSingleArrow(
     ));
 
     shader.setMat4("model", model);
-    arrow.gizmoArrow->draw();
+    if(arrow.gizmoArrow) arrow.gizmoArrow->draw();
 }
 
 

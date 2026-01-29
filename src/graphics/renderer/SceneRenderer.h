@@ -46,6 +46,7 @@ namespace Lengine {
 		void initScene();
 		void renderShadowPass();
 
+		void UpdateScene();
 		void RenderScene_phong(const EditorConfig& editorConfig);
 		void endFrame();
 

@@ -3,6 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../external/stb_image.h"
 #include <iostream>
+#include <filesystem>
 
 namespace Lengine {
 
@@ -47,28 +48,39 @@ namespace Lengine {
         return texture;
     }
 
-      ImageData ImageLoader::stbiLoader(const std::string& filePath)
-        {
-            ImageData img;
-
-            unsigned char* data = stbi_load(
-                filePath.c_str(),
-                &img.width,
-                &img.height,
-                &img.channels,
-                0
-            );
-
-          
-            if (!data)
-                fatalError("Failed to load image: " + filePath);
-           
-            size_t size = img.width * img.height * img.channels;
-            img.pixels.assign(data, data + size);
-
-            stbi_image_free(data);
-            return img;
+    std::shared_ptr<ImageData> ImageLoader::stbiLoader(const std::string& filePath)
+    {
+        std::filesystem::path path = filePath;
+        if (!std::filesystem::exists(path)) {
+            std::cout << "File does not exist: " << path << std::endl;
+            return nullptr;
         }
+
+        auto img = std::make_shared<ImageData>();
+
+        unsigned char* data = stbi_load(
+            filePath.c_str(),
+            &img->width,
+            &img->height,
+            &img->channels,
+            0
+        );
+
+        if (!data) {
+            std::cerr << "STB failed: " << stbi_failure_reason() << std::endl;
+            return nullptr;
+        }
+
+        size_t size = static_cast<size_t>(img->width) *
+            static_cast<size_t>(img->height) *
+            static_cast<size_t>(img->channels);
+
+        img->pixels.assign(data, data + size);
+
+        stbi_image_free(data);
+        return img;
+    }
+
       /*
       void ImageLoader::uploadToGPU(const ImageData& img, bool srgb)
       {

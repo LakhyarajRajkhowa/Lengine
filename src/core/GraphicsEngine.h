@@ -26,6 +26,8 @@ namespace Lengine {
 		GraphicsEngine();
 		void run();
 	private:
+		RuntimeStats runtimeStats;
+
 		EngineSettings settings;
 		RenderSettings renderSettings;
 		Window window;
@@ -50,8 +52,11 @@ namespace Lengine {
 		void initSystems();
 		void mainLoop();
 		void shutDown();
+		void UpdateTimer();
 
-		
+	private:
+
+		float deltaTime;
 	
 	};
 }

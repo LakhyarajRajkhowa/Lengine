@@ -4,11 +4,19 @@
 
 
 
+
 struct FrameStats {
     float fps;
     float msPerFrame;
     float deltaTime;
 };
+
+struct RuntimeStats {
+    FrameStats frameStats{};
+    int targetFPS = 144;
+    bool limitFPS = true;
+};
+
 
 inline FrameStats LimitFPS(int targetFPS, bool enable)
 {
@@ -36,5 +44,6 @@ inline FrameStats LimitFPS(int targetFPS, bool enable)
     stats.msPerFrame = deltaTime * 1000.0f;
     stats.fps = (deltaTime > 0.0f) ? (1.0f / deltaTime) : 0.0f;
     stats.deltaTime = deltaTime;
+
     return stats;
 }

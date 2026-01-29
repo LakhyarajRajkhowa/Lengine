@@ -8916,7 +8916,7 @@ void ImGui::Value(const char* prefix, float v, const char* float_format)
 //-------------------------------------------------------------------------
 
 // Helpers for internal use
-void ImGuiMenuColumns::Update(float spacing, bool window_reappearing)
+void ImGuiMenuColumns::UpdateTimer(float spacing, bool window_reappearing)
 {
     if (window_reappearing)
         memset(Widths, 0, sizeof(Widths));

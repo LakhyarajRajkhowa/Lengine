@@ -5,6 +5,7 @@
 
 #include "../utils/UUID.h"
 #include "../resources/AssetManager.h"
+#include "../editor/EditorSelection.h"
 
 #include "../external/tinyfiledialogs.h"
 namespace Lengine {
@@ -24,31 +25,58 @@ namespace Lengine {
         char path[512];
     };
 
+    enum class AssetFolderView
+    {
+        Root,       // showing folders
+        Prefab,
+        Submesh,
+        Texture,
+        PhongMaterial
+    };
+
     class AssetPanel {
     public:
         AssetPanel(const std::filesystem::path& root, AssetManager& assetMgr);
 
         void OnImGuiRender();
 
+
     private:
-        void DrawDirectory(const std::filesystem::path& path);
         void OpenImportMeshDialog(std::string folderPath);
-        void OpenImportTextureDialog(bool srgb = false);
+        void OpenImportTextureDialog(const UUID& id);
         void OpenImportMaterialDialog();
+        void OpenImportPrefabDialog(std::string folderpath);
+
+        void DrawCreateMaterialPopup();
         void CreateNewFolder(const std::filesystem::path& path);
+
+        ImTextureID LoadThumbnail(const std::string& file);
+
+        void DrawAssetTypeFolder(
+            const char* name,
+            ImTextureID icon,
+            AssetFolderView targetView
+        );
+        void DrawBackButton();
+
+        void DrawSubMeshAssets();
+        void DrawPbrMaterialAssets();
+        void DrawTextureAssets();
+        void DrawPrefabAssets();
+
+
 
     private:
         AssetManager& assetManager;
 
         std::unordered_map<std::string, ImTextureID> thumbnailCache;
-        ImTextureID LoadThumbnail(const std::string& file);
 
         std::filesystem::path m_RootPath;
         std::filesystem::path m_CurrentPath;
         bool  m_OpenImportMeshDialog = false;
         bool  m_OpenImportTextureDialog = false;
-        bool  m_OpenImportSRGBTextureDialog = false;
         bool  m_OpenImportMaterialDialog = false;
+        bool  m_OpenImportPrefabDialog = false;
 
 
 
@@ -56,6 +84,16 @@ namespace Lengine {
         bool m_ShowCreateFolderPopup = false;
 
         bool isSelected = false;
+    private:
+
+        ImTextureID AssetPanel::folderIcon = 0;
+        ImTextureID AssetPanel::meshIcon = 0;
+        ImTextureID AssetPanel::prefabIcon = 0;
+        ImTextureID AssetPanel::submeshIcon = 0;
+        ImTextureID AssetPanel::textureIcon = 0;
+        ImTextureID AssetPanel::materialIcon = 0;
+
+
 
     };
 

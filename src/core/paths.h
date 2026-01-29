@@ -25,22 +25,49 @@ namespace Lengine {
         static inline std::string GameAssets_Materials;
         static inline std::string GameAssets_Mesh;
         static inline std::string GameAssets_Textures;
+        static inline std::string GameAssets_Prefab;
         static inline std::string GameScenes;
 
         static inline std::string GameAssetRegistryFolder;
+
+        static inline std::string GameLibrary;
+        static inline std::string GameLibrary_Assets;
+        static inline std::string GameLibrary_Assets_Mesh;
+        static inline std::string GameLibrary_Assets_Material;
+        static inline std::string GameLibrary_Assets_Texture;
+        static inline std::string GameLibrary_Assets_Prefab;
+
+
+        static inline std::string GameAssetDatabase;
+
+
 
         static void setGameFolderPath(const std::string& gameFolderPath)
         {
             ActiveGameFolder = gameFolderPath;
 
-            GameAssets = ActiveGameFolder + "/assets/";
+            GameAssets = ActiveGameFolder + "/Assets/";
+            GameAssetRegistryFolder = ActiveGameFolder + "AssetRegistry/";
+            GameScenes = ActiveGameFolder + "/Scenes/";
+            GameLibrary = ActiveGameFolder + "/Library/";
+
+
+
             GameAssets_Shaders = GameAssets + "Shaders/";
             GameAssets_Materials = GameAssets + "Materials/";
             GameAssets_Mesh = GameAssets + "Mesh/";
             GameAssets_Textures = GameAssets + "Textures/";
-            GameScenes = ActiveGameFolder + "/scenes/";
+            GameAssets_Prefab = GameAssets + "Prefab/";
 
-            GameAssetRegistryFolder = GameAssets + "AssetRegistry/";
+
+            GameLibrary_Assets = GameLibrary + "Assets/";
+            GameLibrary_Assets_Mesh = GameLibrary_Assets + "Mesh/";
+            GameLibrary_Assets_Material = GameLibrary_Assets + "Material/";
+            GameLibrary_Assets_Texture = GameLibrary_Assets + "Texture/";
+            GameLibrary_Assets_Prefab = GameLibrary_Assets + "Prefab/";
+
+
+            GameAssetDatabase = ActiveGameFolder + "/AssetDatabase/";
         }
 
          
@@ -65,8 +92,6 @@ namespace Lengine {
         static inline std::string pbrVertexShaderPath = Vert("pbr");
         static inline std::string pbrFragmentShaderPath = Frag("pbr");
     };
-
-    
 
 
 }
