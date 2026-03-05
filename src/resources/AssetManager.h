@@ -81,6 +81,7 @@ namespace Lengine {
 			
 		}
 
+		void Init();
 		void LoadAllDefaultAssets();
 
 		void Update(Scene& activeScene);

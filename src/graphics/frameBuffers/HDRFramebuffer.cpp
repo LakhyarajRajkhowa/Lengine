@@ -15,11 +15,11 @@ namespace Lengine {
 
     void HDRFramebuffer::Create() {
 
-        glGenFramebuffers(1, &FBO);
+        if(!FBO) glGenFramebuffers(1, &FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
         // HDR color buffer (resolved target)
-        glGenTextures(2, colorBuffers);
+        if(!colorBuffers[0] || !colorBuffers[1]) glGenTextures(2, colorBuffers);
 
         for (unsigned int i = 0; i < 2; i++)
         {
@@ -48,7 +48,7 @@ namespace Lengine {
         glDrawBuffers(2, attachments);
 
         // Create depth-stencil renderbuffer
-        glGenRenderbuffers(1, &depthBuffer);
+        if(!depthBuffer) glGenRenderbuffers(1, &depthBuffer);
         glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
         glRenderbufferStorage(
             GL_RENDERBUFFER,
@@ -99,7 +99,7 @@ namespace Lengine {
         Create();
     }
 
-    void HDRFramebuffer::ResolveTo(const Framebuffer& target) {
+    void HDRFramebuffer::ResolveTo(const LDRFramebuffer& target) {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.GetID());
 

@@ -92,8 +92,6 @@ void ForwardRenderer::drawSubMesh(
     Submesh& sm,
     GLSLProgram& shader
 ) {
-
-
     sm.draw();
 }
 
@@ -121,62 +119,199 @@ void ForwardRenderer::drawMeshAllSubMeshes(
 
 }
 
+void ForwardRenderer::bindShadowMapUniforms(
+    GLSLProgram& shader,
+    ShadowMap& shadowMap,
+    const TransformComponent& lightTransform,
+    const glm::vec3& camPos
+) {
+
+    glm::mat4 lightSpaceProj =
+        glm::ortho(
+            -20.0f, 20.0f,
+            -20.0f, 20.0f,
+            shadowMap.nearPlane, shadowMap.farPlane
+        );
+
+    
+    glm::vec3 lightDir = glm::normalize(lightTransform.localRotation);
+
+    glm::vec3 center = camPos;  // anchor to camera
+
+    glm::vec3 lightPos = center - lightDir * 20.0f; // move back along light dir
+
+    glm::mat4 lightView = glm::lookAt(
+        lightPos,
+        center,
+        glm::vec3(0, 1, 0)
+    );
+
+
+
+    glm::mat4 lightSpaceMat = lightSpaceProj * lightView;
+    shader.setMat4(
+        "lightSpaceMatrix",
+        lightSpaceMat
+    );
+
+    glActiveTexture(GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Shadow2D));
+    glBindTexture(GL_TEXTURE_2D, shadowMap.getDepthTexture());
+    shader.setInt("shadowMap", static_cast<unsigned int>(TextureUnit::Shadow2D));
+}
+
+void ForwardRenderer::bindPointShadowUniforms(
+    GLSLProgram& shader,
+    ShadowCubeMap& shadowCubeMap
+) {
+    glActiveTexture(GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::ShadowCube));
+    glBindTexture(GL_TEXTURE_CUBE_MAP, shadowCubeMap.getDepthCubeMap());
+    shader.setInt("shadowCubeMap", static_cast<unsigned int>(TextureUnit::ShadowCube));
+
+    shader.setFloat("farPlane", shadowCubeMap.getFarPlane());
+}
 
 void ForwardRenderer::RenderScene_pbr(
-    Scene& activeScene,
-    const EditorConfig& editorConfig,
-    ShadowMap& shadowMap,
-    ShadowCubeMap& shadowCubeMap,
-    const GLTexture& irradianceMap
+    const RenderContext& ctx
 ) {
+    const Scene* activeScene = ctx.scene;
+    const Camera3d* camera = ctx.camera;
+
     GLSLProgram* pbrShader = assetManager.getShader(ShaderRegistry::universalPbr.name);
     pbrShader->use();
-    pbrShader->setInt("irradianceMap", 0);
 
-    const auto& entities = activeScene.getEntities();
-    auto& meshRenderers = activeScene.MeshRenderers();
-    auto& meshFilters = activeScene.MeshFilters();
-    auto& lightComponents = activeScene.Lights();
-    auto& transforms = activeScene.Transforms();
+    pbrShader->setInt("irradianceMap", static_cast<unsigned int>(TextureUnit::Irradiance));
+    pbrShader->setInt("prefilterMap", static_cast<unsigned int>(TextureUnit::Prefilter));
+    pbrShader->setInt("brdfLUT", static_cast<unsigned int>(TextureUnit::BRDF_LUT));
+
+
+    pbrShader->setInt("shadowMap", static_cast<unsigned int>(TextureUnit::Shadow2D));
+    pbrShader->setInt("shadowCubeMap", static_cast<unsigned int>(TextureUnit::ShadowCube));
+
+    const auto& entities = activeScene->getEntities();
+    auto& meshRenderers = activeScene->MeshRenderers();
+    auto& meshFilters = activeScene->MeshFilters();
+    auto& lightComponents = activeScene->Lights();
+    auto& transforms = activeScene->Transforms();
 
 
     // Bind camera once (view & projection are global)
-    pbrShader->setMat4("view", camera.getViewMatrix());
-    pbrShader->setMat4("projection", camera.getProjectionMatrix());
-    pbrShader->setVec3("cameraPos", camera.getCameraPosition());
-  
+    pbrShader->setMat4("view", camera->getViewMatrix());
+    pbrShader->setMat4("projection", camera->getProjectionMatrix());
+    pbrShader->setVec3("cameraPos", camera->getCameraPosition());
+
     // bind pre-computed IBL data
-    
-    glActiveTexture(GL_TEXTURE10);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap.id);
-    pbrShader->setInt("irradianceMap", 10);
+    glActiveTexture(GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Irradiance));
+    glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.irradianceMap.id);
+
+    glActiveTexture(GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Prefilter));
+    glBindTexture(GL_TEXTURE_CUBE_MAP, ctx.prefilterMap.id);
+
+    glActiveTexture(GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::BRDF_LUT));
+    glBindTexture(GL_TEXTURE_2D, ctx.brdfLUTMap.id);
 
 
-    int lightNum = 0;
+    if (lightComponents.GetDirectionalShadowCasteer() != UUID::Null
+        && transforms.Has(lightComponents.GetDirectionalShadowCasteer())
+        )
+    {
+        bindShadowMapUniforms(
+            *pbrShader,
+            *ctx.shadowMap,
+            transforms.Get(lightComponents.GetDirectionalShadowCasteer()),
+            camera->getCameraPosition()
+        );
+    }
+
+
+    if (lightComponents.GetPointShadowCasteer() != UUID::Null
+        && transforms.Has(lightComponents.GetPointShadowCasteer())
+        )
+    {
+
+        bindPointShadowUniforms(
+            *pbrShader,
+            *ctx.shadowCubeMap
+        );
+    }
+
+       
+    uint32_t lightNum = 0;
 
     for (const auto& [id, light] : lightComponents.GetAll())
     {
         if (!transforms.Has(id))
             continue;
 
-        const TransformComponent& t = transforms.Get(id);
+        if (lightNum >= MAX_LIGHTS)
+            break;
+
         const Light& l = light;
 
+        // ---------------- Common ----------------
+        pbrShader->setInt(
+            "lightTypes[" + std::to_string(lightNum) + "]",
+            static_cast<int>(l.type)
+        );
+
+        pbrShader->setVec3(
+            "lightColors[" + std::to_string(lightNum) + "]",
+            l.color
+        );
+
+        pbrShader->setFloat(
+            "lightIntensities[" + std::to_string(lightNum) + "]",
+            l.intensity
+        );
+
+        pbrShader->setBool(
+            "lightCastShadow[" + std::to_string(lightNum) + "]",
+            light.castShadow
+        );
+
+        // ---------------- Point & Spot ----------------
+        pbrShader->setFloat(
+            "lightRanges[" + std::to_string(lightNum) + "]",
+            l.range
+        );
+
+        // ---------------- Spot only ----------------
+        pbrShader->setFloat(
+            "lightInnerAngles[" + std::to_string(lightNum) + "]",
+            glm::cos(glm::radians(l.innerAngle))
+        );
+
+        pbrShader->setFloat(
+            "lightOuterAngles[" + std::to_string(lightNum) + "]",
+            glm::cos(glm::radians(l.outerAngle))
+        );
+
+
+        const TransformComponent& t = transforms.Get(id);
+
+        // ---------------- Position ----------------
+        // Used by point & spot, ignored by directional
         pbrShader->setVec3(
             "lightPositions[" + std::to_string(lightNum) + "]",
             t.localPosition
         );
 
+        // ---------------- Direction ----------------
+        // Used by directional & spot
+        glm::vec3 direction = glm::normalize(
+            t.localRotation
+        );
+
         pbrShader->setVec3(
-            "lightColors[" + std::to_string(lightNum) + "]",
-            l.color * 1000.0f
+            "lightDirections[" + std::to_string(lightNum) + "]",
+            direction
         );
 
         ++lightNum;
+
+       
     }
 
     pbrShader->setInt("lightCount", lightNum);
-
 
 
     for (auto& [entityID, mr] : meshRenderers.All()) {
@@ -199,15 +334,11 @@ void ForwardRenderer::RenderScene_pbr(
 
         if (!mat) continue;
 
-        MaterialInstance& inst = mr.inst;
+        const MaterialInstance& inst = mr.inst;
 
-        if (inst.dirty || mat->localDirty)
-        {
-            inst.cached = ResolveMaterial(*mat, inst);
-            inst.dirty = false;
-        }
 
-        const ResolvedMaterial& finalMat = inst.cached;
+
+        const ResolvedMaterial& finalMat = ResolveMaterial(*mat, inst);
 
         pbrShader->setVec3("material.albedo", finalMat.albedo);
         pbrShader->setFloat("material.metallic", finalMat.metallic);
@@ -223,7 +354,7 @@ void ForwardRenderer::RenderScene_pbr(
             inst.use_map_albedo,
             "material.hasAlbedoMap",
             "material.albedoMap",
-            GL_TEXTURE1
+            GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Albedo)
         );
 
         bindTexture(
@@ -233,7 +364,7 @@ void ForwardRenderer::RenderScene_pbr(
             inst.use_map_normal,
             "material.hasNormalMap",
             "material.normalMap",
-            GL_TEXTURE2
+            GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Normal)
         );
 
         bindTexture(
@@ -243,7 +374,7 @@ void ForwardRenderer::RenderScene_pbr(
             inst.use_map_ao,
             "material.hasAOMap",
             "material.aoMap",
-            GL_TEXTURE3
+            GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::AO)
         );
 
         bindTexture(
@@ -253,7 +384,7 @@ void ForwardRenderer::RenderScene_pbr(
             inst.use_map_metallic,
             "material.hasMetallicMap",
             "material.metallicMap",
-            GL_TEXTURE4
+            GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Metallic)
         );
 
         bindTexture(
@@ -263,7 +394,7 @@ void ForwardRenderer::RenderScene_pbr(
             inst.use_map_roughness,
             "material.hasRoughnessMap",
             "material.roughnessMap",
-            GL_TEXTURE5
+            GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Roughness)
         );
 
         bindTexture(
@@ -273,18 +404,168 @@ void ForwardRenderer::RenderScene_pbr(
             inst.use_map_metallicRoughness,
             "material.hasMetallicRoughnessMap",
             "material.metallicRoughnessMap",
-            GL_TEXTURE6
+            GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::MetallicRoughness)
         );
 
         // new
         if (!mf.submeshID.isNull()) {
             Submesh* sm = assetManager.GetSubmesh(mf.submeshID);
+
             if(sm) sm->draw();
         }                
                 
     }
 
     pbrShader->unuse();
+}
+
+
+void ForwardRenderer::RenderScene_debug(
+    const RenderContext& ctx
+) {
+
+
+    const Scene* activeScene = ctx.scene;
+    const Camera3d* camera = ctx.camera;
+
+    GLSLProgram* shader = assetManager.getShader(ShaderRegistry::debug.name);
+    GLSLProgram* outlineShader = assetManager.getShader(ShaderRegistry::outline.name);
+
+    const auto& entities = activeScene->getEntities();
+    auto& meshRenderers = activeScene->MeshRenderers();
+    auto& meshFilters = activeScene->MeshFilters();
+    auto& lightComponents = activeScene->Lights();
+    auto& transforms = activeScene->Transforms();
+
+    if (debugViewMode == DebugView::Geometry)
+    {
+        // -------- SOLID PASS --------
+        shader->use();
+
+        shader->setInt("u_DebugMode", static_cast<int>(IRenderer::debugViewMode));
+        shader->setMat4("view", camera->getViewMatrix());
+        shader->setMat4("projection", camera->getProjectionMatrix());
+        shader->setVec3("cameraPos", camera->getCameraPosition());
+
+        for (auto& [entityID, mr] : meshRenderers.All())
+        {
+            if (!transforms.Has(entityID)) continue;
+            if (!meshFilters.Has(entityID)) continue;
+
+            const TransformComponent& t = transforms.Get(entityID);
+            shader->setMat4("model", t.worldMatrix);
+
+            Submesh* sm = assetManager.GetSubmesh(meshFilters.Get(entityID).submeshID);
+            if (sm) sm->draw();
+        }
+
+        shader->unuse();
+
+
+        // -------- WIREFRAME OVERLAY --------
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glLineWidth(1.5f);
+
+        outlineShader->use();
+        outlineShader->setMat4("view", camera->getViewMatrix());
+        outlineShader->setMat4("projection", camera->getProjectionMatrix());
+
+        for (auto& [entityID, mr] : meshRenderers.All())
+        {
+            if (!transforms.Has(entityID)) continue;
+            if (!meshFilters.Has(entityID)) continue;
+
+            const TransformComponent& t = transforms.Get(entityID);
+            outlineShader->setMat4("model", t.worldMatrix);
+
+            Submesh* sm = assetManager.GetSubmesh(meshFilters.Get(entityID).submeshID);
+            if (sm) sm->draw();
+        }
+
+        outlineShader->unuse();
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        return;
+    }
+
+
+
+    shader->use();
+
+    shader->setInt("u_DebugMode", static_cast<int>(IRenderer::debugViewMode));
+
+
+    // Bind camera once (view & projection are global)
+    shader->setMat4("view", camera->getViewMatrix());
+    shader->setMat4("projection", camera->getProjectionMatrix());
+    shader->setVec3("cameraPos", camera->getCameraPosition());
+
+
+    for (auto& [entityID, mr] : meshRenderers.All()) {
+
+        if (!transforms.Has(entityID)) continue;
+        if (!meshFilters.Has(entityID)) continue;
+
+
+        const TransformComponent& t = transforms.Get(entityID);
+        const MeshFilter& mf = meshFilters.Get(entityID);
+
+        if (mf.HasPendingSubmesh()) continue;
+        if (mr.inst.baseMaterial.isNull()) continue;
+
+        glm::mat4 model = t.worldMatrix;
+        shader->setMat4("model", model);
+
+
+        Material* mat = assetManager.GetMaterial(mr.inst.baseMaterial);
+
+        if (!mat) continue;
+
+        const MaterialInstance& inst = mr.inst;
+
+
+
+        const ResolvedMaterial& finalMat = ResolveMaterial(*mat, inst);
+
+        shader->setVec3("albedoColor", finalMat.albedo);
+        shader->setFloat("normalStrength", finalMat.normalStrength);
+        shader->setFloat("nearPlane", 0.1f);
+        shader->setFloat("farPlane", 1000.0f);
+
+
+
+        bindTexture(
+            *shader,
+            assetManager,
+            finalMat.map_albedo,
+            inst.use_map_albedo,
+            "hasAlbedoMap",
+            "albedoMap",
+            GL_TEXTURE1
+        );
+
+        bindTexture(
+            *shader,
+            assetManager,
+            finalMat.map_normal,
+            inst.use_map_normal,
+            "hasNormalMap",
+            "normalMap",
+            GL_TEXTURE2
+        );
+
+
+        // new
+        if (!mf.submeshID.isNull()) {
+            Submesh* sm = assetManager.GetSubmesh(mf.submeshID);
+            if (sm) sm->draw();
+        }
+
+    }
+
+    shader->unuse();
+
 }
 
 

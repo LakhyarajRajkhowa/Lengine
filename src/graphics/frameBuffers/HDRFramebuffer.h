@@ -18,7 +18,7 @@ namespace Lengine {
         void Bind();
         void Unbind();
         void Resize(const uint32_t width, const uint32_t height);
-        void ResolveTo(const Framebuffer& target);
+        void ResolveTo(const LDRFramebuffer& target);
         
         uint32_t GetWidth() const { return width; }
         uint32_t GetHeight() const { return height; };
@@ -30,7 +30,7 @@ namespace Lengine {
 
         GLuint FBO = 0;
         GLuint depthBuffer = 0;
-        GLuint colorBuffers[2];
+        GLuint colorBuffers[2] = {0,0};
         GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 
     };

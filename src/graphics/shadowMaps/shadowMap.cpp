@@ -46,12 +46,75 @@ void ShadowMap::init() {
 
 
 void ShadowMap::renderDepthMap(
-    std::vector<std::unique_ptr<Entity>>& entities,
-    MeshRendererStorage& mrs,
-    Light& light,
-    AssetManager& assetManager
+    const std::vector<std::unique_ptr<Entity>>& entities,
+    const TransformStorage& trs,
+    const MeshFilterStorage& mfs,
+    const UUID& mainDirectionalLight,
+    AssetManager& assetManager,
+    const Camera3d& camera
 ) {
+    if (mainDirectionalLight == UUID::Null || !trs.Has(mainDirectionalLight) || prevLight != mainDirectionalLight) {
 
+        prevLight = mainDirectionalLight;
+        // clear previous frame shadow
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return;
+    }   
+
+    glm::mat4 lightSpaceProj = 
+       glm::ortho(
+            -20.0f, 20.0f,
+            -20.0f, 20.0f,
+            nearPlane, farPlane
+        );
+
+    auto& lightTf = trs.Get(mainDirectionalLight);
+    glm::vec3 lightDir = glm::normalize(lightTf.localRotation);
+
+    glm::vec3 center = camera.getCameraPosition();  // anchor to camera
+
+    glm::vec3 lightPos = center - lightDir * 20.0f; // move back along light dir
+
+    glm::mat4 lightView = glm::lookAt(
+        lightPos,
+        center,
+        glm::vec3(0, 1, 0)
+    );
+
+
+    
+    glm::mat4 lightSpaceMat = lightSpaceProj * lightView;
+
+    depthShader.use();
+    depthShader.setMat4("lightSpaceMatrix", lightSpaceMat);
+
+    glViewport(0, 0, SHADOW_RES, SHADOW_RES);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+
+    for (auto& e : entities)
+    {
+        if (!trs.Has(e->getID()) || !mfs.Has(e->getID()) || e->getID() == mainDirectionalLight) continue;;
+
+        auto& tr = trs.Get(e->getID());
+        depthShader.setMat4("model", tr.worldMatrix);
+        auto& mf = mfs.Get(e->getID());
+
+        auto* mesh = assetManager.GetSubmesh(mf.submeshID);
+        if (mesh) {
+            mesh->draw();
+        }
+    }
+
+    depthShader.unuse();
+
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
   
 
 }

@@ -19,10 +19,31 @@ namespace Lengine {
             ShaderPath::pbrFragmentShaderPath
         };
 
+        static inline const ShaderAsset debug = ShaderAsset{
+           "Debug shader",
+           ShaderPath::debugVertexShaderPath,
+           ShaderPath::debugFragmentShaderPath
+        };
+
+        static inline const ShaderAsset outline = ShaderAsset{
+           "Outline shader",
+           ShaderPath::outlineShaderVertexShaderPath,
+           ShaderPath::outlineShaderFragmentShaderPath
+        };
+
+        static inline const ShaderAsset gizmoGrid = ShaderAsset{
+           "Gizmo Grid",
+           ShaderPath::gizmoGridShaderVertexShaderPath,
+           ShaderPath::gizmoGridShaderFragmentShaderPath
+        };
+
         static const std::vector<ShaderAsset>& GetAllDefaults()
         {
             static const std::vector<ShaderAsset> defaults = {
-                universalPbr
+                universalPbr,
+                debug,
+                outline,
+                gizmoGrid
             };
 
             return defaults;

@@ -3,6 +3,7 @@
 #include "../resources/ImageLoader.h"
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/opengl/GLTexture.h"
+#include "../graphics/geometry/FullScreenQuad.h"
 #include <string>
 
 namespace Lengine {
@@ -16,6 +17,9 @@ namespace Lengine {
         void SetHDRTexture(const GLTexture& tex) { hdrTexture = tex; updateTex(); }
 
         const GLTexture GetIrradianceMap() { return irradianceMap; }
+        const GLTexture GetPrefilterMap() { return prefilterMap; }
+        const GLTexture GetbrdfLUTMap() { return brdfLUTTexture; }
+
     private:
 
 
@@ -24,10 +28,16 @@ namespace Lengine {
         GLSLProgram equirectToCubeShader;
         GLSLProgram backgroundShader;
         GLSLProgram irradianceShader;
+        GLSLProgram prefilterShader;
+        GLSLProgram brdfShader;
 
         GLTexture hdrTexture;      // raw HDR 2D
         GLTexture envCubemap;        // converted environment cube
         GLTexture irradianceMap;     // diffuse convolution cube
+        GLTexture prefilterMap;
+        GLTexture brdfLUTTexture;
+
+        FullscreenQuad quad;
 
         unsigned int captureFBO = 0;
         unsigned int captureRBO = 0;

@@ -21,6 +21,8 @@
 #include "../utils/fps.h"
 #include "../utils/imGuiScreens.h"
 
+#include "../graphics/renderer/IRenderer.h"
+
 
 namespace Lengine {
 
@@ -36,25 +38,12 @@ namespace Lengine {
 
     class ViewportPanel {
     public:
-        ViewportPanel(Camera3d& camera, const glm::i32vec2 resolution);
-        void OnImGuiRender();
-        void RenderFullscreen();
+        ViewportPanel(Camera3d& camera_) : camera(camera_) {}
 
-        // Access framebuffer for rendering the scene
-        Framebuffer& GetFramebuffer() { return Framebuffer; }
-        MSAAFramebuffer& GetMSAAFramebuffer() { return MSAAFramebuffer; }
-        HDRFramebuffer& GetHDRFramebuffer() { return HDRFramebuffer; }
-        MSAAHDRFramebuffer& GetMSAAHDRFramebuffer() { return MSAAHDRFramebuffer; }
-
-        SSAOFramebuffer& GetSSAOFramebuffer() { return SSAOFramebuffer; }
-        SSAOBlurFramebuffer& GetSSAOBlurFramebuffer() { return SSAOBlurFramebuffer; }
-        DepthNormalFramebuffer& GetDepthNormalFramebuffer() { return depthNormalFramebuffer; }
-        MSAADepthNormalFramebuffer& GetMSAADepthNormalFramebuffer() { return MSAADepthNormalFramebuffer; }
-
-
+        void OnImGuiRender(const uint32_t finalImage);
+        void RenderFullscreen(const uint32_t finalImage);
 
         void ClearFrame(const glm::vec4& clearColor);
-        void ClearFramebuffers();
 
         // Check if the viewport has resized
         bool IsViewportFocused() const { return m_Focused; }
@@ -73,16 +62,6 @@ namespace Lengine {
     private:
         Camera3d& camera;
         float fullscreenAspectRatio = 16.0f / 9.0f;
-
-        Framebuffer Framebuffer;
-        MSAAFramebuffer MSAAFramebuffer;
-        HDRFramebuffer HDRFramebuffer;
-        MSAAHDRFramebuffer MSAAHDRFramebuffer;
-        
-        SSAOFramebuffer SSAOFramebuffer;
-        SSAOBlurFramebuffer SSAOBlurFramebuffer;
-        DepthNormalFramebuffer depthNormalFramebuffer;
-        MSAADepthNormalFramebuffer MSAADepthNormalFramebuffer;
 
 
         float offsetValueX = 0.14f;

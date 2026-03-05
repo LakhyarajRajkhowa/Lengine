@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "../core/settings.h"
+#include "../graphics/renderer/IRenderer.h"
 
 namespace Lengine {
     class RendererSettingsPanel

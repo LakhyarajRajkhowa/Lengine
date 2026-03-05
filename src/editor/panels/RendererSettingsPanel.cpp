@@ -7,19 +7,22 @@ void RendererSettingsPanel::OnImGuiRender()
     ImGui::Begin("Renderer Settings");
 
     // HDR
-    if (ImGui::Button(m_Settings.HDR ? "HDR: ON" : "HDR: OFF"))
-        m_Settings.HDR = !m_Settings.HDR;
+    //if (ImGui::Button(m_Settings.HDR ? "HDR: ON" : "HDR: OFF")) {
+    //    m_Settings.HDR = !m_Settings.HDR;
+    //    m_Settings.needsReload = true;
+    //}
 
-    if (m_Settings.HDR)
-    {
-        ImGui::SliderFloat("Exposure", &m_Settings.exposure, 0.01f, 5.0f);
 
-        if (ImGui::Button(m_Settings.enableBloom ? "Bloom: ON" : "Bloom: OFF"))
-            m_Settings.enableBloom = !m_Settings.enableBloom;
+    ImGui::SliderFloat("Exposure", &m_Settings.exposure, 0.01f, 5.0f);
 
-        if (m_Settings.enableBloom)
-            ImGui::SliderFloat("Bloom Blur", &m_Settings.bloomBlur, 0.2f, 10.0f);
+    if (ImGui::Button(m_Settings.enableBloom ? "Bloom: ON" : "Bloom: OFF")) {
+        m_Settings.enableBloom = !m_Settings.enableBloom;
+        m_Settings.needsReload = true;
     }
+
+    if (m_Settings.enableBloom)
+        ImGui::SliderFloat("Bloom Blur", &m_Settings.bloomBlur, 0.2f, 10.0f);
+   
 
     ImGui::Separator();
 
@@ -44,6 +47,34 @@ void RendererSettingsPanel::OnImGuiRender()
             m_Settings.needsReload = true;
         }
     }
+
+    ImGui::Separator();
+    ImGui::Text("Debug View");
+
+    if (ImGui::Checkbox("Enable Debug View", &IRenderer::enableDebugView))
+    {
+        // Optional: force something sensible
+        if (IRenderer::enableDebugView)
+            IRenderer::debugViewMode = DebugView::Geometry;
+    }
+
+    if (IRenderer::enableDebugView)
+    {
+        static const char* debugLabels[] = {
+            "Geometry",
+            "Albedo",
+            "Normal",
+            "Depth"
+        };
+
+        int currentMode = static_cast<int>(IRenderer::debugViewMode);
+
+        if (ImGui::Combo("Mode", &currentMode, debugLabels, IM_ARRAYSIZE(debugLabels)))
+        {
+            IRenderer::debugViewMode = static_cast<DebugView>(currentMode);
+        }
+    }
+
 
     ImGui::End();
 }

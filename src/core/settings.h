@@ -25,16 +25,19 @@ enum class RenderPath {
 struct RenderSettings {
 	// RenderPath renderPath = RenderPath::Forward;
 
-	bool HDR = true;
 	float exposure = 1.0f;
 
 	bool enableBloom = false;
 	float bloomBlur = 1.0f;
 
-	bool MSAA = false;
+	bool MSAA = true;
 	int msaaSamples = 4;
 
 	bool needsReload = true;
+
+	uint32_t resolution_X = 1280;
+	uint32_t resolution_Y = 720;
+
 };
 
 struct EditorConfig {

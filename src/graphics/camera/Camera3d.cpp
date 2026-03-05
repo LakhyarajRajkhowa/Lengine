@@ -31,10 +31,10 @@ namespace Lengine {
         projectionMatrix = glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
     }
     glm::mat4 Camera3d::getViewMatrix() {
-        return glm::lookAt(position, position + front, up);
+        return viewMatrix;
     }
     const glm::mat4& Camera3d::getViewMatrix() const{
-        return glm::lookAt(position, position + front, up);
+        return viewMatrix;
     }
 
     glm::mat4 Camera3d::getProjectionMatrix() {
@@ -57,6 +57,8 @@ namespace Lengine {
             const float speed =  deltaTime * speedFactor * speedMultiplier;
             moveMouse(mouseCoords.x, mouseCoords.y, speed);
             controlMovement(speed);
+
+            viewMatrix = glm::lookAt(position, position + front, up);
         }
         
     

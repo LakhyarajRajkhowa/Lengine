@@ -18,14 +18,14 @@ namespace Lengine {
         gizmoRenderer(gizmoRndr),
         inputManager(inputMgr),
         assetManager(assetMgr),
-        renderSettings(rndrSett),
-        viewportPanel(cam, resolution),     
+        renderSettings(rndrSett), 
         hierarchyPanel(cam,  scnMgr,assetMgr),
         inspectorPanel(scnMgr, assetMgr),
         consolePanel(buffer),
         assetPanel(Paths::ActiveGameFolder, assetMgr),
         rendererSettingsPanel(rndrSett),
-        performancePanel(stats_)
+        performancePanel(stats_),
+        viewportPanel(cam)
     {
     }
 
@@ -37,7 +37,7 @@ namespace Lengine {
         // cleanup if you want later
     }
 
-    void EditorLayer::OnImGuiRender() {
+    void EditorLayer::OnImGuiRender(const uint32_t& finalImage) {
 
         BeginDockspace();
 
@@ -48,7 +48,7 @@ namespace Lengine {
 
         //  Render panels
         if (!viewportPanel.viewportFullscreen) {
-            viewportPanel.OnImGuiRender();
+            viewportPanel.OnImGuiRender(finalImage);
             hierarchyPanel.OnImGuiRender();
             inspectorPanel.OnImGuiRender();
             consolePanel.OnImGuiRender();
@@ -59,7 +59,7 @@ namespace Lengine {
         else {
 
             config.editingMode = true;
-            viewportPanel.RenderFullscreen();
+            viewportPanel.RenderFullscreen(finalImage);
             performancePanel.OnImGuiRender();
         }
 

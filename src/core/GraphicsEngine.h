@@ -9,7 +9,7 @@
 #include "../core/settings.h"
 
 #include "../graphics/camera/Camera3d.h"
-#include "../graphics/renderer/SceneRenderer.h"
+#include "../graphics/renderer/RenderPipeline.h"
 #include "../graphics/renderer/PostProcess/PostProcessing.h"
 
 #include "../platform/InputManager.h"
@@ -36,9 +36,9 @@ namespace Lengine {
 		InputHandler inputHandler;
 		AssetManager assetManager;
 		SceneManager sceneManager;
-		SceneRenderer sceneRenderer;
-		PostProcessing postProcess;
 		GizmoRenderer gizmoRenderer;
+		RenderPipeline renderPipeline;
+		
 
 		ImGuiLayer imguiLayer;
 		EditorLayer editorLayer;

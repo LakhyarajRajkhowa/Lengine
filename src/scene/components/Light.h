@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#define MAX_LIGHTS 32
+
 namespace Lengine {
     enum class LightType {
         Directional = 0,
@@ -13,7 +15,19 @@ namespace Lengine {
     class Light {
     public:
         UUID id;
-        glm::vec3 color = glm::vec3(.10f, .10f, .10f);
+        LightType type = LightType::Directional;
+
+        glm::vec3 color = glm::vec3(0.10f);
+        float intensity = 1.0f;
+
+        // Point + Spot
+        float range = 10.0f;
+
+        // Spot only (degrees, engine-side)
+        float innerAngle = 12.5f;
+        float outerAngle = 17.5f;
+
+        bool castShadow = false;
     };
 
 

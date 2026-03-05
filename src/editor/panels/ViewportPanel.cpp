@@ -3,39 +3,13 @@
 
 using namespace Lengine;
 
-    ViewportPanel::ViewportPanel(Camera3d& cam, const glm::i32vec2 resolution)
-		: 
-        Framebuffer(resolution.x, resolution.y), camera(cam),
-        MSAAFramebuffer(resolution.x, resolution.y),
-        HDRFramebuffer(resolution.x, resolution.y),
-        MSAAHDRFramebuffer(resolution.x, resolution.y)
-    {
-    }
     
     void ViewportPanel::ClearFrame(const glm::vec4& clearColor) {
         glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
 
-    void ViewportPanel::ClearFramebuffers() {
-        Framebuffer.Bind();
-        ClearFrame({ 0,0,0,1 });
-        Framebuffer.Unbind();
-
-        MSAAFramebuffer.Bind();
-        ClearFrame({ 0,0,0,1 });
-        MSAAFramebuffer.Unbind();
-
-        HDRFramebuffer.Bind();
-        ClearFrame({ 0,0,0,1 });
-        HDRFramebuffer.Unbind();
-
-        MSAAHDRFramebuffer.Bind();
-        ClearFrame({ 0,0,0,1 });
-        MSAAHDRFramebuffer.Unbind();
-    }
-
-    void ViewportPanel::OnImGuiRender()
+    void ViewportPanel::OnImGuiRender(const uint32_t finalImage)
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Viewport");
@@ -94,7 +68,7 @@ using namespace Lengine;
         }
         
 
-        GLuint texID = Framebuffer.GetColorBuffer();
+        GLuint texID = finalImage;
         
 
          ImGui::Image(
@@ -119,7 +93,7 @@ using namespace Lengine;
 
 
 
-    void ViewportPanel::RenderFullscreen()
+    void ViewportPanel::RenderFullscreen(const uint32_t finalImage)
     {
         camera.isFixed = false;
         camera.setAspectRatio(fullscreenAspectRatio);
@@ -143,7 +117,7 @@ using namespace Lengine;
         if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             viewportFullscreen = false;
 
-        GLuint texID = Framebuffer.GetColorBuffer();
+        GLuint texID =  finalImage;
 
         ImVec2 avail = ImGui::GetContentRegionAvail();
 

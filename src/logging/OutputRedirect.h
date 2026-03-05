@@ -6,13 +6,13 @@
 class OutputRedirect : public std::streambuf {
 public:
     OutputRedirect(LogBuffer& buffer) : logBuffer(buffer) {
-        oldBuf = std::cout.rdbuf(this);
-        oldErrBuf = std::cerr.rdbuf(this);
+       // oldBuf = std::cout.rdbuf(this);
+       // oldErrBuf = std::cerr.rdbuf(this);
     }
 
     ~OutputRedirect() {
-        std::cout.rdbuf(oldBuf);
-        std::cerr.rdbuf(oldErrBuf);
+       // std::cout.rdbuf(oldBuf);
+       // std::cerr.rdbuf(oldErrBuf);
     }
 
 protected:

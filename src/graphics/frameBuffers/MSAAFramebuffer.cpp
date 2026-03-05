@@ -3,10 +3,10 @@
 
 namespace Lengine {
 
-    MSAAFramebuffer::MSAAFramebuffer(const uint32_t width, const uint32_t height)
-        : width(width), height(height)
+    MSAAFramebuffer::MSAAFramebuffer(const uint32_t width_, const uint32_t height_)
+        : width(width_), height(height_)
     {
-        
+        Create();
     }
 
     MSAAFramebuffer::~MSAAFramebuffer() {
@@ -15,11 +15,11 @@ namespace Lengine {
 
     void MSAAFramebuffer::Create() {
 
-        glGenFramebuffers(1, &FBO);
+        if(!FBO) glGenFramebuffers(1, &FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
         // Color attachment (multisampled)
-        glGenTextures(1, &colorBuffer);
+        if (!colorBuffer) glGenTextures(1, &colorBuffer);
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorBuffer);
         glTexImage2DMultisample(
             GL_TEXTURE_2D_MULTISAMPLE,
@@ -39,7 +39,7 @@ namespace Lengine {
         );
 
         // Depth + stencil
-        glGenRenderbuffers(1, &depthBuffer);
+        if(!depthBuffer) glGenRenderbuffers(1, &depthBuffer);
         glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
         glRenderbufferStorageMultisample(
             GL_RENDERBUFFER,
@@ -64,15 +64,22 @@ namespace Lengine {
     }
 
     void MSAAFramebuffer::Destroy() {
-        if (depthBuffer) glDeleteRenderbuffers(1, &depthBuffer);
+        if (depthBuffer) {
+            glDeleteRenderbuffers(1, &depthBuffer);
+            depthBuffer = 0;
+        }
+
         if (colorBuffer) {
             glDeleteTextures(1, &colorBuffer);
             colorBuffer = 0;
-        } 
-       
-        if (FBO) glDeleteFramebuffers(1, &FBO);
+        }
 
-        depthBuffer = colorBuffer = FBO = 0;
+        if (FBO) {
+            glDeleteFramebuffers(1, &FBO);
+            FBO = 0;
+        }
+
+
     }
 
     void MSAAFramebuffer::Bind() {
@@ -92,18 +99,30 @@ namespace Lengine {
 
 
 
-    void MSAAFramebuffer::ResolveTo(const Framebuffer& target) {
+    void MSAAFramebuffer::ResolveTo(const LDRFramebuffer& target) {
+
         glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.GetID());
 
-        glBlitFramebuffer(
-            0, 0, width, height,
-            0, 0, target.GetWidth(), target.GetHeight(),
-            GL_COLOR_BUFFER_BIT,
-            GL_NEAREST
-        );
+        const uint32_t attachmentCount = 1; // color + bright
 
+        for (uint32_t i = 0; i < attachmentCount; i++)
+        {
+            glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
+            glDrawBuffer(GL_COLOR_ATTACHMENT0 + i);
+
+            glBlitFramebuffer(
+                0, 0, width, height,
+                0, 0, target.GetWidth(), target.GetHeight(),
+                GL_COLOR_BUFFER_BIT,
+                GL_NEAREST
+            );
+        }
+
+        // restore default
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glReadBuffer(GL_BACK);
+        glDrawBuffer(GL_BACK);
     }
 
 }

@@ -35,13 +35,9 @@ namespace Lengine {
 	class GizmoRenderer {
 	public:
 		GizmoRenderer(
-			AssetManager& asstmgr,
-			SceneManager& scnMgr,
-			Camera3d& cam
+			AssetManager& asstmgr
 		) :
-			assetManager(asstmgr),
-			sceneManager(scnMgr),
-			camera(cam)
+			assetManager(asstmgr)
 		{
 			
 		}
@@ -52,10 +48,11 @@ namespace Lengine {
 			const bool& highlight
 		);
 
-		void drawGizmoSpheres();
-		void drawGizmoGrid();
-		void drawGizmoArrows();
+		void drawGizmoSpheres(Scene* activeScene, Camera3d* camera);
+		void drawGizmoGrid(Camera3d* camera);
+		void drawGizmoArrows(Scene* activeScene, Camera3d* camera);
 		void drawDebugCapsuleForArrow(
+			Camera3d* camera,
 			const glm::vec3& position,
 			const glm::vec3& axis,
 			float size
@@ -63,16 +60,14 @@ namespace Lengine {
 
 		AxisCapsule& getCapsule(const GizmoAxis axis);
 
-		void initGizmo() {
+		void InitGizmo() {
 			initGizmoGrid();
-			initGizmoSpheres();
-			initGizmoArrows();
+			//initGizmoSpheres();
+			//initGizmoArrows();
 		}
 
 	private:
 		AssetManager& assetManager;
-		SceneManager& sceneManager;
-		Camera3d& camera;
 
 		Submesh* gizmoSphere = nullptr;
 		GLSLProgram gizmoSphereShader;

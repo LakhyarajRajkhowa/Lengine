@@ -440,7 +440,7 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
             tr.worldDirty = true;
 
             TransformSystem::Dirty = true;
-            ;
+            
         }
 
         if (ImGui::DragFloat3(
@@ -678,19 +678,27 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
     }
 
    
-    if (scene->Lights().Has(entity->getID())) {
-
+    if (scene->Lights().Has(entity->getID()))
+    {
         auto& light = scene->Lights().Get(entity->getID());
+
         ImGui::Separator();
         ImGui::Text("Lighting");
         ImGui::Separator();
+        ImGui::Spacing();
+
+        // ---------------- Light Type ----------------
+        const char* lightTypes[] = { "Directional", "Point", "Spotlight" };
+        int currentType = static_cast<int>(light.type);
+
+        if (ImGui::Combo("Type", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
+        {
+            light.type = static_cast<LightType>(currentType);
+        }
 
         ImGui::Spacing();
 
-
-        // ---------------- Colors ----------------
-        ImGui::Spacing();
-
+        // ---------------- Color ----------------
         ImGui::Text("Color");
         ImGui::SameLine();
         ImGui::ColorEdit3(
@@ -698,23 +706,101 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
             glm::value_ptr(light.color)
         );
 
+        // ---------------- Intensity ----------------
         ImGui::Spacing();
-        
-    }
-    else {
+        ImGui::DragFloat(
+            "Intensity",
+            &light.intensity,
+            0.1f,
+            0.0f,
+            100000.0f,
+            "%.2f"
+        );
+
+        // ---------------- Cast Shadows ----------------
+        ImGui::Spacing();
+
+        if (ImGui::Checkbox("Cast Shadows", &light.castShadow))
+        {
+            if (light.castShadow) // turned ON
+            {
+                if (light.type == LightType::Directional)
+                    scene->Lights().SetDirectionalShadowCaster(entityID);
+                else
+                    scene->Lights().SetPointShadowCaster(entityID);
+            }
+            else // turned OFF
+            {
+                if (light.type == LightType::Directional)
+                    scene->Lights().ClearDirectionalShadowCaster(entityID);
+                else
+                    scene->Lights().ClearPointShadowCaster(entityID);
+            }
+        }
+
+
+        // ---------------- Range ----------------
+        if (light.type == LightType::Point || light.type == LightType::Spotlight)
+        {
+            ImGui::Spacing();
+            ImGui::DragFloat(
+                "Range",
+                &light.range,
+                0.1f,
+                0.1f,
+                1000.0f,
+                "%.2f"
+            );
+        }
+
+        // ---------------- Spotlight Angles ----------------
+        if (light.type == LightType::Spotlight)
+        {
+            ImGui::Spacing();
+            ImGui::DragFloat(
+                "Inner Angle",
+                &light.innerAngle,
+                0.1f,
+                0.0f,
+                light.outerAngle - 0.1f,
+                "%.1f deg"
+            );
+
+            ImGui::DragFloat(
+                "Outer Angle",
+                &light.outerAngle,
+                0.1f,
+                light.innerAngle + 0.1f,
+                90.0f,
+                "%.1f deg"
+            );
+        }
+
         ImGui::Spacing();
         ImGui::Separator();
 
-        if (ImGui::Button("Add Light Component", buttonSize)) {
+        // ---------------- Remove ----------------
+        if (ImGui::Button("Remove Light Component"))
+        {
+            scene->Lights().Remove(entity->getID());
+        }
 
+        ImGui::Spacing();
+    }
+    else
+    {
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        if (ImGui::Button("Add Light Component", buttonSize))
+        {
             scene->Lights().Add(entity->getID());
         }
 
         ImGui::Separator();
         ImGui::Spacing();
-    
     }
-  
+
        
 }
 

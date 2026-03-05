@@ -15,16 +15,18 @@
 
 namespace Lengine {
 
+
     class PostProcessing
     {
     public:
-        PostProcessing::PostProcessing(RenderSettings& sett):
-            settings(sett)
-        {
 
-        }
         void initHDR(uint32_t width, uint32_t height);
+
+        void InitToneMappingResources();
+        void InitBloom();
         void renderToneMapping(const bool bloom, const float exposure);
+        void renderBloomShader();
+
         
         void renderBloom(GLuint colorBuffer, const float blurScale);
         const GLuint* getBloomTextures() { return pingpong.colorBuffer; }
@@ -33,13 +35,12 @@ namespace Lengine {
     private:
         uint32_t width = 1280;
         uint32_t height = 720;
-    private:
-        void initToneMappingResources();
-        void initBloom();
+
+
 
     private:
-        RenderSettings& settings;
-        GLSLProgram toneMapShader;
+        GLSLProgram hdrToneMappingShader;
+        GLSLProgram hdrBloomShader;
         FullscreenQuad fullscreenQuad;
 
         GLSLProgram blurShader;

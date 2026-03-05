@@ -25,10 +25,10 @@ namespace Lengine {
         
     private:
         uint32_t width = 0, height = 0;
-        uint32_t samples = 0;
+        uint32_t samples = 4;
 
         GLuint FBO = 0;
-        GLuint colorBuffers[2];
+        GLuint colorBuffers[2] = {0,0};
         GLuint attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
         GLuint depthBuffer = 0;
     };

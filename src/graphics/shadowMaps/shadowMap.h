@@ -7,24 +7,34 @@
 namespace Lengine {
 	class ShadowMap {
 	public:
-		ShadowMap(uint32_t shadowRes) : SHADOW_RES(shadowRes) {}
+
+		ShadowMap(uint32_t shadowRes) : SHADOW_RES(shadowRes) {
+			init();
+		}
 		ShadowMap() = default;
 		void init();
 		void ShadowMap::renderDepthMap(
-			std::vector<std::unique_ptr<Entity>>& entities,
-			MeshRendererStorage& mrs,
-			Light& light,
-			AssetManager& assetManager
+			const std::vector<std::unique_ptr<Entity>>& entities,
+			const TransformStorage& trs,
+			const MeshFilterStorage& mfs,
+			const UUID& mainDirectionalLight,
+			AssetManager& assetManager,
+			const Camera3d& camera
 			);
 
 		const GLuint& getDepthTexture() { return shadowDepthTex; }
+
+		float nearPlane = 0.01f;
+		float farPlane = 1000.5f;
 	private:
+
 		GLuint shadowFBO = 0;
 		GLuint shadowDepthTex = 0;
 
 		uint32_t SHADOW_RES = 1024;
 
-
 		GLSLProgram depthShader;
+
+		UUID prevLight = UUID::Null;
 	};
 }

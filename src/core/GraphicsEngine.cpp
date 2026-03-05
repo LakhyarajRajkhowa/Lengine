@@ -34,25 +34,15 @@ namespace Lengine {
 		),
 
 		sceneManager(assetManager),
-		gizmoRenderer(assetManager, sceneManager, camera),
+		gizmoRenderer(assetManager),
 
-		sceneRenderer(
-			camera,
-			editorLayer.GetViewportPanel(),
-			sceneManager,
-			assetManager,
-			gizmoRenderer,
-			settings,
-			renderSettings,
-			postProcess
-		),
+
 
 		inputHandler(camera, inputManager, window, isRunning),
 		
 		assetManager(settings),
-		postProcess(renderSettings)
+		renderPipeline(assetManager)
 	{
-
 	}
 	
 	void GraphicsEngine::run() {
@@ -80,11 +70,11 @@ namespace Lengine {
 		scenesTobeLoaded.push_back("emptyScene");
 
 		sceneManager.loadScenes(scenesTobeLoaded);
-		sceneRenderer.init();
-		sceneRenderer.preloadAssets();
-		sceneRenderer.initScene();
 
-		postProcess.initHDR(settings.resolution_X, settings.resolution_Y);
+		assetManager.Init();
+
+		renderPipeline.Init();
+
 	}
 
 	void GraphicsEngine::mainLoop() {
@@ -97,22 +87,26 @@ namespace Lengine {
 			UpdateTimer();
 
 			inputManager.Update();
-			assetManager.Update(*sceneManager.getActiveScene());
 			inputHandler.handleInputs(imguiLayer, editorLayer, runtimeStats.frameStats.deltaTime);
+			assetManager.Update(*sceneManager.getActiveScene());
 
-			sceneRenderer.UpdateScene();
+			sceneManager.getActiveScene()->Update();
 
-			sceneRenderer.renderShadowPass();
-			imguiLayer.beginFrame();
-			sceneRenderer.OnRenderSettingsChanged();
+			//imguiLayer.beginFrame();
 
-			sceneRenderer.RenderFrame(editorLayer.config);
+			RenderContext ctx;
+			ctx.scene = sceneManager.getActiveScene();
+			ctx.settings = &renderSettings;
+			ctx.camera = &camera;
 
-			editorLayer.OnImGuiRender();
+			renderPipeline.Render(ctx);
+
+			editorLayer.OnImGuiRender(renderPipeline.GetFinalImage());
 
 			assetManager.drawLoadingScreens();
 			assetManager.drawImportingScreens();
-			imguiLayer.endFrame();
+
+			//imguiLayer.endFrame();
 			window.swapBuffer();
 
 			

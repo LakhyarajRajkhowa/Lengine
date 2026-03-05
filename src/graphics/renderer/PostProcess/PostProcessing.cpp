@@ -9,24 +9,22 @@ void PostProcessing::initHDR(uint32_t w, uint32_t h) {
     height = h;
     fullscreenQuad.init();
 
-    initToneMappingResources();
-    initBloom();
 }
 
 
-void PostProcessing::initToneMappingResources() {
-	toneMapShader.compileShaders(
+void PostProcessing::InitToneMappingResources() {
+	hdrToneMappingShader.compileShaders(
 		Paths::Shaders + "hdrShader.vert",
-		Paths::Shaders + "hdrShader.frag"
+		Paths::Shaders + "hdrToneMapping.frag"
 	);
-	toneMapShader.linkShaders();
-    toneMapShader.use();
-    toneMapShader.setInt("hdrBuffer", 0);
-    toneMapShader.setInt("bloomBlur", 1);
+	hdrToneMappingShader.linkShaders();
+    hdrToneMappingShader.use();
+    hdrToneMappingShader.setInt("hdrBuffer", 0);
+    hdrToneMappingShader.unuse();
     
 }
 
-void PostProcessing::initBloom() {
+void PostProcessing::InitBloom() {
     pingpong.Create(width, height);
 
     blurShader.compileShaders(
@@ -37,18 +35,40 @@ void PostProcessing::initBloom() {
 
     blurShader.use();
     blurShader.setInt("image", 0);
+    blurShader.unuse();
+
+    hdrBloomShader.compileShaders(
+        Paths::Shaders + "hdrShader.vert",
+        Paths::Shaders + "hdrBloom.frag"
+    );
+    hdrBloomShader.linkShaders();
+
+    hdrBloomShader.use();
+    hdrBloomShader.setInt("hdrBuffer", 0);
+    hdrBloomShader.setInt("bloomBlur", 1);
+    hdrBloomShader.unuse();
 
 }
 
 void PostProcessing::renderToneMapping(const bool bloom, const float exposure) {
 
-    toneMapShader.use();
-    toneMapShader.setBool("bloom", bloom);
-    toneMapShader.setFloat("exposure", exposure);
+    hdrToneMappingShader.use();
+    hdrToneMappingShader.setFloat("exposure", exposure);
 
     fullscreenQuad.draw();
 
-    toneMapShader.unuse();
+    hdrToneMappingShader.unuse();
+
+
+}
+
+void PostProcessing::renderBloomShader() {
+
+    hdrBloomShader.use();
+
+    fullscreenQuad.draw();
+
+    hdrBloomShader.unuse();
 
 
 }

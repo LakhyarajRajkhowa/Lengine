@@ -31,35 +31,48 @@ using namespace Lengine;
             entity->setID(UUID());
         }
 
-        // Copy mesh renderer
+        UUID entityId = entity->getID();
+
+        // Copy Transforms
         if (Transforms().Has(originalEntityId)) {
             const TransformComponent& oldTrans = Transforms().Get(originalEntityId);
             TransformComponent newTrans = TransformComponent(oldTrans);
-            transforms.Add(entity->getID(), newTrans);
+            transforms.Add(entityId, newTrans);
+
+            // offset the position a bit
+            auto& t = Transforms().Get(entityId);
+            glm::vec3 offset = glm::vec3{ (t.GetWorldScale().x * 1.0f), 0.0f, (t.GetWorldScale().z * 1.0f), };
+
+            t.localPosition += offset;
+            t.localDirty = true;
+
+            TransformSystem::Dirty = true;
         }
 
-        // Copy mesh renderer
+        // Copy mesh filters
         if (MeshFilters().Has(originalEntityId)) {
             const MeshFilter& oldMf = MeshFilters().Get(originalEntityId);
             MeshFilter newMf = MeshFilter(oldMf);
-            meshFilters.Add(entity->getID(), newMf);
+            meshFilters.Add(entityId, newMf);
         }
 
-        // Copy mesh filter
+        // Copy mesh Renderer
         if (MeshRenderers().Has(originalEntityId)) {
             const MeshRenderer& oldMr = MeshRenderers().Get(originalEntityId);
             MeshRenderer newMr = MeshRenderer(oldMr);
-            meshRenderers.Add(entity->getID(), newMr);
+            meshRenderers.Add(entityId, newMr);
         }
 
+        // Copy light component
         if (Lights().Has(originalEntityId)) {
             const Light& oldLight = Lights().Get(originalEntityId);
             Light newLight = Light(oldLight);
-            lights.Add(entity->getID(), newLight);
+            lights.Add(entityId, newLight);
         }
        
 
         entities.push_back(std::move(entity));
+        rootEntities.push_back(entityId);
         return entities.back().get();
     }
 

@@ -15,6 +15,7 @@
 
 namespace Lengine {
 
+
    
     struct RenderFlags {
         bool entitySelected = false;
@@ -25,37 +26,29 @@ namespace Lengine {
     class ForwardRenderer : public IRenderer {
     public:
         ForwardRenderer(
-            Camera3d& cam,
             AssetManager& assetmgr
 
         ) :
-            camera(cam),
             assetManager(assetmgr)
         {
         }
 
         void Render(
-            Scene& scene,
-            const EditorConfig& editorConfig,
-            ShadowMap& shadowMap,
-            ShadowCubeMap& shadowCubeMap,
-            const GLTexture& irradianceMap
+            const RenderContext& ctx
         ) override
         {
-            RenderScene_pbr(scene, editorConfig, shadowMap, shadowCubeMap, irradianceMap);
+            
+            if (IRenderer::enableDebugView) RenderScene_debug(ctx);
+            else RenderScene_pbr(ctx);
         }
 
-        void RenderSceneDepthNormals(
-            Scene& activeScene,
-            const EditorConfig& editorConfig
-        );
-
+ 
        
     private:
-        Camera3d& camera;
         AssetManager& assetManager;
 
-
+        float nearPlane = 0.1f;
+        float farPlane = 1000.5f;
 
         ResolvedMaterial resolvePBRMaterial(
             const Material& baseMaterial,
@@ -65,12 +58,12 @@ namespace Lengine {
 
 
         void RenderScene_pbr(
-            Scene& activeScene,
-            const EditorConfig& editorConfig,
-            ShadowMap& shadowMap,
-            ShadowCubeMap& shadowCubeMap,
-            const GLTexture& irradianceMap
+            const RenderContext& ctx
 
+        );
+
+        void RenderScene_debug(
+            const RenderContext& ctx
         );
 
 
@@ -78,12 +71,12 @@ namespace Lengine {
         void bindShadowMapUniforms(
             GLSLProgram& shader,
             ShadowMap& shadowMap,
-            Light& mainDirectionalLight
+            const TransformComponent& lightTransform,
+            const glm::vec3& camPos
         );
         void bindPointShadowUniforms(
             GLSLProgram& shader,
-            ShadowCubeMap& shadowCubeMap,
-            Light& light
+            ShadowCubeMap& shadowCubeMap
         );
 
         void bindCameraUniforms(
@@ -137,6 +130,8 @@ namespace Lengine {
 
         GLSLProgram* defaultShader;
         GLSLProgram* lightSourceShader;
+
+
     };
 }
 

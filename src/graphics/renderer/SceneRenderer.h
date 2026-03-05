@@ -12,6 +12,7 @@
 #include "../resources/AssetManager.h"
 #include "../resources/fileLoader.h"
 
+#include "../graphics/renderer/RenderPipeline.h"
 
 
 namespace Lengine {
@@ -30,7 +31,7 @@ namespace Lengine {
 			camera(cam),
 			sceneManager(scnMgr),
 			assetManager(assetmgr),
-			forwardRenderer(cam, assetmgr),
+			forwardRenderer(assetmgr),
 			gizmoRenderer(gizmoRndr),
 			settings(sett),
 			renderSettings(rndrSett),
@@ -41,19 +42,18 @@ namespace Lengine {
 		{
 		}
 
-		void init();
+		void Init();
 		void preloadAssets();
 		void initScene();
 		void renderShadowPass();
 
 		void UpdateScene();
-		void RenderScene_phong(const EditorConfig& editorConfig);
+		void RenderScene(const RenderContext& ctx);
 		void endFrame();
 
 		ForwardRenderer forwardRenderer;
 
-
-		void RenderFrame(const EditorConfig& config);
+		void RenderFrame();
 		void OnRenderSettingsChanged();
 
 	private:
@@ -76,10 +76,10 @@ namespace Lengine {
 		ShadowCubeMap shadowCubeMap;
 	private:
 		// render paths
-		void renderLDR(const EditorConfig& config);
-		void renderMSAA_LDR(const EditorConfig& config);
-		void renderHDR(const EditorConfig& config);
-		void renderHDR_MSAA(const EditorConfig& config);
+		void renderLDR(const RenderContext& ctx);
+		void renderMSAA_LDR(const RenderContext& ctx);
+		void renderHDR(const RenderContext& ctx);
+		void renderHDR_MSAA(const RenderContext& ctx);
 
 		// helpers
 		void beginScenePass();

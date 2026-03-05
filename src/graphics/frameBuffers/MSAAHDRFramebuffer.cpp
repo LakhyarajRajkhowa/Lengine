@@ -6,7 +6,7 @@ namespace Lengine {
     MSAAHDRFramebuffer::MSAAHDRFramebuffer(const uint32_t width, const uint32_t height)
         : width(width), height(height)
     {
-        
+        Create();
     }
 
     MSAAHDRFramebuffer::~MSAAHDRFramebuffer() {
@@ -15,11 +15,12 @@ namespace Lengine {
 
     void MSAAHDRFramebuffer::Create() {
 
-        glGenFramebuffers(1, &FBO);
+
+        if(!FBO) glGenFramebuffers(1, &FBO);
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
         // Color attachment (multisampled)
-        glGenTextures(2, colorBuffers);
+        if(!colorBuffers[0] || !colorBuffers[1]) glGenTextures(2, colorBuffers);
         for (int i = 0; i < 2; i++) {
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, colorBuffers[i]);
             glTexImage2DMultisample(
@@ -44,7 +45,7 @@ namespace Lengine {
 
 
         // Depth + stencil
-        glGenRenderbuffers(1, &depthBuffer);
+        if(!depthBuffer) glGenRenderbuffers(1, &depthBuffer);
         glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
         glRenderbufferStorageMultisample(
             GL_RENDERBUFFER,

@@ -7,7 +7,9 @@ namespace Lengine {
 	class ShadowCubeMap {
 	public:
 		ShadowCubeMap() = default;
-		ShadowCubeMap(unsigned int shadowRes) : SHADOW_RES(shadowRes) {}
+		ShadowCubeMap(unsigned int shadowRes) : SHADOW_RES(shadowRes) {
+			init();
+		}
 		void init();
 		void updateTransforms(const glm::vec3& lightPos);
 		const glm::mat4& getShadowProj() { return shadowProj; }
@@ -16,12 +18,16 @@ namespace Lengine {
 		const float& getFarPlane() { return farPlane; }
 
 		void renderDepthCubeMap(
-			std::vector<std::unique_ptr<Entity>>& entities,
-			MeshRendererStorage& mrs,
-			Light& light,
-			AssetManager& assetManager);
+			const std::vector<std::unique_ptr<Entity>>& entities,
+			const TransformStorage& trs,
+			const MeshFilterStorage& mfs,
+			const UUID& mainPointLight,
+			AssetManager& assetManager
+		);
 
 	private:
+
+
 		GLuint depthCubeMap = 0;
 		GLuint depthMapFBO = 0;
 		GLSLProgram depthCubeMapShader;
@@ -33,6 +39,6 @@ namespace Lengine {
 		glm::mat4 shadowProj;
 		std::vector<glm::mat4> shadowTransforms;
 
-
+		UUID prevLight = UUID::Null;
 	};
 }

@@ -2,6 +2,10 @@
 
 using namespace Lengine;
 
+void AssetManager::Init() {
+    AssetDatabase::LoadDatabase();
+    LoadAllDefaultAssets();
+}
 
 void AssetManager::LoadAllDefaultAssets() {
 
@@ -29,6 +33,7 @@ void AssetManager::Update(Scene& activeScene) {
   //  UpdateAssetStates();
     SyncAssetsToScene(activeScene);
     ProcessGpuUploads();
+
 
 }
 
@@ -688,6 +693,7 @@ bool AssetManager::processPendingTextures(const UUID& uuid)
     GLTexture* tex = getTexture(uuid);
     if (!tex || !tex->pendingGPUUpload || !tex->imageCPU)
         return false;
+
 
     GLenum format;
     switch (tex->imageCPU->channels)

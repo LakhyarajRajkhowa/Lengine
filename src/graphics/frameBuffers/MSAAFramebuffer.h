@@ -16,7 +16,7 @@ namespace Lengine {
         void Unbind();
 
         void Resize(const uint32_t width, const uint32_t height);
-        void ResolveTo(const Framebuffer& target);
+        void ResolveTo(const LDRFramebuffer& target);
 
         void SetMSAASamples(const uint32_t s) { samples = s; }
 
@@ -25,7 +25,7 @@ namespace Lengine {
 
     private:
         uint32_t width = 0, height = 0;
-        uint32_t samples = 0;
+        uint32_t samples = 4;
 
         GLuint FBO = 0;
         GLuint colorBuffer = 0;

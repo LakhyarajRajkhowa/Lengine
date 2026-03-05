@@ -91,6 +91,15 @@ namespace Lengine {
 
         static inline std::string pbrVertexShaderPath = Vert("pbr");
         static inline std::string pbrFragmentShaderPath = Frag("pbr");
+
+        static inline std::string debugVertexShaderPath = Vert("debug");
+        static inline std::string debugFragmentShaderPath = Frag("debug");
+
+        static inline std::string outlineShaderVertexShaderPath = Vert("outlineShader");
+        static inline std::string outlineShaderFragmentShaderPath = Frag("outlineShader");
+
+        static inline std::string gizmoGridShaderVertexShaderPath = Vert("grid");
+        static inline std::string gizmoGridShaderFragmentShaderPath = Frag("grid");
     };
 
 

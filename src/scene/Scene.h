@@ -44,7 +44,49 @@ namespace Lengine {
             return rootEntities;
         }
 
+        const UUID& GetMainDirectionalLight() {
+            Light light;
+            bool hasDirectionalLight = false;
 
+            for (auto& l : lights.GetAll()) {
+                if (l.second.type == LightType::Directional) {
+                    light.id = l.first;
+                    light.outerAngle = l.second.outerAngle;
+                    hasDirectionalLight = true;
+                    break;
+                }
+            }
+            if (!hasDirectionalLight) return UUID::Null;
+
+            if (!transforms.Has(light.id)) return UUID::Null;
+
+
+
+            return light.id;
+        }
+
+        UUID GetMainDirectionalLight() const {
+            Light light;
+            bool hasDirectionalLight = false;
+
+            for (auto& l : lights.GetAll()) {
+                if (l.second.type == LightType::Directional) {
+                    light.id = l.first;
+                    light.outerAngle = l.second.outerAngle;
+                    hasDirectionalLight = true;
+
+
+                    break;
+                }
+            }
+
+            if (!hasDirectionalLight) return UUID::Null;
+
+            if (!transforms.Has(light.id)) return UUID::Null;
+
+
+            return light.id;
+        }
 
 
  

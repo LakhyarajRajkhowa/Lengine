@@ -731,7 +731,7 @@ bool AssetImporter::ImportTextureFile(const fs::path& externalPath, const UUID& 
         fs::create_directories(assetDir);
 
         // Final  path
-        fs::path destPath = assetDir / externalPath.filename();
+       destPath = assetDir / externalPath.filename();
 
 
         // Copy main  file
@@ -941,11 +941,9 @@ void TextureImporter::Import(const fs::path& assetPath, UUID fileID)
     if (fs::exists(libPath))
     {
         // Optional: log or early out
-        std::cout << "Texture already exists in library: "
+        std::cout << "Texture already exists in Library: "
             << libPath << "\n";
 
-        // You may still want to register metadata if missing
-        // or simply return
         return;
     }
 

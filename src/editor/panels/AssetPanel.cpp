@@ -111,12 +111,12 @@ void AssetPanel::OpenImportMeshDialog(std::string folderPath)
 }
 void AssetPanel::OpenImportTextureDialog(const UUID& id)
 {
-    const char* filters[3] = { "*.png", "*.jpeg", "*.jpg"};
+    const char* filters[4] = { "*.png", "*.jpeg", "*.jpg", "*.tga"};
 
     const char* filePath = tinyfd_openFileDialog(
         "Import Texture",
         "",
-        3,
+        4,
         filters,
         "Texture Files",
         0

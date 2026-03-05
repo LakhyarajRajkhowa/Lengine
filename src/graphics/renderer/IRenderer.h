@@ -6,22 +6,41 @@
 
 namespace Lengine {
 
+    struct RenderContext {
+        Scene* scene;
+        Camera3d* camera;
 
-    
+        ShadowMap* shadowMap;
+        ShadowCubeMap* shadowCubeMap;
+
+        GLTexture irradianceMap;
+        GLTexture prefilterMap;
+        GLTexture brdfLUTMap;
+
+        RenderSettings* settings;
+    };
+
+    enum class DebugView : int {
+        Geometry = 0,   
+        Albedo = 1,
+        Normal = 2,
+        Depth = 3
+    };
+
    
-
-
     class IRenderer {
     public:
+        static bool enableDebugView;
+        static DebugView debugViewMode;
         virtual ~IRenderer() = default;
 
         virtual void Render(
-            Scene& scene,
-            const EditorConfig& editorConfig,
-            ShadowMap& shadowMap,
-            ShadowCubeMap& shadowCubeMap,
-            const GLTexture& irradianceMap
+            const RenderContext& ctx
         ) = 0;
+
+
+    private:
+       
     };
     
 }

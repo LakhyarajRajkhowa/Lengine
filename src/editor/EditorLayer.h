@@ -49,7 +49,7 @@ namespace Lengine {
         ~EditorLayer() = default;
 
         void OnAttach();
-        void OnImGuiRender();  
+        void OnImGuiRender(const uint32_t& finalImage);
         void OnDetach();
 
         // Access viewport panel (camera, input needs this)

@@ -49,6 +49,7 @@ namespace Lengine {
         glm::vec3 front;
         glm::vec3 up;
         glm::mat4 projectionMatrix;
+        glm::mat4 viewMatrix;
         float yaw, pitch;
         float fov;
         float aspectRatio;

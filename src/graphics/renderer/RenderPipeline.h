@@ -1,0 +1,341 @@
+#pragma once
+
+#include "../graphics/renderer/PostProcess/PostProcessing.h"
+#include "../graphics/geometry/HDREnvironment.h"
+#include "../graphics/frameBuffers/FrameBuffer.h"
+#include "../graphics/frameBuffers/HDRFramebuffer.h"
+#include "../graphics/frameBuffers/MSAAFramebuffer.h"
+#include "../graphics/frameBuffers/MSAAHDRFramebuffer.h"
+#include "../graphics/renderer/ForwardRenderer.h"
+
+
+namespace Lengine {
+
+
+    class RenderPass
+    {
+    public:
+        virtual ~RenderPass() = default;
+        virtual void Execute(RenderContext& ctx) = 0;
+    };
+
+    class ShadowPass : public RenderPass
+    {
+    public:
+        ShadowPass(ShadowCubeMap& shadowcube_ , ShadowMap& shadow_, AssetManager& asset_) :
+            shadowCubemap(shadowcube_),
+            shadowMap(shadow_),
+            assetManager(asset_) 
+        {
+        }
+            
+        void Execute(RenderContext& ctx) override
+        {
+
+            glCullFace(GL_FRONT);
+            shadowMap.renderDepthMap(
+                ctx.scene->getEntities(),
+                ctx.scene->Transforms(),
+                ctx.scene->MeshFilters(),
+                ctx.scene->Lights().GetDirectionalShadowCasteer(),
+                assetManager,
+                *ctx.camera
+            );
+            glCullFace(GL_BACK);
+
+            shadowCubemap.renderDepthCubeMap(
+                ctx.scene->getEntities(),
+                ctx.scene->Transforms(),
+                ctx.scene->MeshFilters(),
+                ctx.scene->Lights().GetPointShadowCasteer(),
+                assetManager
+            );
+
+            glViewport(
+                0, 0,
+                ctx.settings->resolution_X,
+                ctx.settings->resolution_Y
+            );
+           
+        }
+    private:
+        ShadowCubeMap& shadowCubemap;
+        ShadowMap& shadowMap;
+        AssetManager& assetManager;
+    };
+
+    class ForwardPass : public RenderPass
+    {
+    public:
+        ForwardPass(ForwardRenderer& renderer,
+            Framebuffer& target)
+            : renderer(renderer), target(target) {
+        }
+
+        void Execute(RenderContext& ctx) override
+        {
+            target.Bind();
+            glClearColor(0, 0, 0, 1);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            renderer.Render(ctx);
+
+            target.Unbind();
+        }
+
+    private:
+        ForwardRenderer& renderer;
+        Framebuffer& target;
+    };
+
+    class ResolvePass : public RenderPass
+    {
+    public:
+        ResolvePass(Framebuffer& src, Framebuffer& dst)
+            : source(src), destination(dst) {
+        }
+
+        void Execute(RenderContext& ctx) override
+        {
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, source.GetID());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, destination.GetID());
+
+            glBlitFramebuffer(
+                0, 0, source.GetWidth(), source.GetHeight(),
+                0, 0, destination.GetWidth(), destination.GetHeight(),
+                GL_COLOR_BUFFER_BIT,
+                GL_NEAREST
+            );
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+    private:
+        Framebuffer& source;
+        Framebuffer& destination;
+    };
+
+
+    class ToneMapPass : public RenderPass
+    {
+    public:
+        ToneMapPass(
+            PostProcessing& postProcess_,
+            Framebuffer& mainBuffer,
+            Framebuffer& hdrBuffer_
+            ) : 
+            postProcess(postProcess_),
+            mainBuffer(mainBuffer),
+            hdrBuffer(hdrBuffer_)       
+        {
+            //postProcess.InitToneMappingResources();
+
+        }
+        void Execute(RenderContext& ctx) override
+        {
+            mainBuffer.Bind();
+
+            glActiveTexture(GL_TEXTURE0 + 0);
+            glBindTexture(GL_TEXTURE_2D, hdrBuffer.GetColorAttachment(0));
+
+            glClearColor(0,0,0,1);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            postProcess.renderToneMapping(ctx.settings->enableBloom, ctx.settings->exposure);
+
+            mainBuffer.Unbind();
+        }
+    private:
+        PostProcessing& postProcess;
+        Framebuffer& mainBuffer;
+        Framebuffer& hdrBuffer;
+    };
+
+    class BloomPass : public RenderPass
+    {
+    public:
+        BloomPass(PostProcessing& postProcess_, Framebuffer& ldrBuffer_, Framebuffer& hdrBuffer_) : 
+            postProcess(postProcess_),
+            mainBuffer(ldrBuffer_),
+            hdrBuffer(hdrBuffer_)
+        {
+            //postProcess.InitBloom();
+        }
+        void Execute(RenderContext& ctx) override
+        {
+            postProcess.renderBloom(hdrBuffer.GetColorAttachment(1), ctx.settings->bloomBlur);
+
+            mainBuffer.Bind();
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, hdrBuffer.GetColorAttachment(0));
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, postProcess.getBloomColorBuffer());
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            postProcess.renderBloomShader();
+
+            mainBuffer.Unbind();
+
+        }
+    private:
+        PostProcessing& postProcess;
+        Framebuffer& mainBuffer;
+        Framebuffer& hdrBuffer;
+    };
+
+    class SkyboxPass : public RenderPass
+    {
+    public:
+        SkyboxPass(Framebuffer& target_, HDREnvironment& hdrSykybox_, std::string texPath_, uint32_t texRes_) :
+            target(target_),
+            hdrSkybox(hdrSykybox_)
+        {
+
+        }
+        void Execute(RenderContext& ctx) override
+        {
+            target.Bind();
+            hdrSkybox.Render(ctx.camera->getViewMatrix(), ctx.camera->getProjectionMatrix());
+            target.Unbind();
+        }
+    private:
+        Framebuffer& target;
+        HDREnvironment& hdrSkybox;
+
+    };
+
+    class GizmoPass : public RenderPass
+    {
+    public:
+        GizmoPass(GizmoRenderer& gizmos_, Framebuffer& target_) :
+            gizmos(gizmos_),
+            target(target_)
+        {
+            gizmos.InitGizmo();
+        }
+        void Execute(RenderContext& ctx) override
+        {
+            target.Bind();
+
+            glDisable(GL_CULL_FACE);
+
+
+            gizmos.drawGizmoGrid(ctx.camera);
+
+
+            glEnable(GL_CULL_FACE);
+
+            target.Unbind();
+        }
+
+    private:
+        GizmoRenderer& gizmos;
+        Framebuffer& target;
+
+    };
+
+
+    class RenderGraph
+    {
+    public:
+        RenderGraph() = default;
+        ~RenderGraph() = default;
+
+        void AddPass(std::unique_ptr<RenderPass> pass)
+        {
+            passes.push_back(std::move(pass));
+        }
+
+        void Clear()
+        {
+            passes.clear();
+        }
+
+        void Execute(RenderContext& context)
+        {
+            for (auto& pass : passes)
+            {
+                pass->Execute(context);
+            }
+        }
+
+    private:
+        std::vector<std::unique_ptr<RenderPass>> passes;
+    };
+
+
+    class RenderPipeline
+    {
+    public:
+        RenderPipeline(AssetManager& assetManager_) :
+            assetManager(assetManager_), 
+            forwardRenderer(assetManager_),
+            gizmoRenderer(assetManager_),
+            shadowMap(1024),
+            shadowCubemap(1024)
+        {}
+        // -------- Lifecycle --------
+        void Init();
+        void Resize(uint32_t width, uint32_t height);
+
+        // -------- Frame --------
+        void Render(RenderContext& ctx);
+
+        // -------- Settings --------
+        void SetRenderSettings(const RenderSettings& settings);
+        RenderSettings& GetRenderSettings();
+
+        // -------- Output --------
+        uint32_t RenderPipeline::GetFinalImage() const
+        {
+            return mainFramebuffer->GetColorAttachment(0);
+        }
+
+    private:
+
+        // =============================
+        // Systems (owned here)
+        // =============================
+        AssetManager& assetManager;
+
+        ForwardRenderer forwardRenderer;
+        PostProcessing postProcess;
+        HDREnvironment hdrSkybox;
+        GizmoRenderer gizmoRenderer; // for now, this has nothing to do with editor gizmo
+        
+        ShadowMap shadowMap;
+        ShadowCubeMap shadowCubemap;
+
+        // =============================
+        // Render Targets
+        // =============================
+
+        std::unique_ptr<Framebuffer> mainFramebuffer;
+        std::unique_ptr<Framebuffer> hdrFramebuffer;
+        std::unique_ptr<Framebuffer> msaaFramebuffer;
+
+
+        // =============================
+        // Render Graph
+        // =============================
+
+        RenderGraph renderGraph;
+
+        void BuildGraph();
+        void RecreateFramebuffers();
+        void PostProcess();
+
+        // =============================
+        // Internal State
+        // =============================
+
+        RenderSettings renderSettings;
+
+        uint32_t viewportWidth = 1280;
+        uint32_t viewportHeight = 720;
+    };
+
+}
+
