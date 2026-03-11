@@ -6,14 +6,13 @@ namespace Lengine {
 	InputManager::InputManager() : _mouseCoords(0, 0) {}
 	InputManager::~InputManager() {}
 
-	void InputManager::Update() {
-		for (auto& it : _keyMap) {
+	void InputManager::Update()
+	{
+		for (auto& it : _keyMap)
 			_previousKeyMap[it.first] = it.second;
-		}
 
-		for (auto& it : _mouseButtonMap) {
+		for (auto& it : _mouseButtonMap)
 			_previousMouseButtonMap[it.first] = it.second;
-		}
 
 	}
 
@@ -97,5 +96,30 @@ namespace Lengine {
 		scrollY = 0;
 	}
 
+	void InputManager::processEvent(const SDL_Event& event)
+	{
+		switch (event.type)
+		{
+		case SDL_KEYDOWN:
+			pressKey(event.key.keysym.sym);
+			break;
+
+		case SDL_KEYUP:
+			releaseKey(event.key.keysym.sym);
+			break;
+
+		case SDL_MOUSEBUTTONDOWN:
+			pressButton(event.button.button);
+			break;
+
+		case SDL_MOUSEBUTTONUP:
+			releaseButton(event.button.button);
+			break;
+
+		case SDL_MOUSEWHEEL:
+			setScroll(event.wheel.x, event.wheel.y);
+			break;
+		}
+	}
 }
 

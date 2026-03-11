@@ -134,7 +134,7 @@ void ForwardRenderer::bindShadowMapUniforms(
         );
 
     
-    glm::vec3 lightDir = glm::normalize(lightTransform.localRotation);
+    glm::vec3 lightDir = glm::normalize(lightTransform.localRotation * glm::vec3(0.0f, -1.0f, 0.0f));
 
     glm::vec3 center = camPos;  // anchor to camera
 
@@ -297,9 +297,7 @@ void ForwardRenderer::RenderScene_pbr(
 
         // ---------------- Direction ----------------
         // Used by directional & spot
-        glm::vec3 direction = glm::normalize(
-            t.localRotation
-        );
+        glm::vec3 direction = glm::normalize(t.localRotation * glm::vec3(0.0f, -1.0f, 0.0f));
 
         pbrShader->setVec3(
             "lightDirections[" + std::to_string(lightNum) + "]",

@@ -115,7 +115,7 @@ void HDREnvironment::Render(const glm::mat4& view, const glm::mat4& projection)
     renderCube();
 
     backgroundShader.unuse();
-
+    glDepthFunc(GL_LESS);
 }
 
 

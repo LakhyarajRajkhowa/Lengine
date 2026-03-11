@@ -67,7 +67,6 @@ namespace Lengine {
         );
 
 
-
         void bindShadowMapUniforms(
             GLSLProgram& shader,
             ShadowMap& shadowMap,
@@ -84,12 +83,7 @@ namespace Lengine {
             const glm::mat4& model,
             Camera3d& camera
         );
-        void bindLightUniforms(
-            GLSLProgram& shader,
-            const Light& light,
-            const glm::vec3& sceneAmbient,
-            int index
-        );
+
 
         void bindPBRLights(
             GLSLProgram& shader,

@@ -60,11 +60,14 @@ void SceneHierarchyPanel::OnImGuiRender() {
             // Highlight active scene
             ImGuiTreeNodeFlags flags =
                 (scene == activeScene ? ImGuiTreeNodeFlags_DefaultOpen : 0);
+
             bool sceneOpen = ImGui::TreeNodeEx(
                 scene->getName().c_str(),
                 flags | ImGuiTreeNodeFlags_OpenOnArrow
             );
+
             static bool openModelPopup = false;
+
             // --- RIGHT CLICK MENU FOR SCENE ---
             if (ImGui::BeginPopupContextItem(scene->getName().c_str()))
             {
@@ -131,7 +134,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
                     if (scene == activeScene)
                         DrawEntityNode(scene, entity, activeScene);
                     else
-                        ImGui::Text("%s", entity->getName().c_str());
+                        ImGui::Text("%s", scene->NameTags().Get(entity->getID()).name.c_str());
                 }
 
 
@@ -172,7 +175,7 @@ void SceneHierarchyPanel::DrawEntityNode(Scene* scene, Entity* entity, Scene* ac
     ImGui::PushID(entity->getID());
 
     bool opened = ImGui::TreeNodeEx(
-        entity->getName().c_str(),
+        scene->NameTags().Get(entity->getID()).name.c_str(),
         flags
     );
 
@@ -188,7 +191,7 @@ void SceneHierarchyPanel::DrawEntityNode(Scene* scene, Entity* entity, Scene* ac
     {
         if (ImGui::MenuItem("Create Copy"))
         {
-            Entity* clone = entity->Clone();
+            Entity* clone = new Entity(UUID());
             createdEntityQueue.push({ clone, entity->getID() });
         }
 

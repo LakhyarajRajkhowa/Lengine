@@ -5,40 +5,43 @@
 
 namespace Lengine {
 
-    class LDRFramebuffer {
-    public:
-        LDRFramebuffer(const uint32_t w, const uint32_t h);
-        ~LDRFramebuffer();
+    static GLenum GetFormatFromInternal(GLenum internalFormat)
+    {
+        switch (internalFormat)
+        {
+        case GL_RGBA8:
+        case GL_RGBA16F:
+            return GL_RGBA;
 
-        void Create();
-        void Destroy();
+        case GL_RGB8:
+        case GL_RGB16F:
+            return GL_RGB;
 
-        void Bind();
-        void Unbind();
+        case GL_R32F:
+            return GL_RED;
 
-        void Resize(const uint32_t width, const uint32_t height);
+        default:
+            return GL_RGBA;
+        }
+    }
 
-        GLuint GetColorBuffer() const { return colorBuffer; }
-        GLuint GetID() const { return FBO; }
+    static GLenum GetTypeFromInternal(GLenum internalFormat)
+    {
+        switch (internalFormat)
+        {
+        case GL_RGBA8:
+        case GL_RGB8:
+            return GL_UNSIGNED_BYTE;
 
-        uint32_t GetWidth() const { return width; }
-        uint32_t GetHeight() const { return height; }
+        case GL_RGBA16F:
+        case GL_RGB16F:
+        case GL_R32F:
+            return GL_FLOAT;
 
-        void UseTexture(const GLuint texture, const GLuint slot);
-
-    private:
-       
-
-    private:
-        GLuint FBO = 0;
-        GLuint colorBuffer = 0;
-        GLuint depthBuffer = 0;
-
-        uint32_t width = 0;
-        uint32_t height = 0;
-    };
-
-
+        default:
+            return GL_UNSIGNED_BYTE;
+        }
+    }
 
     struct FramebufferSpecification
     {
@@ -46,7 +49,7 @@ namespace Lengine {
         uint32_t height = 720;
 
         uint32_t samples = 1;            // 1 = no MSAA
-        GLenum   colorFormat = GL_RGBA8; // GL_RGBA8 or GL_RGBA16F
+        std::vector<GLenum> colorFormats = { GL_RGBA8 }; // GL_RGBA8 or GL_RGBA16F
 
         uint32_t colorAttachmentCount = 1;
         bool     useDepth = true;
@@ -66,6 +69,7 @@ namespace Lengine {
 
         uint32_t GetID() const { return m_FBO; }
         uint32_t GetColorAttachment(uint32_t index = 0) const;
+        uint32_t GetDepthAttachment() const;
         uint32_t GetWidth() const { return m_Spec.width; }
         uint32_t GetHeight() const { return m_Spec.height; }
         uint32_t GetSamples() const { return m_Spec.samples; }

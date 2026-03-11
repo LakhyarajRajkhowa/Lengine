@@ -6,12 +6,18 @@ namespace Lengine {
     }
     Camera3d::~Camera3d() {}
 
-    void Camera3d::init(const uint32_t width, const uint32_t height, InputManager* inputManager, glm::vec3 cameraPos, float FOV) {
+    void Camera3d::init(
+        InputManager* inputManager,
+        const uint32_t width,
+        const uint32_t height,
+        glm::vec3 cameraPos,
+        float FOV
+    ) {
         position = cameraPos;
         yaw = -90.0f;
         pitch = 0.0f;
         nearPlane = 0.50f;
-        farPlane = 1000.0f;
+        farPlane = 100000000.0f;
         up = glm::vec3(0.0f, 1.0f, 0.0f);
 
         fov = FOV;
@@ -111,67 +117,59 @@ namespace Lengine {
       
     }
 
-    void Camera3d::controlMovement(const float& speed) {
-        for (SDL_Keycode key : { SDLK_w, SDLK_s, SDLK_a, SDLK_d, SDLK_SPACE, SDLK_LSHIFT,SDLK_ESCAPE}) {
-            
-            if (controlMode == CameraControlMode::first) {
-                if (_inputManager->isKeyDown(key)) {
-                    switch (key) {
+    void Camera3d::controlMovement(const float& speed)
+    {
+        glm::vec3 right = glm::normalize(glm::cross(front, up));
 
-                    case SDLK_w:
-                        position += glm::normalize(front) * speed;
-                        break;
-                    case SDLK_s:
-                        position -= glm::normalize(front) * speed;
-                        break;
-                    case SDLK_a:
-                        position -= glm::normalize(glm::cross(front, up)) * speed;
-                        break;
-                    case SDLK_d:
-                        position += glm::normalize(glm::cross(front, up)) * speed;
-                        break;
-                    case SDLK_SPACE:
-                        position += glm::normalize(up) * speed;
-                        break;
-                    case SDLK_LSHIFT:
-                        position -= glm::normalize(up) * speed;
-                        break;
-               
-                    }
-                }
-            }
+        if (controlMode == CameraControlMode::first)
+        {
+            if (_inputManager->isKeyDown(SDLK_w))
+                position += glm::normalize(front) * speed;
 
-            else if (controlMode == CameraControlMode::second) {
-                if (_inputManager->isKeyDown(key) && _inputManager->isMouseButtonDown(SDL_BUTTON_RIGHT)) {
-                    switch (key) {
+            if (_inputManager->isKeyDown(SDLK_s))
+                position -= glm::normalize(front) * speed;
 
-                    case SDLK_w:
-                        position += glm::normalize(front) * speed;
-                        break;
-                    case SDLK_s:
-                        position -= glm::normalize(front) * speed;
-                        break;
-                    case SDLK_a:
-                        position -= glm::normalize(glm::cross(front, up)) * speed;
-                        break;
-                    case SDLK_d:
-                        position += glm::normalize(glm::cross(front, up)) * speed;
-                        break;
-                    case SDLK_SPACE:
-                        position += glm::normalize(up) * speed;
-                        break;
-                    case SDLK_LSHIFT:
-                        position -= glm::normalize(up) * speed;
-                        break;
+            if (_inputManager->isKeyDown(SDLK_a))
+                position -= right * speed;
 
-                    }
-                }
-            }
+            if (_inputManager->isKeyDown(SDLK_d))
+                position += right * speed;
 
-            if (_inputManager->isKeyPressed(SDLK_ESCAPE))
-                isFixed = !isFixed;
+            if (_inputManager->isKeyDown(SDLK_SPACE))
+                position += glm::normalize(up) * speed;
+
+            if (_inputManager->isKeyDown(SDLK_LSHIFT))
+                position -= glm::normalize(up) * speed;
         }
 
+        else if (controlMode == CameraControlMode::second)
+        {
+            if (_inputManager->isMouseButtonDown(SDL_BUTTON_RIGHT))
+            {
+                if (_inputManager->isKeyDown(SDLK_w))
+                    position += glm::normalize(front) * speed;
+
+                if (_inputManager->isKeyDown(SDLK_s))
+                    position -= glm::normalize(front) * speed;
+
+                if (_inputManager->isKeyDown(SDLK_a))
+                    position -= right * speed;
+
+                if (_inputManager->isKeyDown(SDLK_d))
+                    position += right * speed;
+
+                if (_inputManager->isKeyDown(SDLK_SPACE))
+                    position += glm::normalize(up) * speed;
+
+                if (_inputManager->isKeyDown(SDLK_LSHIFT))
+                    position -= glm::normalize(up) * speed;
+            }
+        }
+
+        if (_inputManager->isKeyPressed(SDLK_ESCAPE))
+        {
+            isFixed = !isFixed;
+        }
     }
 
     glm::vec3 Camera3d::getForward() const {

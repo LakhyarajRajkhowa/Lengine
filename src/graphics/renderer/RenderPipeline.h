@@ -3,9 +3,6 @@
 #include "../graphics/renderer/PostProcess/PostProcessing.h"
 #include "../graphics/geometry/HDREnvironment.h"
 #include "../graphics/frameBuffers/FrameBuffer.h"
-#include "../graphics/frameBuffers/HDRFramebuffer.h"
-#include "../graphics/frameBuffers/MSAAFramebuffer.h"
-#include "../graphics/frameBuffers/MSAAHDRFramebuffer.h"
 #include "../graphics/renderer/ForwardRenderer.h"
 
 
@@ -99,10 +96,11 @@ namespace Lengine {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, source.GetID());
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, destination.GetID());
 
+           
             glBlitFramebuffer(
                 0, 0, source.GetWidth(), source.GetHeight(),
                 0, 0, destination.GetWidth(), destination.GetHeight(),
-                GL_COLOR_BUFFER_BIT,
+                GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
                 GL_NEAREST
             );
 
@@ -137,12 +135,32 @@ namespace Lengine {
             glActiveTexture(GL_TEXTURE0 + 0);
             glBindTexture(GL_TEXTURE_2D, hdrBuffer.GetColorAttachment(0));
 
-            glClearColor(0,0,0,1);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
 
             postProcess.renderToneMapping(ctx.settings->enableBloom, ctx.settings->exposure);
 
+            glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);   
             mainBuffer.Unbind();
+
+            // this prevents from depth data loss 
+            // which is needed for editor overlays
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, hdrBuffer.GetID());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mainBuffer.GetID());
+
+            glBlitFramebuffer(
+                0, 0, ctx.settings->resolution_X, ctx.settings->resolution_Y,
+                0, 0, ctx.settings->resolution_X, ctx.settings->resolution_Y,
+                GL_DEPTH_BUFFER_BIT,
+                GL_NEAREST
+            );
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
         }
     private:
         PostProcessing& postProcess;
@@ -172,7 +190,7 @@ namespace Lengine {
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, postProcess.getBloomColorBuffer());
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT);
 
             postProcess.renderBloomShader();
 
@@ -206,35 +224,7 @@ namespace Lengine {
 
     };
 
-    class GizmoPass : public RenderPass
-    {
-    public:
-        GizmoPass(GizmoRenderer& gizmos_, Framebuffer& target_) :
-            gizmos(gizmos_),
-            target(target_)
-        {
-            gizmos.InitGizmo();
-        }
-        void Execute(RenderContext& ctx) override
-        {
-            target.Bind();
-
-            glDisable(GL_CULL_FACE);
-
-
-            gizmos.drawGizmoGrid(ctx.camera);
-
-
-            glEnable(GL_CULL_FACE);
-
-            target.Unbind();
-        }
-
-    private:
-        GizmoRenderer& gizmos;
-        Framebuffer& target;
-
-    };
+   
 
 
     class RenderGraph
@@ -272,7 +262,6 @@ namespace Lengine {
         RenderPipeline(AssetManager& assetManager_) :
             assetManager(assetManager_), 
             forwardRenderer(assetManager_),
-            gizmoRenderer(assetManager_),
             shadowMap(1024),
             shadowCubemap(1024)
         {}
@@ -282,7 +271,8 @@ namespace Lengine {
 
         // -------- Frame --------
         void Render(RenderContext& ctx);
-
+        Framebuffer& GetFinalFramebuffer();
+       
         // -------- Settings --------
         void SetRenderSettings(const RenderSettings& settings);
         RenderSettings& GetRenderSettings();
@@ -303,7 +293,6 @@ namespace Lengine {
         ForwardRenderer forwardRenderer;
         PostProcessing postProcess;
         HDREnvironment hdrSkybox;
-        GizmoRenderer gizmoRenderer; // for now, this has nothing to do with editor gizmo
         
         ShadowMap shadowMap;
         ShadowCubeMap shadowCubemap;

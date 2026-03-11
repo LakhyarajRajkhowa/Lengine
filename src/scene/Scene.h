@@ -8,6 +8,7 @@
 #include "../scene/components/LightStorage.h"
 #include "../scene/components/TransformStorage.h"
 #include "../scene/components/HierarchyStorage.h"
+#include "../scene/components/NameTagComponentStorage.h"
 
 #include "../scene/TransformSystem.h"
 #include "../assets/MaterialRegistry.h"
@@ -26,10 +27,7 @@ namespace Lengine {
         );
 
         Entity* addEntity(std::unique_ptr<Entity> entity, const UUID originalEntityId);
-        
-        const  Entity* getEntityByName(const std::string& name) const;
-        Entity* getEntityByName(const std::string& name) ;
-
+       
         const  Entity* getEntityByID(const UUID& id) const;
         Entity* getEntityByID(const UUID& UUID);
 
@@ -147,6 +145,14 @@ namespace Lengine {
             return hierarchys;
         }
 
+        const NameTagComponentStorage& NameTags() const {
+            return nameTags;
+        }
+
+        NameTagComponentStorage& NameTags() {
+            return nameTags;
+        }
+
         void UpdateWorldTransformRecursive(
             UUID entityID,
             const glm::mat4& parentWorld,
@@ -156,6 +162,7 @@ namespace Lengine {
 
         void Update();
 
+        std::string GenerateDuplicateName(Scene* scene, const std::string& baseName);
 
     private:
         std::string name;
@@ -169,7 +176,7 @@ namespace Lengine {
         LightStorage lights;
         TransformStorage transforms;
         HierarchyStorage hierarchys;
-
+        NameTagComponentStorage nameTags;
 
 
     };

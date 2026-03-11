@@ -10,7 +10,9 @@ using namespace Lengine;
         const std::string& name,
         UUID entityID
     ) {
-        auto entity = std::make_unique<Entity>(entityID, name);
+        auto entity = std::make_unique<Entity>(entityID);
+        nameTags.Add(entityID, NameTagComponent(name));
+
         Entity* entityPtr = entity.get();
 
         entities.push_back(std::move(entity));
@@ -69,6 +71,15 @@ using namespace Lengine;
             Light newLight = Light(oldLight);
             lights.Add(entityId, newLight);
         }
+
+        if (NameTags().Has(originalEntityId))
+        {
+            auto& tag = NameTags().Get(originalEntityId);
+
+            std::string newName = GenerateDuplicateName(this, tag.name);
+
+            NameTags().Add(entityId, NameTagComponent(newName));
+        }
        
 
         entities.push_back(std::move(entity));
@@ -76,10 +87,11 @@ using namespace Lengine;
         return entities.back().get();
     }
 
+   
 
     void Scene::RemoveEntity(const UUID id)
     {
-        // 1️⃣ Remove from hierarchy first (important)
+        // Remove from hierarchy first (important)
         if (hierarchys.Has(id))
         {
             auto& h = hierarchys.Get(id);
@@ -109,13 +121,13 @@ using namespace Lengine;
             hierarchys.Remove(id);
         }
 
-        // 2️⃣ Remove from rootEntities
+        // Remove from rootEntities
         rootEntities.erase(
             std::remove(rootEntities.begin(), rootEntities.end(), id),
             rootEntities.end()
         );
 
-        // 3️⃣ Remove entity object
+        // Remove entity object
         entities.erase(
             std::remove_if(
                 entities.begin(),
@@ -128,11 +140,12 @@ using namespace Lengine;
             entities.end()
         );
 
-        // 4️⃣ Remove components
+        // 4Remove components
         if (transforms.Has(id))     transforms.Remove(id);
         if (meshFilters.Has(id))    meshFilters.Remove(id);
         if (meshRenderers.Has(id))  meshRenderers.Remove(id);
         if (lights.Has(id))         lights.Remove(id);
+        if (nameTags.Has(id))       nameTags.Remove(id);
     }
 
     void Scene::RemoveEntityRecursive(UUID id)
@@ -148,24 +161,6 @@ using namespace Lengine;
     }
 
 
-
-
-    const Entity* Scene::getEntityByName(const std::string& name) const {
-        for (auto& entity : entities) {
-            if (entity->getName() == name) {
-                return entity.get();
-            }
-        }
-        return nullptr;
-    }
-    Entity* Scene::getEntityByName(const std::string& name)  {
-        for (auto& entity : entities) {
-            if (entity->getName() == name) {
-                return entity.get();
-            }
-        }
-        return nullptr;
-    }
 
     const Entity* Scene::getEntityByID(const UUID& id) const {
         for (auto& entity : entities) {
@@ -236,11 +231,11 @@ using namespace Lengine;
 
     }
 
-
     void Scene::Update() {
        
         UpdateWorldTransforms();
     }
+
     bool Scene::HasChildren(UUID entityID) const
     {
         if (!hierarchys.Has(entityID))
@@ -311,6 +306,38 @@ using namespace Lengine;
 
         if (transforms.Has(child))
             transforms.Get(child).localDirty = true;
+    }
+
+    std::string Scene::GenerateDuplicateName(Scene* scene, const std::string& baseName)
+    {
+        int counter = 1;
+        std::string newName;
+
+        while (true)
+        {
+            newName = baseName + "_" + std::to_string(counter);
+
+            bool exists = false;
+
+            for (auto& e : scene->getEntities())
+            {
+                if (!scene->NameTags().Has(e->getID()))
+                    continue;
+
+                auto& tag = scene->NameTags().Get(e->getID());
+
+                if (tag.name == newName)
+                {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists)
+                return newName;
+
+            counter++;
+        }
     }
 
 

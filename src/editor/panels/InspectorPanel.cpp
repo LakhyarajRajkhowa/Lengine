@@ -406,13 +406,15 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
     }
     
     // ---------------- NAME ----------------
-    char buffer[256] = {};
-    strcpy_s(buffer, sizeof(buffer), entity->getName().c_str());
 
+    auto& tag = scene->NameTags().Get(entity->getID());
+
+    char buffer[256] = {};
+    strcpy_s(buffer, sizeof(buffer), tag.name.c_str());
 
     if (ImGui::InputText("Name", buffer, sizeof(buffer))) {
         if (buffer[0] != '\0') {
-            entity->setName(buffer);
+            tag.name = buffer;
         }
     }
     ImGui::Spacing();
@@ -472,7 +474,7 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
 
         }
 
-        glm::vec3 rotationDeg = glm::degrees(tr.localRotation);
+        glm::vec3 rotationDeg = glm::degrees(glm::eulerAngles(tr.localRotation));
 
         if (ImGui::DragFloat3(
             "##Rotation",

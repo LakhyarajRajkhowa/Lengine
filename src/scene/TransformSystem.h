@@ -18,50 +18,38 @@ namespace Lengine {
 
         static void RecalculateLocalMatrix(TransformComponent& t)
         {
-            glm::mat4 m(1.0f);
-            m = glm::translate(m, t.localPosition);
-            m = glm::rotate(m, t.localRotation.x, { 1,0,0 });
-            m = glm::rotate(m, t.localRotation.y, { 0,1,0 });
-            m = glm::rotate(m, t.localRotation.z, { 0,0,1 });
-            m = glm::scale(m, t.localScale);
-
-            t.localMatrix = m;
-            t.localDirty = false;
+            t.localMatrix = glm::translate(glm::mat4(1.0f), t.localPosition)
+                * glm::mat4_cast(t.localRotation)   // ← no euler order issue
+                * glm::scale(glm::mat4(1.0f), t.localScale);
         }
 
         static void DecomposeMatrix(
             const glm::mat4& m,
             glm::vec3& position,
-            glm::vec3& rotationEuler,
+            glm::quat& rotation,      // ← quat instead of euler
             glm::vec3& scale
         )
         {
-            // ---- Translation ----
             position = glm::vec3(m[3]);
 
-            // ---- Extract basis vectors ----
             glm::vec3 x = glm::vec3(m[0]);
             glm::vec3 y = glm::vec3(m[1]);
             glm::vec3 z = glm::vec3(m[2]);
 
-            // ---- Scale ----
             scale.x = glm::length(x);
             scale.y = glm::length(y);
             scale.z = glm::length(z);
 
-            // Prevent division by zero
             if (scale.x != 0.0f) x /= scale.x;
             if (scale.y != 0.0f) y /= scale.y;
             if (scale.z != 0.0f) z /= scale.z;
 
-            // ---- Rotation ----
             glm::mat3 rotMat;
             rotMat[0] = x;
             rotMat[1] = y;
             rotMat[2] = z;
 
-            glm::quat q = glm::quat_cast(rotMat);
-            rotationEuler = glm::eulerAngles(q); // radians
+            rotation = glm::quat_cast(rotMat);  // ← no euler conversion, no drift
         }
     };
 

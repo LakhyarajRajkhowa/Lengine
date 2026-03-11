@@ -15,6 +15,8 @@ namespace Lengine {
 		~InputManager();
 
 		void Update();
+		void processEvent(const SDL_Event& event);
+
 
 		void pressKey(unsigned int keyID);
 		void releaseKey(unsigned int keyID);

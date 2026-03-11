@@ -3,9 +3,7 @@
 
 namespace Lengine {
    
-
  
-    
     void InputHandler::handleInputs(
         ImGuiLayer& imguiLayer,
         EditorLayer& editorLayer,
@@ -21,49 +19,25 @@ namespace Lengine {
 
         const float dt = deltaTime;
 
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            // 1. Send all events to ImGui
 
-                imguiLayer.processEvent(event);
-
-        }
         // ---- MODE 2: EDITOR MODE ----
         if (camera.isFixed)
         {
             if (viewportHovered)
             {
-                editorLayer.getHoveredGizmoAxis();
                 editorLayer.config.editingMode = false;
 
                 for (SDL_Keycode key : EditorKeys::All)
                 {
-                    editorLayer.HandleKeyboardShortcuts(key);
+                    editorLayer.manipulator.HandleKeyboardShortcuts(key);
                 }
-                for ( Uint8 button : { SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT, SDL_BUTTON_MIDDLE}) {
-                    if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
-                        editorLayer.selectHoveredEntity();
-                        editorLayer.BeginArrowDrag();   // ✅ ONLY ON PRESS
-                    }
 
-                    if (inputManager.isMouseButtonDown(SDL_BUTTON_LEFT)) {
-                        editorLayer.HandleArrowDrag();  // ✅ ONLY MOVE
-                    }
-
-                    if (!inputManager.isMouseButtonDown(SDL_BUTTON_LEFT)) {
-                        editorLayer.endArrowDrag();     // ✅ CLEAN EXIT
-                    }
-
-                }
-                if (inputManager.getScrollY()) {
-                    editorLayer.HandleMouseWheel(inputManager.getScrollY());
-                    // reset each frame otherwise the scroll activates in next frame
-                    inputManager.resetScroll();
+                if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
+                    editorLayer.manipulator.SelectHoveredEntity();
                 }
             }
             else {
                 editorLayer.config.editingMode = true;
-                editorLayer.deselectAllEntities();
                 
             }
         }
@@ -116,7 +90,4 @@ namespace Lengine {
         }
         
     }
-
-
-
 }

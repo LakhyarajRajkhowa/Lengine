@@ -23,33 +23,18 @@ namespace Lengine {
 	
 	class Entity {
 	public:
-		Entity(UUID eID, const std::string& n)
-			: ID(eID), name(n)
+		Entity(UUID eID)
+			: ID(eID)
 		{
 			
 		}
 		UUID getID() const { return ID; }
 		void setID(const UUID& id) { ID = id; }
-		const std::string& getName() const { return name; }
-		void setName(const std::string& newName) { name = newName; }
 
 
-		Entity* Entity::Clone() 
-		{
-			Entity* e = new Entity(UUID(), this->name + "_" + std::to_string(numCopies));
 
-			numCopies++;
-			return e;
-		}
-
-
-	private:
-		
+	private:	
 		UUID ID;
-		std::string name;
-		
-		uint32_t numCopies = 1;
-
 	};
 }
 

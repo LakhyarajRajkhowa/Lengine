@@ -855,8 +855,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
     for (const auto& entityPtr : entities)
     {
         const UUID entityID = entityPtr.get()->getID();
-        const std::string entityName = entityPtr.get()->getName();
-
+        const std::string entityName = scene.NameTags().Get(entityID).name;
 
 
         json jEntity;
@@ -869,7 +868,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 
             jEntity["transform"] = {
                 { "position", { entityTransform.localPosition.x, entityTransform.localPosition.y, entityTransform.localPosition.z } },
-                { "rotation", { entityTransform.localRotation.x, entityTransform.localRotation.y, entityTransform.localRotation.z } },
+                { "rotation", { entityTransform.localRotation.x, entityTransform.localRotation.y, entityTransform.localRotation.z, entityTransform.localRotation.w } },
                 { "scale",    { entityTransform.localScale.x,    entityTransform.localScale.y,    entityTransform.localScale.z } }
             };
         }
@@ -974,6 +973,8 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 UUID entityID = UUID(jEntity.at("entityID").get<uint64_t>());
                 std::string entityName = jEntity.at("name").get<std::string>();
 
+                scene->NameTags().Add(entityID, NameTagComponent(entityName));
+
                 Entity* entity = scene->createEntity(entityName, entityID);
 
                 // ---- Transform ----
@@ -989,11 +990,12 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                         jt.at("position")[2]
                     };
 
-                    tr.localRotation = {
-                        jt.at("rotation")[0],
-                        jt.at("rotation")[1],
-                        jt.at("rotation")[2]
-                    };
+                    tr.localRotation = glm::quat(
+                        jt.at("rotation")[3],  // w
+                        jt.at("rotation")[0],  // x
+                        jt.at("rotation")[1],  // y
+                        jt.at("rotation")[2]   // z
+                    );
 
                     tr.localScale = {
                         jt.at("scale")[0],

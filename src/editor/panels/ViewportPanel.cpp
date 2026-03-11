@@ -52,9 +52,7 @@ using namespace Lengine;
         m_ViewportSize = { avail.x, avail.y };
         m_ViewportPos = ImGui::GetWindowPos();
 
-       
-
-
+      
 
         if (m_ViewportSize.x > 0 && m_ViewportSize.y > 0)
         {
@@ -80,15 +78,18 @@ using namespace Lengine;
 
          m_Focused = ImGui::IsItemFocused();
          m_Hovered = ImGui::IsItemHovered();
-         ImVec2 imagePos = ImGui::GetItemRectMin();
+         imagePos = ImGui::GetItemRectMin();
          ImVec2 mousePos = ImGui::GetMousePos();
   
-
          mouseInViewport = { mousePos.x - imagePos.x, mousePos.y - imagePos.y };
-    
+        
+
+           // DrawTransformGizmo();
+
 
         ImGui::End();
         ImGui::PopStyleVar();
+
     }
 
 
@@ -116,7 +117,7 @@ using namespace Lengine;
 
         if (ImGui::IsKeyPressed(ImGuiKey_Escape))
             viewportFullscreen = false;
-
+        
         GLuint texID =  finalImage;
 
         ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -152,3 +153,78 @@ using namespace Lengine;
         ImGui::PopStyleVar();
     }
 
+   void ViewportPanel::DrawTransformGizmo()
+{
+    if (!EditorSelection::GetEntity() || !sceneManager.getActiveScene())
+        return;
+
+    UUID selectedEntity = EditorSelection::GetEntity();
+
+    auto* scene = sceneManager.getActiveScene();
+
+    if (!scene->Transforms().Has(selectedEntity))
+        return;
+
+    TransformComponent& transform = scene->Transforms().Get(selectedEntity);
+
+    // Camera
+    glm::mat4 view = camera.getViewMatrix();
+    glm::mat4 projection = camera.getProjectionMatrix();
+
+    // --- Configure gizmo ---
+    ImGuizmo::SetOrthographic(false);
+    ImGuizmo::SetDrawlist();
+
+    ImGuizmo::SetRect(
+        imagePos.x,
+        imagePos.y,
+        m_ViewportSize.x,
+        m_ViewportSize.y
+    );
+
+    static ImGuizmo::OPERATION operation = ImGuizmo::TRANSLATE;
+
+    if (ImGui::IsKeyPressed(ImGuiKey_T))
+        operation = ImGuizmo::TRANSLATE;
+
+    if (ImGui::IsKeyPressed(ImGuiKey_E))
+        operation = ImGuizmo::ROTATE;
+
+    if (ImGui::IsKeyPressed(ImGuiKey_R))
+        operation = ImGuizmo::SCALE;
+
+    // ---- Use world matrix ----
+    glm::mat4 transformMatrix = transform.localMatrix;
+
+    // ---- Draw gizmo ----
+    ImGuizmo::Manipulate(
+        glm::value_ptr(view),
+        glm::value_ptr(projection),
+        operation,
+        ImGuizmo::WORLD,
+        glm::value_ptr(transformMatrix)
+    );
+
+  
+    if (ImGuizmo::IsUsing())
+    {
+        glm::vec3 translation = glm::vec3(transformMatrix[3]);
+
+        std::cout << "Translation: "
+            << translation.x << " "
+            << translation.y << " "
+            << translation.z << "\n";
+
+
+        // ---- APPLY ----
+        transform.localPosition = translation;
+        //transform.localScale = scale;
+
+        //glm::mat3 rotMatrix = glm::mat3(transformMatrix);
+        //transform.localRotation = glm::normalize(glm::quat_cast(rotMatrix));
+
+        transform.localDirty = true;
+        transform.worldDirty = true;
+        TransformSystem::Dirty = true;
+    }
+}

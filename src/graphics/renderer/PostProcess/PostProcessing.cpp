@@ -18,8 +18,10 @@ void PostProcessing::InitToneMappingResources() {
 		Paths::Shaders + "hdrToneMapping.frag"
 	);
 	hdrToneMappingShader.linkShaders();
+
     hdrToneMappingShader.use();
     hdrToneMappingShader.setInt("hdrBuffer", 0);
+    hdrToneMappingShader.setInt("bloomBlur", 1);
     hdrToneMappingShader.unuse();
     
 }
@@ -54,7 +56,7 @@ void PostProcessing::renderToneMapping(const bool bloom, const float exposure) {
 
     hdrToneMappingShader.use();
     hdrToneMappingShader.setFloat("exposure", exposure);
-
+    hdrToneMappingShader.setBool("enableBloom", bloom);
     fullscreenQuad.draw();
 
     hdrToneMappingShader.unuse();

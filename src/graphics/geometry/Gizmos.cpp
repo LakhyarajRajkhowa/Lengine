@@ -4,7 +4,6 @@ using namespace Lengine;
 
 void GizmoRenderer::initGizmoGrid() {
     gizmoGrid = assetManager.GetSubmesh(SubmeshID::Plane);
-
     gizmoGridShader = *assetManager.getShader("Gizmo Grid");
 
 
@@ -49,12 +48,9 @@ void GizmoRenderer::drawGizmoGrid(Camera3d* camera){
     gizmoGridShader.use();
     gizmoGridShader.setMat4("view", camera->getViewMatrix());
     gizmoGridShader.setMat4("projection", camera->getProjectionMatrix());
-    gizmoGridShader.setVec4("color", glm::vec4(0, 1, 0, 0.2));
-    glm::mat4 model(1.0f);
-    gizmoGridShader.setMat4("model", model);
+    gizmoGridShader.setVec3("cameraPos", camera->getCameraPosition());
     if(gizmoGrid) gizmoGrid->draw();
     gizmoGridShader.unuse();
-
 
 }
 

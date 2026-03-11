@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../utils/UUID.h"
+#include "../assets/AssetRegistry.h"
 
 namespace Lengine {
     class EditorSelection

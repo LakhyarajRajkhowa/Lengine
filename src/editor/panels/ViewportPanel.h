@@ -6,27 +6,23 @@
 #define IMGUI_ENABLE_DOCKING
 #define IMGUI_ENABLE_DOCKING_EXTENSION
 #include "imgui.h"
+#include "../external/ImGuizmo.h"
 #include <imgui/backends/imgui_impl_sdl2.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+#include "../editor/EditorSelection.h"
+
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/frameBuffers/Framebuffer.h"
-#include "../graphics/frameBuffers/MSAAFramebuffer.h"
-#include "../graphics/frameBuffers/HDRFramebuffer.h"
-#include "../graphics/frameBuffers/MSAAHDRFramebuffer.h"
-#include "../graphics/frameBuffers/SSAOFramebuffer.h"
-#include "../graphics/frameBuffers/MSAADepthNormalFramebuffer.h"
-
 
 #include "../utils/fps.h"
 #include "../utils/imGuiScreens.h"
 
-#include "../graphics/renderer/IRenderer.h"
+#include "../scene/SceneManager.h"
 
 
 namespace Lengine {
 
-    using SSAOBlurFramebuffer = SSAOFramebuffer;
 
 
     enum class ViewportMode {
@@ -38,7 +34,11 @@ namespace Lengine {
 
     class ViewportPanel {
     public:
-        ViewportPanel(Camera3d& camera_) : camera(camera_) {}
+        
+        ViewportPanel(Camera3d& camera_, SceneManager& scene_) :
+            camera(camera_),
+            sceneManager(scene_)
+        {}
 
         void OnImGuiRender(const uint32_t finalImage);
         void RenderFullscreen(const uint32_t finalImage);
@@ -58,9 +58,13 @@ namespace Lengine {
         bool fixCamera = false;
         bool viewportFullscreen = true;
 
+    public:
+        void DrawTransformGizmo();
         
     private:
         Camera3d& camera;
+        SceneManager& sceneManager;
+
         float fullscreenAspectRatio = 16.0f / 9.0f;
 
 
@@ -70,6 +74,7 @@ namespace Lengine {
         ImVec2 m_ViewportPos;
         ImVec2 m_LastViewportSize = { -1, -1 };
 
+        ImVec2 imagePos;
         ImVec2 mouseInViewport;
         ImVec2 mouseInImage;
 

@@ -41,7 +41,7 @@ void RenderPipeline::RecreateFramebuffers()
     mainBufferSpec.width = renderSettings.resolution_X;
     mainBufferSpec.height = renderSettings.resolution_Y;
     mainBufferSpec.samples = 1;
-    mainBufferSpec.colorFormat = GL_RGBA8;
+    mainBufferSpec.colorFormats = { GL_RGBA8 };
     mainBufferSpec.colorAttachmentCount = 1;
 
     mainFramebuffer = std::make_unique<Framebuffer>(mainBufferSpec);
@@ -51,7 +51,7 @@ void RenderPipeline::RecreateFramebuffers()
     hdrSpec.width = renderSettings.resolution_X;
     hdrSpec.height = renderSettings.resolution_Y;
     hdrSpec.samples = 1;
-    hdrSpec.colorFormat = GL_RGBA16F;
+    hdrSpec.colorFormats = { GL_RGBA16F , GL_RGBA16F };
     hdrSpec.colorAttachmentCount = 2; // scene + bright
 
     hdrFramebuffer = std::make_unique<Framebuffer>(hdrSpec);
@@ -68,12 +68,14 @@ void RenderPipeline::RecreateFramebuffers()
         msaaSpec.height = renderSettings.resolution_Y;
         msaaSpec.samples = renderSettings.msaaSamples;
 
-        msaaSpec.colorFormat = GL_RGBA16F;
+        msaaSpec.colorFormats = { GL_RGBA16F };
 
         msaaSpec.colorAttachmentCount = 1;
 
         msaaFramebuffer = std::make_unique<Framebuffer>(msaaSpec);
     }
+
+   
 }
 
 void RenderPipeline::PostProcess() {
@@ -113,14 +115,7 @@ void RenderPipeline::BuildGraph()
                 *msaaFramebuffer
             )
         );
-
-        //GIZMOS
-        renderGraph.AddPass(
-            std::make_unique<GizmoPass>(
-                gizmoRenderer,
-                *msaaFramebuffer
-            )
-        );
+       
 
         // SKYBOX
         renderGraph.AddPass(
@@ -132,6 +127,7 @@ void RenderPipeline::BuildGraph()
             )
         );
 
+        
 
         Framebuffer& resolveTarget =
              *hdrFramebuffer;
@@ -142,6 +138,7 @@ void RenderPipeline::BuildGraph()
                 resolveTarget
             )
         );
+       
     }
     else
     {
@@ -155,14 +152,7 @@ void RenderPipeline::BuildGraph()
                 target
             )
         );
-
-        // GIZMOS
-        renderGraph.AddPass(
-            std::make_unique<GizmoPass>(
-                gizmoRenderer,
-                target
-            )
-        );
+ 
 
         // SKYBOX
         renderGraph.AddPass(
@@ -189,6 +179,8 @@ void RenderPipeline::BuildGraph()
         );
     }
 
+
+
     renderGraph.AddPass(
         std::make_unique<ToneMapPass>(
             postProcess,
@@ -196,6 +188,9 @@ void RenderPipeline::BuildGraph()
             *hdrFramebuffer
         )
     );
+
+
+  
 } 
 
 
@@ -207,15 +202,21 @@ void RenderPipeline::Render(RenderContext& ctx)
         SetRenderSettings(*ctx.settings);
         ctx.settings->needsReload = false;
     }
-    // 1️⃣ Update per-frame context data
+    // 1 Update per-frame context data
     ctx.irradianceMap = hdrSkybox.GetIrradianceMap();
     ctx.shadowMap = &shadowMap;
     ctx.shadowCubeMap = &shadowCubemap;
     ctx.prefilterMap = hdrSkybox.GetPrefilterMap();
     ctx.brdfLUTMap = hdrSkybox.GetbrdfLUTMap();
 
-    // 2️⃣ Execute passes in order
+    // Execute passes in order
     renderGraph.Execute(ctx);
+                
+}
+
+Framebuffer& RenderPipeline::GetFinalFramebuffer()
+{
+    return *mainFramebuffer;
 }
 
 

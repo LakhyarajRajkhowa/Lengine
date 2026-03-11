@@ -25,7 +25,6 @@ namespace Lengine {
 
 		{
 		}
-
 		void handleInputs(ImGuiLayer& imguiLayer, EditorLayer& editorLayer, const float deltaTime);
 	
 		Camera3d& camera;

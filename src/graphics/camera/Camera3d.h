@@ -17,7 +17,14 @@ namespace Lengine {
     public:
         Camera3d();
         ~Camera3d();
-        void init(const uint32_t width, const uint32_t height, InputManager* inputManager, glm::vec3 cameraPos, float FOV);
+
+        void init(
+            InputManager* inputManager,
+            const uint32_t width = 1280,
+            const uint32_t height = 720,
+            glm::vec3 cameraPos = glm::vec3(0, 5, 0),
+            float FOV = 45.0f
+        );
          const glm::vec3& getCameraPosition()  { return position; }
          const glm::vec3& getCameraDirection() { return front; }
          const glm::vec3& getCameraPosition() const { return position; }
@@ -45,13 +52,13 @@ namespace Lengine {
 
         CameraControlMode controlMode = CameraControlMode::first;
     private:
-        glm::vec3 position;
+        glm::vec3 position = {0, 10, 0};
         glm::vec3 front;
         glm::vec3 up;
         glm::mat4 projectionMatrix;
         glm::mat4 viewMatrix;
         float yaw, pitch;
-        float fov;
+        float fov = 45.0f;
         float aspectRatio;
         float nearPlane, farPlane;
 
