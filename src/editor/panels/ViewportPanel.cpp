@@ -84,7 +84,7 @@ using namespace Lengine;
          mouseInViewport = { mousePos.x - imagePos.x, mousePos.y - imagePos.y };
         
 
-           // DrawTransformGizmo();
+            DrawTransformGizmo();
 
 
         ImGui::End();
@@ -205,23 +205,45 @@ using namespace Lengine;
         glm::value_ptr(transformMatrix)
     );
 
-  
+    float size = 128.0f;
+
+    ImGuizmo::ViewManipulate(
+        glm::value_ptr(view),
+        10.0f,
+        ImVec2(
+            ImGui::GetWindowPos().x + ImGui::GetWindowWidth() - size - 10,
+            ImGui::GetWindowPos().y + 10
+        ),
+        ImVec2(size, size),
+        0x10101010
+    );
+
     if (ImGuizmo::IsUsing())
     {
-        glm::vec3 translation = glm::vec3(transformMatrix[3]);
+        glm::vec3 translation;
+        glm::vec3 scale;
+        glm::quat rotation;
 
-        std::cout << "Translation: "
-            << translation.x << " "
-            << translation.y << " "
-            << translation.z << "\n";
+        // Decompose matrix
+        translation = glm::vec3(transformMatrix[3]);
 
+        // Extract scale
+        scale.x = glm::length(glm::vec3(transformMatrix[0]));
+        scale.y = glm::length(glm::vec3(transformMatrix[1]));
+        scale.z = glm::length(glm::vec3(transformMatrix[2]));
+
+        // Remove scale from rotation matrix
+        glm::mat3 rotMatrix;
+        rotMatrix[0] = glm::vec3(transformMatrix[0]) / scale.x;
+        rotMatrix[1] = glm::vec3(transformMatrix[1]) / scale.y;
+        rotMatrix[2] = glm::vec3(transformMatrix[2]) / scale.z;
+
+        rotation = glm::normalize(glm::quat_cast(rotMatrix));
 
         // ---- APPLY ----
         transform.localPosition = translation;
-        //transform.localScale = scale;
-
-        //glm::mat3 rotMatrix = glm::mat3(transformMatrix);
-        //transform.localRotation = glm::normalize(glm::quat_cast(rotMatrix));
+        transform.localScale = scale;
+        transform.localRotation = rotation;
 
         transform.localDirty = true;
         transform.worldDirty = true;

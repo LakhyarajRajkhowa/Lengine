@@ -25,7 +25,6 @@ namespace Lengine {
         {
             if (viewportHovered)
             {
-                editorLayer.config.editingMode = false;
 
                 for (SDL_Keycode key : EditorKeys::All)
                 {
@@ -37,7 +36,6 @@ namespace Lengine {
                 }
             }
             else {
-                editorLayer.config.editingMode = true;
                 
             }
         }

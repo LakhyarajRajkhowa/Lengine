@@ -40,9 +40,7 @@ struct RenderSettings {
 
 };
 
-struct EditorConfig {
-	bool editingMode = false;
-};
+;
 
 class EngineSettings {
 public:

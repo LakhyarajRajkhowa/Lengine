@@ -46,7 +46,6 @@ namespace Lengine {
         ViewportPanel& GetViewportPanel() { return viewportPanel; }
         PerformancePanel& GetPerformancePanel() { return performancePanel; }
         
-        EditorConfig config;
         EditorManipulator manipulator;
 
 

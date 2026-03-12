@@ -14,6 +14,12 @@
 
 namespace Lengine {
 
+    enum class EngineMode
+    {
+        Editor,
+        Play
+    };
+
     class EngineCore {
     public:
 

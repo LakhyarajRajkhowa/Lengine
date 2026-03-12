@@ -59,7 +59,6 @@ namespace Lengine {
         }
         else {
 
-            config.editingMode = true;
             viewportPanel.RenderFullscreen(finalImage);
             performancePanel.OnImGuiRender();
         }

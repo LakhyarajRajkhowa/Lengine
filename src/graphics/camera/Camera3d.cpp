@@ -17,7 +17,7 @@ namespace Lengine {
         yaw = -90.0f;
         pitch = 0.0f;
         nearPlane = 0.50f;
-        farPlane = 100000000.0f;
+        farPlane = 1000.0f;
         up = glm::vec3(0.0f, 1.0f, 0.0f);
 
         fov = FOV;

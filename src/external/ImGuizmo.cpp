@@ -920,6 +920,7 @@ namespace IMGUIZMO_NAMESPACE
       const float numer = plan.Dot3(rOrigin) - plan.w;
       const float denom = plan.Dot3(rVector);
 
+
       if (fabsf(denom) < FLT_EPSILON)  // normal is orthogonal to vector, cant intersect
       {
          return -1.0f;
@@ -2149,7 +2150,6 @@ namespace IMGUIZMO_NAMESPACE
       }
       return type;
    }
-
    static bool HandleTranslation(float* matrix, float* deltaMatrix, OPERATION op, int& type, const float* snap)
    {
       if(!Intersects(op, TRANSLATE) || type != MT_NONE)
@@ -2170,6 +2170,9 @@ namespace IMGUIZMO_NAMESPACE
 #endif
          const float signedLength = IntersectRayPlane(gContext.mRayOrigin, gContext.mRayVector, gContext.mTranslationPlan);
          const float len = fabsf(signedLength); // near plan
+
+
+
          const vec_t newPos = gContext.mRayOrigin + gContext.mRayVector * len;
 
          // compute delta
@@ -2177,12 +2180,15 @@ namespace IMGUIZMO_NAMESPACE
          vec_t delta = newOrigin - gContext.mModel.v.position;
 
          // 1 axis constraint
+
+
          if (gContext.mCurrentOperation >= MT_MOVE_X && gContext.mCurrentOperation <= MT_MOVE_Z)
          {
             const int axisIndex = gContext.mCurrentOperation - MT_MOVE_X;
             const vec_t& axisValue = *(vec_t*)&gContext.mModel.m[axisIndex];
             const float lengthOnAxis = Dot(axisValue, delta);
             delta = axisValue * lengthOnAxis;
+
          }
 
          // snap
@@ -2197,13 +2203,19 @@ namespace IMGUIZMO_NAMESPACE
                modelSourceNormalizedInverse.Inverse(modelSourceNormalized);
                cumulativeDelta.TransformVector(modelSourceNormalizedInverse);
                ComputeSnap(cumulativeDelta, snap);
+
+            
                cumulativeDelta.TransformVector(modelSourceNormalized);
             }
             else
             {
                ComputeSnap(cumulativeDelta, snap);
+
+
             }
             delta = gContext.mMatrixOrigin + cumulativeDelta - gContext.mModel.v.position;
+
+
 
          }
 
@@ -2212,6 +2224,8 @@ namespace IMGUIZMO_NAMESPACE
             modified = true;
          }
          gContext.mTranslationLastDelta = delta;
+
+
 
          // compute matrix & delta
          matrix_t deltaMatrixTranslation;
