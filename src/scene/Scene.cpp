@@ -72,6 +72,7 @@ using namespace Lengine;
             lights.Add(entityId, newLight);
         }
 
+        // Name tag 
         if (NameTags().Has(originalEntityId))
         {
             auto& tag = NameTags().Get(originalEntityId);
@@ -80,7 +81,8 @@ using namespace Lengine;
 
             NameTags().Add(entityId, NameTagComponent(newName));
         }
-       
+        
+        
 
         entities.push_back(std::move(entity));
         rootEntities.push_back(entityId);
@@ -146,6 +148,8 @@ using namespace Lengine;
         if (meshRenderers.Has(id))  meshRenderers.Remove(id);
         if (lights.Has(id))         lights.Remove(id);
         if (nameTags.Has(id))       nameTags.Remove(id);
+        if (animations.Has(id))     animations.Remove(id);
+
     }
 
     void Scene::RemoveEntityRecursive(UUID id)

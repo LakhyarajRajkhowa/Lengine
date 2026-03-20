@@ -96,7 +96,17 @@ namespace Lengine {
             (void*)offsetof(Vertex, bitangent)
         );
 
+        // Bone IDs
+        glEnableVertexAttribArray(5);
+        glVertexAttribIPointer(5, MAX_BONE_INFLUENCE, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, boneIDs));
+
+        // Bone Weights
+        glEnableVertexAttribArray(6);
+        glVertexAttribPointer(6, MAX_BONE_INFLUENCE, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+            (void*)offsetof(Vertex, weights));
         
+
+
         glBindVertexArray(0);
 
     }

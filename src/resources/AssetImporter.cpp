@@ -104,6 +104,46 @@ bool AssetImporter::ImportMeshFile(const fs::path& externalPath, const UUID& uui
 
 
 
+static void AddBoneData(Vertex& v, int boneID, float weight)
+{
+    // Check if this bone is already added
+    for (int i = 0; i < 4; i++)
+    {
+        if (v.boneIDs[i] == boneID)
+        {
+            v.weights[i] += weight;
+            std::cout << v.weights[i] << std::endl;
+            return;
+        }
+    }
+
+    // Add to first empty slot
+    for (int i = 0; i < 4; i++)
+    {
+        if (v.weights[i] == 0.0f)
+        {
+            v.boneIDs[i] = boneID;
+            v.weights[i] = weight;
+            return;
+        }
+    }
+
+    // Vertex has more than 4 bones, take the largest weights
+    int minIndex = 0;
+    for (int i = 1; i < 4; i++)
+        if (v.weights[i] < v.weights[minIndex])
+            minIndex = i;
+
+    if (weight > v.weights[minIndex])
+    {
+        v.boneIDs[minIndex] = boneID;
+        v.weights[minIndex] = weight;
+    }
+
+
+
+}
+
 static void ProcessSubMesh(
     const aiMesh* aiMesh,
     uint32_t subMeshIndex,
@@ -197,6 +237,7 @@ static void ProcessSubMesh(
     }
 
 
+
     // ---------------- Indices ----------------
     for (uint32_t f = 0; f < aiMesh->mNumFaces; f++)
     {
@@ -236,6 +277,173 @@ static void ProcessSubMesh(
     outRef.subMeshPath = subMeshPath.filename();
 }
 
+static void ProcessSubMesh_prefab(
+    const aiMesh* aiMesh,
+    uint32_t subMeshIndex,
+    const std::filesystem::path& sourcePath,
+    const std::filesystem::path& outDir,
+    UUID parentMeshID,
+    LMeshSubMeshRef& outRef,
+    std::unordered_map<std::string, int>& skeletonBoneMap,
+    UUID submeshID = UUID()
+
+)
+{
+    LSubMeshFile sm;
+    sm.subMeshID = submeshID;
+    sm.parentMeshID = parentMeshID;
+    sm.sourcePath = sourcePath.string();
+    sm.subMeshIndex = subMeshIndex;
+
+    // ---------------- Vertices ----------------
+    sm.vertices.reserve(aiMesh->mNumVertices);
+    sm.indices.reserve(aiMesh->mNumFaces * 3);
+
+    for (unsigned int i = 0; i < aiMesh->mNumVertices; i++)
+    {
+        Vertex v{};
+
+        // Position
+        if (aiMesh->HasPositions() && aiMesh->mVertices)
+        {
+            v.position = glm::vec3(
+                aiMesh->mVertices[i].x,
+                aiMesh->mVertices[i].y,
+                aiMesh->mVertices[i].z
+            );
+        }
+        else
+        {
+            v.position = glm::vec3(0.0f);
+        }
+
+        // Normal
+        if (aiMesh->HasNormals() && aiMesh->mNormals)
+        {
+            v.normal = glm::vec3(
+                aiMesh->mNormals[i].x,
+                aiMesh->mNormals[i].y,
+                aiMesh->mNormals[i].z
+            );
+        }
+        else
+        {
+            v.normal = glm::vec3(0.0f);
+        }
+
+        // Texture coordinates (UV0 only)
+        if (aiMesh->HasTextureCoords(0) && aiMesh->mTextureCoords[0])
+        {
+            v.texCoord = glm::vec2(
+                aiMesh->mTextureCoords[0][i].x,
+                aiMesh->mTextureCoords[0][i].y
+            );
+        }
+        else
+        {
+            v.texCoord = glm::vec2(0.0f);
+        }
+
+        // Tangent & Bitangent
+        if (aiMesh->HasTangentsAndBitangents() &&
+            aiMesh->mTangents &&
+            aiMesh->mBitangents)
+        {
+            v.tangent = glm::vec3(
+                aiMesh->mTangents[i].x,
+                aiMesh->mTangents[i].y,
+                aiMesh->mTangents[i].z
+            );
+
+            v.bitangent = glm::vec3(
+                aiMesh->mBitangents[i].x,
+                aiMesh->mBitangents[i].y,
+                aiMesh->mBitangents[i].z
+            );
+        }
+        else
+        {
+            v.tangent = glm::vec3(0.0f);
+            v.bitangent = glm::vec3(0.0f);
+        }
+
+        sm.vertices.push_back(v);
+    }
+
+
+    if (aiMesh->HasBones())
+    {
+        for (uint32_t b = 0; b < aiMesh->mNumBones; b++)
+        {
+            aiBone* bone = aiMesh->mBones[b];
+            bool hasWeight = false;
+
+            // check if this bone has any non-zero weights
+            for (uint32_t w = 0; w < bone->mNumWeights; w++)
+            {
+                if (bone->mWeights[w].mWeight > 0.0f)
+                {
+                    hasWeight = true;
+                    break;
+                }
+            }
+
+            if (!hasWeight)
+                continue; // skip bones that don't influence any vertex
+
+            // add bone index to palette
+            sm.bonePalette.push_back(b);
+
+            // now assign weights to vertices
+            for (uint32_t w = 0; w < bone->mNumWeights; w++)
+            {
+                aiVertexWeight weight = bone->mWeights[w];
+                int vertexID = weight.mVertexId;
+                float value = weight.mWeight;
+
+                AddBoneData(sm.vertices[vertexID], static_cast<int>(sm.bonePalette.size() - 1), value);
+                // note: local ID = position in palette
+            }
+        }
+    }
+    // ---------------- Indices ----------------
+    for (uint32_t f = 0; f < aiMesh->mNumFaces; f++)
+    {
+        const aiFace& face = aiMesh->mFaces[f];
+        for (uint32_t i = 0; i < face.mNumIndices; i++)
+            sm.indices.push_back(face.mIndices[i]);
+    }
+
+    // ----------------- Name --------------------
+    std::string name = "submesh_" + std::to_string(subMeshIndex);
+    if (aiMesh->mName.C_Str())
+    {
+        name = aiMesh->mName.C_Str();
+    }
+
+    // ---------------- Write .lsubmesh ----------------
+    std::filesystem::path subMeshPath =
+        outDir / (name + ".lsubmesh");
+
+    WriteLSubMesh(subMeshPath, sm);
+
+
+    // ---------------- Register SubMesh asset ----------------
+    AssetMetadata subMeshMeta;
+    subMeshMeta.uuid = sm.subMeshID;
+    subMeshMeta.name = name;
+    subMeshMeta.type = AssetType::Submesh;
+    subMeshMeta.libraryPath = subMeshPath;      // full path is better
+    subMeshMeta.sourcePath = sourcePath;
+    subMeshMeta.thumbnailPath = Paths::Icons + "submesh_icon.png";
+
+    AssetDatabase::RegisterAsset(subMeshMeta);
+
+    // ---------------- Fill lmesh reference ----------------
+    outRef.subMeshID = sm.subMeshID;
+    outRef.subMeshIndex = subMeshIndex;
+    outRef.subMeshPath = subMeshPath.filename();
+}
 void MeshImporter::Import(const std::filesystem::path& meshPath, UUID sourceFileID)
 {
     Assimp::Importer importer;
@@ -272,6 +480,7 @@ void MeshImporter::Import(const std::filesystem::path& meshPath, UUID sourceFile
     lmesh.sourcePath = meshPath.string();
 
     lmesh.subMeshes.reserve(scene->mNumMeshes);
+
 
     // ---------------- Submeshes ----------------
     for (uint32_t i = 0; i < scene->mNumMeshes; i++)
@@ -449,21 +658,17 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
     std::filesystem::path outMeshDir =
         Paths::GameLibrary_Assets_Mesh / assetName;
 
-
     std::filesystem::create_directories(outMeshDir);
 
-
-
     std::filesystem::path prefabPath = outDir / assetName.replace_extension(".prefab");
-        
+     
+
 
     // If file is a valid prefab file then proceed
     Prefab* prefab = new Prefab();
     prefab->id = sourceFileID;
     prefab->name = scene->mName.C_Str();
     prefab->path = prefabPath;
-
-  
 
     std::filesystem::create_directories(outDir);
 
@@ -475,8 +680,65 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
     lmesh.sourcePath = assetPath.string();
     lmesh.subMeshes.reserve(scene->mNumMeshes);
 
-    // ---------------- Nodes ----------------
+     // --- Skeleton ---
+
+    bool hasSkeleton = false;
+    std::unordered_map<std::string, int> skeletonBoneMap;
+    std::vector<UUID> animationIDs;
+
+
+    for (uint32_t i = 0; i < scene->mNumMeshes; i++)
+    {
+        if (scene->mMeshes[i]->HasBones())
+        {
+            hasSkeleton = true;
+            break;
+        }
+    }
+
     
+    LSkeletonFile skeleton;
+    UUID skeletonID;
+
+    if (hasSkeleton)
+    {
+
+        // skeleton dir
+        std::filesystem::path skeletonDir =
+            Paths::GameLibrary_Assets_Skeleton;
+
+        std::filesystem::path outSkeletonDir =
+                skeletonDir / assetName.replace_extension("").string();
+
+
+        std::filesystem::create_directories(outSkeletonDir);
+
+        skeletonID = UUID();
+
+        SkeletonImporter::ImportSkeleton(
+            scene,
+            assetPath,
+            outSkeletonDir,
+            skeletonID,
+            skeleton,
+            skeletonBoneMap,
+            assetName.replace_extension("").string()
+        );
+
+        AnimationImporter::ImportAnimations(
+            scene,
+            assetPath,
+            outSkeletonDir,  
+            skeleton,
+            assetName.replace_extension("").string(),
+            skeletonBoneMap,
+            animationIDs
+        );
+
+    }
+
+    // ---------------- Nodes ----------------
+
     // send root node of the scene for processing
     prefab->rootPrefabNode = LoadPrefabNode(
         scene,
@@ -485,7 +747,10 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
         prefab->importedMaterials,
         assetPath,
         outDir,
-        lmesh
+        lmesh,
+        skeletonBoneMap,
+        skeletonID,
+        animationIDs
     );
 
 
@@ -495,15 +760,6 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
         outMeshDir / (prefab->name + ".lmesh");
 
     WriteLMesh(lmeshPath, lmesh);
-
-    // ---------------- Register Mesh asset ----------------
-    AssetMetadata meshMeta;
-    meshMeta.uuid = prefab->id;
-    meshMeta.name = prefab->name;
-    meshMeta.type = AssetType::Mesh;
-    meshMeta.libraryPath = lmeshPath;
-    meshMeta.sourcePath = assetPath;
-    meshMeta.thumbnailPath = Paths::Icons + "mesh_icon.png";
 
     return prefab;
 
@@ -516,9 +772,12 @@ PrefabNode* PrefabImporter::LoadPrefabNode(
     std::unordered_map<const aiMaterial*, UUID>& loadedMaterials,
     const std::filesystem::path& sourceAssetPath,
     const std::filesystem::path& outDir,
-    LMeshFile& lmesh
+    LMeshFile& lmesh,
+    std::unordered_map<std::string, int>& skeletonBoneMap,
+    UUID skeletonID,
+    std::vector<UUID>& animationIDs
+    
 )
-
 
 {
     std::filesystem::path assetName =
@@ -550,19 +809,32 @@ PrefabNode* PrefabImporter::LoadPrefabNode(
         UUID materialUUID;
         UUID submeshUUID;
 
+        if (submesh->HasBones())
+        {
+            skeletonID = skeletonID;
+            animationIDs = animationIDs;
+        }
+        else
+        {
+            skeletonID = UUID::Null;
+            animationIDs.clear();
+        }
+
+
         auto it = loadedSubmeshes.find(submesh);
         if (it == loadedSubmeshes.end())
         {
             submeshUUID = UUID();
 
             LMeshSubMeshRef ref{};
-            ProcessSubMesh(
+            ProcessSubMesh_prefab(
                 submesh,
                 submeshIndex,
                 sourceAssetPath,
                 outMeshDir,
                 lmesh.meshID,
                 ref,
+                skeletonBoneMap,
                 submeshUUID
             );
 
@@ -600,6 +872,8 @@ PrefabNode* PrefabImporter::LoadPrefabNode(
         meshNode->meshID = submeshUUID;
         meshNode->parent = parentNode;
         meshNode->materialID = materialUUID;
+        meshNode->skeletonID = skeletonID;
+        meshNode->animationIDs = animationIDs;
         parentNode->children.push_back(meshNode);
     }
 
@@ -613,7 +887,10 @@ PrefabNode* PrefabImporter::LoadPrefabNode(
             loadedMaterials,
             sourceAssetPath,
             outDir,
-            lmesh
+            lmesh,
+            skeletonBoneMap,
+            skeletonID,
+            animationIDs
         );
 
         child->parent = parentNode;
@@ -963,5 +1240,220 @@ void TextureImporter::Import(const fs::path& assetPath, UUID fileID)
     meta.thumbnailPath = Paths::Icons + "texture_icon.png";
 
     AssetDatabase::RegisterAsset(meta);
+}
+
+static glm::mat4 ConvertMatrix(const aiMatrix4x4& m)
+{
+    return glm::transpose(glm::make_mat4(&m.a1));
+}
+
+void SkeletonImporter::ImportSkeleton(
+    const aiScene* scene,
+    const std::filesystem::path& assetPath,
+    const std::filesystem::path& outDir,
+    UUID skeletonID,
+    LSkeletonFile& skeleton,
+    std::unordered_map<std::string, int>& boneMap,
+    std::string skeletonName
+
+    )
+{
+
+    // PASS 1 — Collect bones from meshes
+    for (uint32_t m = 0; m < scene->mNumMeshes; m++)
+    {
+        aiMesh* mesh = scene->mMeshes[m];
+
+        for (uint32_t b = 0; b < mesh->mNumBones; b++)
+        {
+            aiBone* bone = mesh->mBones[b];
+            std::string name = bone->mName.C_Str();
+
+            if (boneMap.find(name) == boneMap.end())
+            {
+                size_t id = skeleton.bones.size();
+                boneMap[name] = id;
+
+                LSkeletonBone newBone{};
+                newBone.name = name;
+                newBone.parentIndex = -1;
+                newBone.inverseBindMatrix =
+                    ConvertMatrix(bone->mOffsetMatrix);
+
+                skeleton.bones.push_back(newBone);
+            }
+        }
+    }
+
+    // PASS 2 — Build hierarchy from nodes
+    BuildBoneHierarchy(scene->mRootNode, -1, boneMap, skeleton);
+
+    // Write .lskeleton
+
+    std::string cleanName = SanitizeFilename(skeletonName);
+
+    std::filesystem::path path = outDir / (cleanName + ".lskeleton" );
+
+
+    WriteSkeleton(path, skeleton);
+
+    AssetMetadata skeletonMeta;
+    skeletonMeta.uuid = skeletonID;
+    skeletonMeta.name = skeletonName;
+    skeletonMeta.type = AssetType::Skeleton;
+    skeletonMeta.libraryPath = path;
+    skeletonMeta.sourcePath = assetPath;
+    skeletonMeta.thumbnailPath = Paths::Icons + "mesh_icon.png";
+
+    AssetDatabase::RegisterAsset(skeletonMeta);
+}
+
+void SkeletonImporter::BuildBoneHierarchy(
+    const aiNode* node,
+    int parentBone,
+    std::unordered_map<std::string, int>& boneMap,
+    LSkeletonFile& skeleton)
+{
+    std::string name = node->mName.C_Str();
+
+    int currentBone = parentBone;
+
+    auto it = boneMap.find(name);
+    if (it != boneMap.end())
+    {
+        currentBone = it->second;
+        skeleton.bones[currentBone].parentIndex = parentBone;
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++)
+    {
+        BuildBoneHierarchy(
+            node->mChildren[i],
+            currentBone,
+            boneMap,
+            skeleton
+        );
+    }
+}
+
+void AnimationImporter::ImportAnimations(
+    const aiScene* scene,
+    const std::filesystem::path& assetPath,
+    const std::filesystem::path& outDir,
+    const LSkeletonFile& skeleton,
+    std::string skeletonName,
+    std::unordered_map<std::string, int>& boneMap,
+    std::vector<UUID>& animationIDs
+)
+{
+    if (!scene->HasAnimations())
+        return;
+
+    for (uint32_t i = 0; i < scene->mNumAnimations; i++)
+    {
+        aiAnimation* aiAnim = scene->mAnimations[i];
+
+        LAnimationFile animFile;
+
+        animFile.animationID = UUID();
+        animFile.skeletonID = skeleton.skeletonID;
+
+        animationIDs.push_back(animFile.animationID);
+
+        animFile.name = aiAnim->mName.length > 0 ?
+            aiAnim->mName.C_Str() :
+            "Animation_" + std::to_string(i);
+
+        animFile.duration = (float)aiAnim->mDuration;
+        animFile.ticksPerSecond = aiAnim->mTicksPerSecond != 0 ?
+            (float)aiAnim->mTicksPerSecond : 25.0f;
+
+        animFile.tracks.reserve(aiAnim->mNumChannels);
+
+        for (uint32_t c = 0; c < aiAnim->mNumChannels; c++)
+        {
+            aiNodeAnim* channel = aiAnim->mChannels[c];
+
+            std::string boneName = channel->mNodeName.C_Str();
+
+            // Ignore channels not in skeleton
+            if (boneMap.find(boneName) == boneMap.end())
+                continue;
+
+            LAnimationTrack track;
+            track.boneName = boneName;
+
+            if (boneMap.find(track.boneName) != boneMap.end())
+                track.boneIndex = boneMap[track.boneName];
+
+            // POSITION KEYS
+            for (uint32_t p = 0; p < channel->mNumPositionKeys; p++)
+            {
+                const aiVectorKey& key = channel->mPositionKeys[p];
+
+                LKeyPosition pos;
+                pos.position = glm::vec3(key.mValue.x, key.mValue.y, key.mValue.z);
+                pos.time = (float)key.mTime;
+
+                track.positions.push_back(pos);
+            }
+
+            // ROTATION KEYS
+            for (uint32_t r = 0; r < channel->mNumRotationKeys; r++)
+            {
+                const aiQuatKey& key = channel->mRotationKeys[r];
+
+                LKeyRotation rot;
+                rot.rotation = glm::quat(
+                    key.mValue.w,
+                    key.mValue.x,
+                    key.mValue.y,
+                    key.mValue.z
+                );
+
+                rot.time = (float)key.mTime;
+
+                track.rotations.push_back(rot);
+            }
+
+            // SCALE KEYS
+            for (uint32_t s = 0; s < channel->mNumScalingKeys; s++)
+            {
+                const aiVectorKey& key = channel->mScalingKeys[s];
+
+                LKeyScale scale;
+                scale.scale = glm::vec3(
+                    key.mValue.x,
+                    key.mValue.y,
+                    key.mValue.z
+                );
+
+                scale.time = (float)key.mTime;
+
+                track.scales.push_back(scale);
+            }
+
+            animFile.tracks.push_back(track);
+        }
+
+        // Output path
+        std::string cleanName = SanitizeFilename(animFile.name);
+
+        std::filesystem::path outPath =
+            outDir / (skeletonName + "_" + cleanName + ".lanim");
+
+        WriteLAnimation(outPath, animFile);
+
+
+        AssetMetadata meta;
+        meta.uuid = animFile.animationID;
+        meta.name = animFile.name;
+        meta.libraryPath = outPath;
+        meta.sourcePath = assetPath;
+        meta.thumbnailPath = Paths::Icons + "texture_icon.png";
+        meta.type = AssetType::Animation;
+
+        AssetDatabase::RegisterAsset(meta);
+    }
 }
 

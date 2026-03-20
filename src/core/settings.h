@@ -30,7 +30,7 @@ struct RenderSettings {
 	bool enableBloom = false;
 	float bloomBlur = 1.0f;
 
-	bool MSAA = true;
+	bool MSAA = false;
 	int msaaSamples = 4;
 
 	bool needsReload = true;

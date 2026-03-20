@@ -132,8 +132,11 @@ namespace Lengine {
         {
             mainBuffer.Bind();
 
-            glActiveTexture(GL_TEXTURE0 + 0);
+            glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, hdrBuffer.GetColorAttachment(0));
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, postProcess.getBloomColorBuffer());
 
             glClear(GL_COLOR_BUFFER_BIT);
             glDisable(GL_DEPTH_TEST);
@@ -171,36 +174,22 @@ namespace Lengine {
     class BloomPass : public RenderPass
     {
     public:
-        BloomPass(PostProcessing& postProcess_, Framebuffer& ldrBuffer_, Framebuffer& hdrBuffer_) : 
+        BloomPass(PostProcessing& postProcess_, Framebuffer& hdrBuffer, const uint32_t width, const uint32_t height) :
             postProcess(postProcess_),
-            mainBuffer(ldrBuffer_),
-            hdrBuffer(hdrBuffer_)
+            hdrBuffer(hdrBuffer)
+
         {
-            //postProcess.InitBloom();
+            postProcess.InitBloom(width, height);
         }
         void Execute(RenderContext& ctx) override
         {
             postProcess.renderBloom(hdrBuffer.GetColorAttachment(1), ctx.settings->bloomBlur);
 
-            mainBuffer.Bind();
-
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, hdrBuffer.GetColorAttachment(0));
-
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, postProcess.getBloomColorBuffer());
-
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            postProcess.renderBloomShader();
-
-            mainBuffer.Unbind();
-
         }
     private:
         PostProcessing& postProcess;
-        Framebuffer& mainBuffer;
         Framebuffer& hdrBuffer;
+ 
     };
 
     class SkyboxPass : public RenderPass

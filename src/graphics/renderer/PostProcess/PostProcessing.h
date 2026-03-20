@@ -20,10 +20,10 @@ namespace Lengine {
     {
     public:
 
-        void initHDR(uint32_t width, uint32_t height);
+        void InitHDRShaders();
 
         void InitToneMappingResources();
-        void InitBloom();
+        void InitBloom(uint32_t width, uint32_t height);
         void renderToneMapping(const bool bloom, const float exposure);
         void renderBloomShader();
 
@@ -33,9 +33,6 @@ namespace Lengine {
         const GLuint getBloomColorBuffer() { return pingpong.colorBuffer[!horizontal]; }
 
     private:
-        uint32_t width = 1280;
-        uint32_t height = 720;
-
 
 
     private:

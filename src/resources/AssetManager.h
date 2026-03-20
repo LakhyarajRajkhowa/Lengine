@@ -69,8 +69,10 @@ namespace Lengine {
 		std::unordered_map<UUID, std::shared_ptr<GLTexture>> textures;
 		std::unordered_map<UUID, std::shared_ptr<PhongMaterial>> materials;
 		std::unordered_map<UUID, std::shared_ptr<Material>> pbrMaterials;
-
 		std::unordered_map<UUID, std::shared_ptr<Submesh>> submeshes;
+		std::unordered_map<UUID, std::shared_ptr<Skeleton>> skeletons;
+		std::unordered_map<UUID, std::shared_ptr<Animation>> animations;
+
 
 		TextureCache textureCache;
 		
@@ -108,6 +110,14 @@ namespace Lengine {
 		bool LoadSubmesh(const UUID& uuid);
 		bool processPendingSubmesh(const UUID& id);
 		Submesh* GetSubmesh(const UUID& id);
+
+		// SKELETONS
+		bool LoadSkeleton(const UUID& uuid);
+		Skeleton* GetSkeleton(const UUID& id);
+
+		// SKELETONS
+		bool LoadAnimation(const UUID& uuid);
+		Animation* GetAnimation(const UUID& id);
 
 		// MATERIAL (PBR)
 		void ImportMaterial(const std::string path);

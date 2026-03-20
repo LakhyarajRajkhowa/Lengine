@@ -9,6 +9,7 @@
 int main(int argc, char* argv[])
 {
     Lengine::EngineCore engine;
+    engine.initSystems();
 
     Lengine::Editor editor(
         engine.getWindow(),
@@ -21,8 +22,6 @@ int main(int argc, char* argv[])
         engine.getRenderPipeline(),
         engine.isRunning()
     );
-
-    engine.initSystems();
     editor.init();
 
     while (engine.isRunning())

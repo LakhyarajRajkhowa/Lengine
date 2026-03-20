@@ -75,9 +75,50 @@ namespace Lengine {
             std::unordered_map<const aiMaterial*, UUID>& loadedMaterials,
             const std::filesystem::path& sourceAssetPath,
             const std::filesystem::path& outDir,
-            LMeshFile& lmesh
+            LMeshFile& lmesh,
+            std::unordered_map<std::string, int>& skeletonBoneMap,
+            UUID skeletonID,
+            std::vector<UUID>& animationIDs
         );
 
+    };
+
+    class SkeletonImporter
+    {
+    public:
+        static void ImportSkeleton(
+            const aiScene* scene,
+            const std::filesystem::path& assetPath,
+            const std::filesystem::path& outDir,
+            UUID skeletonID,
+            LSkeletonFile& skeleton,
+            std::unordered_map<std::string, int>& boneMap,
+            std::string skeletonName
+
+        );
+
+        static void BuildBoneHierarchy(
+            const aiNode* node,
+            int parentBone,
+            std::unordered_map<std::string, int>& boneMap,
+            LSkeletonFile& skeleton);
+
+    };
+
+    class AnimationImporter
+    {
+    public:
+
+        static void ImportAnimations(
+            const aiScene* scene,
+            const std::filesystem::path& assetPath,
+            const std::filesystem::path& outDir,
+            const LSkeletonFile& skeleton,
+            std::string skeletonName,
+            std::unordered_map<std::string, int>& boneMap,
+            std::vector<UUID>& animationIDs
+
+        );
     };
 
 }

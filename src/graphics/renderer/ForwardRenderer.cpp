@@ -192,6 +192,7 @@ void ForwardRenderer::RenderScene_pbr(
     auto& meshFilters = activeScene->MeshFilters();
     auto& lightComponents = activeScene->Lights();
     auto& transforms = activeScene->Transforms();
+    auto& animations = activeScene->Animations();
 
 
     // Bind camera once (view & projection are global)
@@ -319,6 +320,7 @@ void ForwardRenderer::RenderScene_pbr(
 
 
         const TransformComponent& t = transforms.Get(entityID);
+        const AnimationComponent* anim = animations.Get(entityID);
         const MeshFilter& mf = meshFilters.Get(entityID);
 
         if (mf.HasPendingSubmesh()) continue;
@@ -327,15 +329,35 @@ void ForwardRenderer::RenderScene_pbr(
         glm::mat4 model = t.worldMatrix;
         pbrShader->setMat4("model", model);
 
+        Submesh* sm = nullptr;
+
+        if (!mf.submeshID.isNull()) {
+            sm = assetManager.GetSubmesh(mf.submeshID);
+        }
+       
+        // Animation
+        if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
+        {
+
+            for (int i = 0; i < sm->bonePalette.size(); i++)
+            {
+                int globalID = sm->bonePalette[i];
+
+                pbrShader->setMat4(
+                    "finalBonesMatrices[" + std::to_string(i) + "]",
+                    anim->finalBoneMatrices[globalID]
+                );
+            }
+
+
+        }
+
 
         Material* mat = assetManager.GetMaterial(mr.inst.baseMaterial);
 
         if (!mat) continue;
 
         const MaterialInstance& inst = mr.inst;
-
-
-
         const ResolvedMaterial& finalMat = ResolveMaterial(*mat, inst);
 
         pbrShader->setVec3("material.albedo", finalMat.albedo);
@@ -405,12 +427,9 @@ void ForwardRenderer::RenderScene_pbr(
             GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::MetallicRoughness)
         );
 
-        // new
-        if (!mf.submeshID.isNull()) {
-            Submesh* sm = assetManager.GetSubmesh(mf.submeshID);
 
             if(sm) sm->draw();
-        }                
+              
                 
     }
 

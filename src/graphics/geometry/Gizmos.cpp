@@ -15,34 +15,6 @@ void GizmoRenderer::initGizmoSpheres() {
 
 }
 
-void GizmoRenderer::initGizmoArrows()
-{
-    Submesh* arrowMesh = assetManager.GetSubmesh(SubmeshID::Arrow);
-
-    // X Axis (Red)
-    arrowX.gizmoArrow = arrowMesh;
-    arrowX.axis = glm::vec3(1, 0, 0);
-    arrowX.color = glm::vec4(1, 0, 0, 1);
-
-    // Y Axis (Green)
-    arrowY.gizmoArrow = arrowMesh;
-    arrowY.axis = glm::vec3(0, 1, 0);
-    arrowY.color = glm::vec4(0, 1, 0, 1);
-
-    // Z Axis (Blue)
-    arrowZ.gizmoArrow = arrowMesh;
-    arrowZ.axis = glm::vec3(0, 0, 1);
-    arrowZ.color = glm::vec4(0, 0, 1, 1);
-
-    for (GizmoArrows* a : { &arrowX, &arrowY, &arrowZ }) {
-        a->gizmoArrowShader.compileShaders(
-            Paths::Shaders + "defaultSimpleShader.vert",
-            Paths::Shaders + "defaultSimpleShader.frag"
-        );
-        a->gizmoArrowShader.linkShaders();
-    }
-}
-
 
 void GizmoRenderer::drawGizmoGrid(Camera3d* camera){
     gizmoGridShader.use();

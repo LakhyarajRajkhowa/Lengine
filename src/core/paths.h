@@ -36,6 +36,8 @@ namespace Lengine {
         static inline std::string GameLibrary_Assets_Material;
         static inline std::string GameLibrary_Assets_Texture;
         static inline std::string GameLibrary_Assets_Prefab;
+        static inline std::string GameLibrary_Assets_Skeleton;
+
 
 
         static inline std::string GameAssetDatabase;
@@ -65,6 +67,7 @@ namespace Lengine {
             GameLibrary_Assets_Material = GameLibrary_Assets + "Material/";
             GameLibrary_Assets_Texture = GameLibrary_Assets + "Texture/";
             GameLibrary_Assets_Prefab = GameLibrary_Assets + "Prefab/";
+            GameLibrary_Assets_Skeleton = GameLibrary_Assets + "Skeleton/";
 
 
             GameAssetDatabase = ActiveGameFolder + "/AssetDatabase/";

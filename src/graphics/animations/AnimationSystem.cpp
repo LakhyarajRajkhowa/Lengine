@@ -1,0 +1,201 @@
+#include "AnimationSystem.h"
+#include <cmath>
+
+namespace Lengine
+{
+
+    void AnimationSystem::Update(Scene* scene, float dt)
+    {
+        auto& anims = scene->Animations().GetAll();
+        const auto& entities = scene->Animations().GetEntities();
+
+        for (size_t i = 0; i < anims.size(); i++)
+        {
+
+            AnimationComponent& anim = anims[i];
+            UUID entity = entities[i];
+
+            if (anim.currentAnimationID == UUID::Null)
+                continue;
+
+            Animation* animation = assetManager.GetAnimation(anim.currentAnimationID);
+            if (!animation)
+                continue;
+
+            // Advance time
+            anim.currentTime += dt * animation->ticksPerSecond * anim.playbackSpeed;
+         
+
+            if (anim.looping)
+            {
+                anim.currentTime = fmod(anim.currentTime, animation->duration);
+            }
+            else
+            {
+                anim.currentTime = std::min(anim.currentTime, animation->duration);
+            }
+
+            ApplyAnimation(scene, entity, anim, anim.currentTime);
+        }
+    }
+    void AnimationSystem::ApplyAnimation(
+        Scene* scene,
+        UUID entity,
+        AnimationComponent& anim,
+        float time)
+    {
+        auto& sk = scene->Skeletons().Get(entity);
+        if (sk.skeletonID == UUID::Null)
+        {
+            return;
+        }
+
+        Skeleton* skeleton = sk.skeleton;
+        if (!skeleton)
+        {
+            return;
+        }
+
+     
+        Animation* animation = assetManager.GetAnimation(anim.currentAnimationID);
+        if (!animation)
+        {
+            return;
+        }
+
+        // Ensure finalBoneMatrices array is the correct size and initialized to identity
+        if (anim.finalBoneMatrices.size() != skeleton->bones.size())
+            anim.finalBoneMatrices.resize(skeleton->bones.size(), glm::mat4(1.0f));
+
+        // Compute the bone transforms
+        ComputeBoneTransforms(*skeleton, *animation, time, anim.finalBoneMatrices);
+
+
+    }
+
+    void AnimationSystem::ComputeBoneTransforms(
+        Skeleton& skeleton,
+        Animation& animation,
+        float time,
+        std::vector<glm::mat4>& boneMatrices)
+    {
+        std::vector<glm::mat4> globalTransforms(skeleton.bones.size());
+
+        std::unordered_map<int, int> trackMap;
+        std::vector<int> animatedBones;
+
+        for (size_t i = 0; i < animation.tracks.size(); i++) {
+            trackMap[animation.tracks[i].boneIndex] = (int)i; 
+            animatedBones.push_back(animation.tracks[i].boneIndex);
+
+        }
+
+
+        for (size_t i = 0; i < skeleton.bones.size(); i++)
+        {
+            
+            glm::mat4 localTransform(1.0f);
+
+            auto it = trackMap.find((int)i);
+            if (it != trackMap.end())
+            {
+                auto& track = animation.tracks[it->second];
+
+                glm::vec3 pos = InterpolatePosition(track, time);
+                glm::quat rot = InterpolateRotation(track, time);
+                glm::vec3 scale = InterpolateScale(track, time);
+
+                localTransform =
+                    glm::translate(glm::mat4(1.0f), pos) *
+                    glm::toMat4(rot) *
+                    glm::scale(glm::mat4(1.0f), scale);
+            }
+
+            int parent = skeleton.bones[i].parentIndex;
+
+            if (parent == -1)
+                globalTransforms[i] = localTransform;
+            else
+                globalTransforms[i] = globalTransforms[parent] * localTransform;
+
+            boneMatrices[i] =
+                globalTransforms[i] * skeleton.bones[i].inverseBindMatrix;
+        }
+    }
+
+    glm::vec3 AnimationSystem::InterpolatePosition(AnimationTrack& track, float time)
+    {
+        if (track.positions.size() == 1)
+            return track.positions[0].position;
+
+        for (size_t i = 0; i < track.positions.size() - 1; i++)
+        {
+            if (time < track.positions[i + 1].timeStamp)
+            {
+                float t1 = track.positions[i].timeStamp;
+                float t2 = track.positions[i + 1].timeStamp;
+
+                float factor = (time - t1) / (t2 - t1);
+
+                return glm::mix(
+                    track.positions[i].position,
+                    track.positions[i + 1].position,
+                    factor
+                );
+            }
+        }
+
+        return track.positions.back().position;
+    }
+
+    glm::quat AnimationSystem::InterpolateRotation(AnimationTrack& track, float time)
+    {
+        if (track.rotations.size() == 1)
+            return track.rotations[0].rotation;
+
+        for (size_t i = 0; i < track.rotations.size() - 1; i++)
+        {
+            if (time < track.rotations[i + 1].timeStamp)
+            {
+                float t1 = track.rotations[i].timeStamp;
+                float t2 = track.rotations[i + 1].timeStamp;
+
+                float factor = (time - t1) / (t2 - t1);
+
+                return glm::slerp(
+                    track.rotations[i].rotation,
+                    track.rotations[i + 1].rotation,
+                    factor
+                );
+            }
+        }
+
+        return track.rotations.back().rotation;
+    }
+
+    glm::vec3 AnimationSystem::InterpolateScale(AnimationTrack& track, float time)
+    {
+        if (track.scales.size() == 1)
+            return track.scales[0].scale;
+
+        for (size_t i = 0; i < track.scales.size() - 1; i++)
+        {
+            if (time < track.scales[i + 1].timeStamp)
+            {
+                float t1 = track.scales[i].timeStamp;
+                float t2 = track.scales[i + 1].timeStamp;
+
+                float factor = (time - t1) / (t2 - t1);
+
+                return glm::mix(
+                    track.scales[i].scale,
+                    track.scales[i + 1].scale,
+                    factor
+                );
+            }
+        }
+
+        return track.scales.back().scale;
+    }
+
+}

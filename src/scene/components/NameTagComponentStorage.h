@@ -3,36 +3,38 @@
 #include <unordered_map>
 #include "NameTagComponent.h"
 
-class NameTagComponentStorage
-{
-public:
-
-    void Add(uint32_t entityID, const NameTagComponent& tag)
+namespace Lengine {
+    class NameTagComponentStorage
     {
-        components[entityID] = tag;
-    }
+    public:
 
-    bool Has(uint32_t entityID) const
-    {
-        return components.find(entityID) != components.end();
-    }
+        void Add(UUID entityID, const NameTagComponent& tag)
+        {
+            components[entityID] = tag;
+        }
 
-    NameTagComponent& Get(uint32_t entityID)
-    {
-        return components.at(entityID);
-    }
+        bool Has(UUID entityID) const
+        {
+            return components.find(entityID) != components.end();
+        }
 
-    const NameTagComponent& Get(uint32_t entityID) const
-    {
-        return components.at(entityID);
-    }
+        NameTagComponent& Get(UUID entityID)
+        {
+            return components.at(entityID);
+        }
 
-    void Remove(uint32_t entityID)
-    {
-        components.erase(entityID);
-    }
+        const NameTagComponent& Get(UUID entityID) const
+        {
+            return components.at(entityID);
+        }
 
-private:
+        void Remove(UUID entityID)
+        {
+            components.erase(entityID);
+        }
 
-    std::unordered_map<uint32_t, NameTagComponent> components;
-};
+    private:
+
+        std::unordered_map<UUID, NameTagComponent> components;
+    };
+}

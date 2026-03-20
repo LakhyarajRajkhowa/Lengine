@@ -20,9 +20,8 @@ namespace Lengine {
         std::vector<unsigned int> indices;
         GLuint VAO, VBO, EBO;
 
+
         void computeBounds();
-
-
     public:
         std::vector<Vertex> vertices;
 
@@ -34,8 +33,6 @@ namespace Lengine {
         );
       
         ~Submesh();
-
-
 
         glm::vec3 aabbMin;
         glm::vec3 aabbMax;
@@ -51,9 +48,11 @@ namespace Lengine {
         void addVertex(const Vertex& v);
         void addIndex(uint32_t i);
 
+        std::vector<int> bonePalette;
 
 
     };
+
     class Mesh {
     public:
         

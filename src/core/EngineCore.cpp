@@ -13,7 +13,8 @@ namespace Lengine {
 
         sceneManager(assetManager),
         assetManager(settings),
-        renderPipeline(assetManager)
+        renderPipeline(assetManager),
+        animationSystem(assetManager)
 
     {
     }
@@ -44,6 +45,8 @@ namespace Lengine {
         assetManager.Update(*sceneManager.getActiveScene());
 
         sceneManager.getActiveScene()->Update();
+
+        animationSystem.Update(sceneManager.getActiveScene(), deltaTime);
     }
 
     void EngineCore::pollEvents()

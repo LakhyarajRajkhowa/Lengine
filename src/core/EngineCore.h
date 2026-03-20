@@ -8,9 +8,10 @@
 #include "../core/EventSystem.h"
 
 #include "../graphics/renderer/RenderPipeline.h"
-
 #include "../platform/InputManager.h"
 #include "../platform/Window.h"
+
+#include "../graphics/animations/AnimationSystem.h"
 
 namespace Lengine {
 
@@ -61,6 +62,8 @@ namespace Lengine {
         AssetManager assetManager;
         SceneManager sceneManager;
         RenderPipeline renderPipeline;
+
+        AnimationSystem animationSystem;
 
         bool running = true;
 

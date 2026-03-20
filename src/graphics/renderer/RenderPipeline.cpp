@@ -22,9 +22,7 @@ void RenderPipeline::Init() {
     hdrSkybox.Init(512);
     hdrSkybox.SetHDRTexture(hdrTex);
 
-    postProcess.initHDR(renderSettings.resolution_X, renderSettings.resolution_Y);
-    postProcess.InitBloom();
-    postProcess.InitToneMappingResources();
+    postProcess.InitHDRShaders();
 
 
 }
@@ -173,8 +171,10 @@ void RenderPipeline::BuildGraph()
         renderGraph.AddPass(
             std::make_unique<BloomPass>(
                 postProcess,
-                *mainFramebuffer,   
-                *hdrFramebuffer
+                *hdrFramebuffer,
+                renderSettings.resolution_X,
+                renderSettings.resolution_Y
+
             )
         );
     }
@@ -201,6 +201,9 @@ void RenderPipeline::Render(RenderContext& ctx)
 
         SetRenderSettings(*ctx.settings);
         ctx.settings->needsReload = false;
+
+
+
     }
     // 1 Update per-frame context data
     ctx.irradianceMap = hdrSkybox.GetIrradianceMap();

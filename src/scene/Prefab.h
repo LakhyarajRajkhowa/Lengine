@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../utils/UUID.h"
+#include "../graphics/animations/Skeleton.h"
 #include "external/assimp/Importer.hpp"
 
 namespace Lengine {
@@ -19,6 +20,8 @@ namespace Lengine {
 
 		UUID meshID = UUID::Null;
 		UUID materialID = UUID::Null;
+		UUID skeletonID = UUID::Null;
+		std::vector<UUID> animationIDs = { UUID::Null };
 
 		PrefabNode* parent;
 		std::vector<PrefabNode*> children;
@@ -43,9 +46,11 @@ namespace Lengine {
 
 		PrefabNode* rootPrefabNode; 
 
+
 		~Prefab() {
 			delete rootPrefabNode;
 		}
+
 
 	};
 
@@ -59,6 +64,9 @@ namespace Lengine {
 
 		UUID meshID = UUID::Null;
 		UUID materialID = UUID::Null;
+		UUID skeletonID = UUID::Null;
+		std::vector<UUID> animationIDs = { UUID::Null };
+
 
 		std::optional<UUID> map_albedo;
 	};
@@ -86,6 +94,8 @@ namespace Lengine {
 		data.localTransform = node->localTransform;
 		data.meshID = node->meshID;
 		data.materialID = node->materialID;
+		data.skeletonID = node->skeletonID;
+		data.animationIDs = node->animationIDs;
 
 		outNodes.push_back(data);
 
@@ -128,6 +138,14 @@ namespace Lengine {
 			out.write((char*)&n.localTransform, sizeof(glm::mat4));
 			out.write((char*)&n.meshID, sizeof(UUID));
 			out.write((char*)&n.materialID, sizeof(UUID));
+			out.write((char*)&n.skeletonID, sizeof(UUID));
+
+			uint32_t animCount = (uint32_t)n.animationIDs.size();
+			out.write((char*)&animCount, sizeof(uint32_t));
+
+			for (auto& animID : n.animationIDs)
+				out.write((char*)&animID, sizeof(UUID));
+
 		}
 	}
 
@@ -162,6 +180,15 @@ namespace Lengine {
 			in.read((char*)&n.localTransform, sizeof(glm::mat4));
 			in.read((char*)&n.meshID, sizeof(UUID));
 			in.read((char*)&n.materialID, sizeof(UUID));
+			in.read((char*)&n.skeletonID, sizeof(UUID));
+
+			uint32_t animCount;
+			in.read((char*)&animCount, sizeof(uint32_t));
+
+			n.animationIDs.resize(animCount);
+
+			for (uint32_t j = 0; j < animCount; j++)
+				in.read((char*)&n.animationIDs[j], sizeof(UUID));
 		}
 
 		return data;

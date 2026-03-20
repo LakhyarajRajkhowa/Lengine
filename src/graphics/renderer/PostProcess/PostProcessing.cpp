@@ -4,30 +4,19 @@ using namespace Lengine;
 
 
 
-void PostProcessing::initHDR(uint32_t w, uint32_t h) {
-    width = w;
-    height = h;
+void PostProcessing::InitHDRShaders() {
     fullscreenQuad.init();
 
-}
-
-
-void PostProcessing::InitToneMappingResources() {
-	hdrToneMappingShader.compileShaders(
-		Paths::Shaders + "hdrShader.vert",
-		Paths::Shaders + "hdrToneMapping.frag"
-	);
-	hdrToneMappingShader.linkShaders();
+    hdrToneMappingShader.compileShaders(
+        Paths::Shaders + "hdrShader.vert",
+        Paths::Shaders + "hdrToneMapping.frag"
+    );
+    hdrToneMappingShader.linkShaders();
 
     hdrToneMappingShader.use();
     hdrToneMappingShader.setInt("hdrBuffer", 0);
     hdrToneMappingShader.setInt("bloomBlur", 1);
     hdrToneMappingShader.unuse();
-    
-}
-
-void PostProcessing::InitBloom() {
-    pingpong.Create(width, height);
 
     blurShader.compileShaders(
         Paths::Shaders + "blur.vert",
@@ -39,16 +28,12 @@ void PostProcessing::InitBloom() {
     blurShader.setInt("image", 0);
     blurShader.unuse();
 
-    hdrBloomShader.compileShaders(
-        Paths::Shaders + "hdrShader.vert",
-        Paths::Shaders + "hdrBloom.frag"
-    );
-    hdrBloomShader.linkShaders();
 
-    hdrBloomShader.use();
-    hdrBloomShader.setInt("hdrBuffer", 0);
-    hdrBloomShader.setInt("bloomBlur", 1);
-    hdrBloomShader.unuse();
+}
+
+
+void PostProcessing::InitBloom(uint32_t width, uint32_t height) {
+    pingpong.Create(width, height);
 
 }
 
@@ -64,16 +49,7 @@ void PostProcessing::renderToneMapping(const bool bloom, const float exposure) {
 
 }
 
-void PostProcessing::renderBloomShader() {
 
-    hdrBloomShader.use();
-
-    fullscreenQuad.draw();
-
-    hdrBloomShader.unuse();
-
-
-}
 
 void PostProcessing::renderBloom(GLuint hdrColorBuffer, const float blurScale) {
     bool horizontal = true;

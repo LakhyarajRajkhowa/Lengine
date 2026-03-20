@@ -16,5 +16,8 @@ SubMeshSerializer::Deserialize(const std::filesystem::path& path)
         std::move(file.vertices),
         std::move(file.indices)
     );
+
+    submesh->bonePalette = std::move(file.bonePalette);
+
     return submesh;
 }

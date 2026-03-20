@@ -122,6 +122,8 @@ bool AssetManager::LoadSubmesh(const UUID& id) {
         submeshes[id] = sm;
     else
         return false;
+
+    return true;
 }
 
 bool AssetManager::processPendingSubmesh(const UUID& id) {
@@ -144,6 +146,49 @@ Submesh* AssetManager::GetSubmesh(const UUID& id) {
 
     return it->second.get();
 }
+
+// -------- SKELETON ----------
+
+bool AssetManager::LoadSkeleton(const UUID& uuid) {
+    auto skeleton = AssetDatabase::LoadAsset<Skeleton>(uuid);
+
+    if (skeleton)
+        skeletons[uuid] = skeleton;
+    else
+        return false;
+
+    return true;
+}
+
+Skeleton* AssetManager::GetSkeleton(const UUID& id) {
+    auto it = skeletons.find(id);
+    if (it == skeletons.end())
+        return nullptr;
+
+    return it->second.get();
+}
+
+// -------- ANIMATION ----------
+
+bool AssetManager::LoadAnimation(const UUID& uuid) {
+    auto anim = AssetDatabase::LoadAsset<Animation>(uuid);
+
+    if (anim)
+        animations[uuid] = anim;
+    else
+        return false;
+
+    return true;
+}
+
+Animation* AssetManager::GetAnimation(const UUID& id) {
+    auto it = animations.find(id);
+    if (it == animations.end())
+        return nullptr;
+
+    return it->second.get();
+}
+
 
 // -------- PBRMATERIAL ---------
 
@@ -401,7 +446,7 @@ Entity* AssetManager::InstantiatePrefab(
         if (node.meshID != UUID::Null)
         {
 
-
+            // Submesh
             if (!scene.MeshFilters().Has(e->getID())) {
                 auto& mf = scene.MeshFilters().Add(e->getID());
                 RequestSubmeshLoad(node.meshID, e->getID());
@@ -411,6 +456,7 @@ Entity* AssetManager::InstantiatePrefab(
                 RequestSubmeshLoad(node.meshID, e->getID());
             }
 
+            // Material
             if (node.materialID != UUID::Null)
             {
                 
@@ -447,11 +493,60 @@ Entity* AssetManager::InstantiatePrefab(
 
                 }
             }
+
+            // -------- SKELETON --------
+            if (node.skeletonID != UUID::Null)
+            {
+                if (!scene.Skeletons().Has(e->getID()))
+                {
+                    auto& sk = scene.Skeletons().Add(e->getID());
+
+                    sk.skeletonID = node.skeletonID;
+
+                    // load skeleton asset
+                    if (GetSkeleton(sk.skeletonID)) {
+                        sk.skeleton = GetSkeleton(sk.skeletonID);
+                    }
+                    else {
+                        if (LoadSkeleton(sk.skeletonID)) {
+                            sk.skeleton = GetSkeleton(sk.skeletonID);
+                        }
+
+                    }
+                }
+                
+            }
+
+            // -------- ANIMATION --------
+            if (!node.animationIDs.empty())
+            {
+                if (!scene.Animations().Has(e->getID()))
+                {
+                    auto& anim = scene.Animations().Add(e->getID());
+
+                    anim.animationIDs = node.animationIDs;
+
+                    // Load first animation as default
+                    UUID firstAnimID = node.animationIDs[0];
+
+                    if (GetAnimation(firstAnimID))
+                    {
+                        anim.currentAnimationID = firstAnimID;
+                    }
+                    else
+                    {
+                        if (LoadAnimation(firstAnimID))
+                            anim.currentAnimationID = firstAnimID;
+                       
+                    }
+
+                    anim.currentTime = 0.0f;
+                    anim.playbackSpeed = 1.0f;
+                    anim.looping = true;
+                }
+            }
        
-        }
-
-
-        
+        }  
     }
 
     for (const auto& node : prefab.nodes)

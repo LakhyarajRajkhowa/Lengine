@@ -9,7 +9,18 @@ public:
     GLuint FBO[2];
     GLuint colorBuffer[2];
 
+    void Delete() {
+        if (FBO[0] || FBO[1])
+            glDeleteFramebuffers(2, FBO);
+
+        if (colorBuffer[0] || colorBuffer[1])
+            glDeleteTextures(2, colorBuffer);
+    }
+
     void Create(uint32_t width, uint32_t height) {
+
+        Delete();
+
         glGenFramebuffers(2, FBO);
         glGenTextures(2, colorBuffer);
 
@@ -42,5 +53,7 @@ public:
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+   
 };
 

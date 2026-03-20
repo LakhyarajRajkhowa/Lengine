@@ -9,6 +9,8 @@
 #include "../scene/components/TransformStorage.h"
 #include "../scene/components/HierarchyStorage.h"
 #include "../scene/components/NameTagComponentStorage.h"
+#include "../scene/components/SkeletonComponentStorage.h"
+#include "../scene/components/AnimationComponentStorage.h"
 
 #include "../scene/TransformSystem.h"
 #include "../assets/MaterialRegistry.h"
@@ -153,6 +155,23 @@ namespace Lengine {
             return nameTags;
         }
 
+        const SkeletonComponentStorage& Skeletons() const {
+            return skeletons;
+        }
+
+         SkeletonComponentStorage& Skeletons()  {
+            return skeletons;
+        }
+
+        const AnimationComponentStorage& Animations() const {
+            return animations;
+        }
+
+         AnimationComponentStorage& Animations()  {
+            return animations;
+        }
+
+
         void UpdateWorldTransformRecursive(
             UUID entityID,
             const glm::mat4& parentWorld,
@@ -177,7 +196,8 @@ namespace Lengine {
         TransformStorage transforms;
         HierarchyStorage hierarchys;
         NameTagComponentStorage nameTags;
-
+        SkeletonComponentStorage skeletons;
+        AnimationComponentStorage animations;
 
     };
 }

@@ -11,6 +11,7 @@
 
 #include "../graphics/material/MaterialLoader.h"
 #include "../resources/ImageLoader.h"
+#include "../graphics/animations/Animator.h"
 
 namespace Lengine {
 
@@ -39,6 +40,18 @@ namespace Lengine {
     struct AssetTypeResolver<ImageData>
     {
         static constexpr AssetType Type = AssetType::Texture;
+    };
+
+    template<>
+    struct AssetTypeResolver<Skeleton>
+    {
+        static constexpr AssetType Type = AssetType::Skeleton;
+    };
+
+    template<>
+    struct AssetTypeResolver<Animation>
+    {
+        static constexpr AssetType Type = AssetType::Animation;
     };
 }
 
@@ -108,6 +121,16 @@ namespace Lengine {
             else if constexpr (std::is_same_v<T, ImageData>)
             {
                 asset = ImageLoader::stbiLoader(NormalizePath(meta->libraryPath.string()));
+
+            }
+            else if constexpr (std::is_same_v<T, Skeleton>)
+            {
+                asset = ReadSkeleton(NormalizePath(meta->libraryPath.string()));
+
+            }
+            else if constexpr (std::is_same_v<T, Animation>)
+            {
+                asset = ReadAnimation(NormalizePath(meta->libraryPath.string()));
 
             }
             else

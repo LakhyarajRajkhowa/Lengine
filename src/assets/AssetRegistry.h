@@ -21,7 +21,9 @@ namespace Lengine {
         Shader = 5,
         Scene = 6,
         Prefab = 8,
-        count = 9
+        Skeleton = 9,
+        Animation = 10,
+        count = 11
     };
 
     enum class TextureMapType {
@@ -66,6 +68,8 @@ namespace Lengine {
         case AssetType::Texture:         return "Texture";
         case AssetType::Shader:          return "Shader";
         case AssetType::Prefab:          return "Prefab";
+        case AssetType::Skeleton:        return "Skeleton";
+        case AssetType::Animation:       return "Animation";
         default: return "Unknown";
         }
     }
@@ -79,6 +83,8 @@ namespace Lengine {
         if (str == "Texture")        return AssetType::Texture;
         if (str == "Shader")         return AssetType::Shader;
         if (str == "Prefab")         return AssetType::Prefab;
+        if (str == "Skeleton")       return AssetType::Skeleton;
+        if (str == "Animation")      return AssetType::Animation;
 
         return AssetType::Unknown;
     }

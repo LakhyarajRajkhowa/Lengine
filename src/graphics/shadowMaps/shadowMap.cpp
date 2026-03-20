@@ -62,10 +62,10 @@ void ShadowMap::renderDepthMap(
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         return;
-    }   
+    }
 
-    glm::mat4 lightSpaceProj = 
-       glm::ortho(
+    glm::mat4 lightSpaceProj =
+        glm::ortho(
             -20.0f, 20.0f,
             -20.0f, 20.0f,
             nearPlane, farPlane
@@ -85,7 +85,7 @@ void ShadowMap::renderDepthMap(
     );
 
 
-    
+
     glm::mat4 lightSpaceMat = lightSpaceProj * lightView;
 
     depthShader.use();
@@ -115,6 +115,6 @@ void ShadowMap::renderDepthMap(
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  
+
 
 }

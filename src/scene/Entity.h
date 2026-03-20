@@ -32,7 +32,6 @@ namespace Lengine {
 		void setID(const UUID& id) { ID = id; }
 
 
-
 	private:	
 		UUID ID;
 	};

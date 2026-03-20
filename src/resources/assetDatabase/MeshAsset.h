@@ -120,6 +120,8 @@ namespace Lengine {
 
         AABB bounds;
 
+        std::vector<int> bonePalette;
+
 
     };
 
@@ -162,6 +164,13 @@ namespace Lengine {
 
         // --- Write bounding box ---
         out.write((char*)&submesh.bounds, sizeof(AABB));
+
+        // --- Write bone palette ---
+        uint32_t paletteSize = (uint32_t)submesh.bonePalette.size();
+        out.write((char*)&paletteSize, sizeof(uint32_t));
+
+        if (paletteSize > 0)
+            out.write((char*)submesh.bonePalette.data(), paletteSize * sizeof(int));
 
         out.close();
     }
@@ -207,8 +216,161 @@ namespace Lengine {
         // AABB
         in.read((char*)&submesh.bounds, sizeof(AABB));
 
+        // --- Read bone palette ---
+        uint32_t paletteSize;
+        in.read((char*)&paletteSize, sizeof(uint32_t));
+
+        submesh.bonePalette.resize(paletteSize);
+        if (paletteSize > 0)
+            in.read((char*)submesh.bonePalette.data(), paletteSize * sizeof(int));
+
         return submesh;
     }
+
+    struct LSkeletonBone
+    {
+        std::string name;
+        int parentIndex;
+        glm::mat4 inverseBindMatrix;
+    };
+
+    struct LSkeletonFile
+    {
+        UUID skeletonID;
+        std::string sourcePath;
+
+        std::vector<LSkeletonBone> bones;
+    };
+
+
+
+    static void WriteSkeleton(
+        const std::filesystem::path& outPath,
+        const LSkeletonFile& skeleton)
+    {
+        std::ofstream out(outPath, std::ios::binary);
+
+        if (!out)
+        {
+            std::cout << "Failed to write skeleton: " << outPath << std::endl;
+            return;
+        }
+
+        // UUID
+        out.write((char*)&skeleton.skeletonID, sizeof(UUID));
+
+        // source path
+        size_t pathLen = skeleton.sourcePath.size();
+        out.write((char*)&pathLen, sizeof(uint32_t));
+        out.write(skeleton.sourcePath.c_str(), pathLen);
+
+        // bone count
+        size_t boneCount = skeleton.bones.size();
+        out.write((char*)&boneCount, sizeof(uint32_t));
+
+        for (const auto& bone : skeleton.bones)
+        {
+            size_t nameLen = bone.name.size();
+
+            out.write((char*)&nameLen, sizeof(uint32_t));
+            out.write(bone.name.c_str(), nameLen);
+
+            out.write((char*)&bone.parentIndex, sizeof(int));
+            out.write((char*)&bone.inverseBindMatrix, sizeof(glm::mat4));
+        }
+
+        out.close();
+    }
+
+    struct LKeyPosition
+    {
+        glm::vec3 position;
+        float time;
+    };
+
+    struct LKeyRotation
+    {
+        glm::quat rotation;
+        float time;
+    };
+
+    struct LKeyScale
+    {
+        glm::vec3 scale;
+        float time;
+    };
+
+    struct LAnimationTrack
+    {
+        std::string boneName;
+
+        int boneIndex = -1;
+
+        std::vector<LKeyPosition> positions;
+        std::vector<LKeyRotation> rotations;
+        std::vector<LKeyScale> scales;
+    };
+
+    struct LAnimationFile
+    {
+        UUID animationID;
+        UUID skeletonID;
+
+        std::string name;
+
+        float duration;
+        float ticksPerSecond;
+
+        std::vector<LAnimationTrack> tracks;
+    };
+
+    static void WriteLAnimation(const std::filesystem::path& path, const LAnimationFile& anim)
+{
+    
+        // TODO : path too long , so error 
+    std::ofstream out(path, std::ios::binary);
+
+    if (!out) {
+        std::cout << ("Failed to open .lanim file for writing") <<std::endl;
+    }
+        
+
+
+    out.write((char*)&anim.animationID, sizeof(UUID));
+    out.write((char*)&anim.skeletonID, sizeof(UUID));
+
+    size_t nameLen = anim.name.size();
+    out.write((char*)&nameLen, sizeof(uint32_t));
+    out.write(anim.name.data(), nameLen);
+
+    out.write((char*)&anim.duration, sizeof(float));
+    out.write((char*)&anim.ticksPerSecond, sizeof(float));
+
+    size_t trackCount = anim.tracks.size();
+    out.write((char*)&trackCount, sizeof(uint32_t));
+
+    for (const auto& track : anim.tracks)
+    {
+        size_t boneLen = track.boneName.size();
+        out.write((char*)&boneLen, sizeof(uint32_t));
+        out.write(track.boneName.data(), boneLen);
+
+        size_t boneIdx = track.boneIndex;
+        out.write((char*)&boneIdx, sizeof(uint32_t));
+
+        size_t posCount = track.positions.size();
+        out.write((char*)&posCount, sizeof(uint32_t));
+        out.write((char*)track.positions.data(), posCount * sizeof(LKeyPosition));
+
+        size_t rotCount = track.rotations.size();
+        out.write((char*)&rotCount, sizeof(uint32_t));
+        out.write((char*)track.rotations.data(), rotCount * sizeof(LKeyRotation));
+
+        size_t scaleCount = track.scales.size();
+        out.write((char*)&scaleCount, sizeof(uint32_t));
+        out.write((char*)track.scales.data(), scaleCount * sizeof(LKeyScale));
+    }
+}
 
 
 }
