@@ -57,6 +57,8 @@ namespace Lengine {
         float ticksPerSecond = 0.0f;
 
         std::vector<AnimationTrack> tracks;
+        std::vector<int> boneTrackMap;
+
 
     };
 
@@ -91,6 +93,7 @@ namespace Lengine {
         in.read((char*)&trackCount, sizeof(uint32_t));
 
         animation->tracks.resize(trackCount);
+
 
         for (uint32_t i = 0; i < trackCount; i++)
         {
@@ -128,6 +131,12 @@ namespace Lengine {
             track.scales.resize(scaleCount);
             in.read((char*)track.scales.data(), scaleCount * sizeof(AnimationKeyScale));
         }
+
+        uint32_t mapSize;
+        in.read((char*)&mapSize, sizeof(uint32_t));
+
+        animation->boneTrackMap.resize(mapSize);
+        in.read((char*)animation->boneTrackMap.data(), mapSize * sizeof(int));
 
         return animation;
     }

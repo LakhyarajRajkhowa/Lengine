@@ -737,6 +737,9 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
 
     }
 
+    prefab->skeletonID = skeletonID;
+    prefab->animationIDs = animationIDs;
+
     // ---------------- Nodes ----------------
 
     // send root node of the scene for processing
@@ -872,8 +875,6 @@ PrefabNode* PrefabImporter::LoadPrefabNode(
         meshNode->meshID = submeshUUID;
         meshNode->parent = parentNode;
         meshNode->materialID = materialUUID;
-        meshNode->skeletonID = skeletonID;
-        meshNode->animationIDs = animationIDs;
         parentNode->children.push_back(meshNode);
     }
 
@@ -1369,6 +1370,8 @@ void AnimationImporter::ImportAnimations(
             (float)aiAnim->mTicksPerSecond : 25.0f;
 
         animFile.tracks.reserve(aiAnim->mNumChannels);
+        animFile.boneTrackMap.resize(skeleton.bones.size(), -1);
+
 
         for (uint32_t c = 0; c < aiAnim->mNumChannels; c++)
         {
@@ -1434,6 +1437,7 @@ void AnimationImporter::ImportAnimations(
             }
 
             animFile.tracks.push_back(track);
+            animFile.boneTrackMap[track.boneIndex] = (int)animFile.tracks.size() - 1;
         }
 
         // Output path

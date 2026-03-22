@@ -44,6 +44,13 @@ namespace Lengine {
             return rootEntities;
         }
 
+        bool Scene::IsRootEntity(const UUID& id)
+        {
+            const auto& roots = getRootEntities();
+
+            return std::find(roots.begin(), roots.end(), id) != roots.end();
+        }
+
         const UUID& GetMainDirectionalLight() {
             Light light;
             bool hasDirectionalLight = false;
@@ -104,8 +111,6 @@ namespace Lengine {
         void RemoveEntityRecursive(UUID id);
 
 
-
-        
         
         const MeshRendererStorage& MeshRenderers() const {
             return meshRenderers;

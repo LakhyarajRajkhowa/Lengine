@@ -4,6 +4,8 @@
 namespace Lengine
 {
 
+    // TODO : Optimise using SoA and parallel animation
+
     void AnimationSystem::Update(Scene* scene, float dt)
     {
         auto& anims = scene->Animations().GetAll();
@@ -81,34 +83,23 @@ namespace Lengine
     {
         std::vector<glm::mat4> globalTransforms(skeleton.bones.size());
 
-        std::unordered_map<int, int> trackMap;
-        std::vector<int> animatedBones;
-
-        for (size_t i = 0; i < animation.tracks.size(); i++) {
-            trackMap[animation.tracks[i].boneIndex] = (int)i; 
-            animatedBones.push_back(animation.tracks[i].boneIndex);
-
-        }
-
-
         for (size_t i = 0; i < skeleton.bones.size(); i++)
         {
-            
             glm::mat4 localTransform(1.0f);
 
-            auto it = trackMap.find((int)i);
-            if (it != trackMap.end())
+            int trackIndex = animation.boneTrackMap[i];
+
+            if (trackIndex != -1)
             {
-                auto& track = animation.tracks[it->second];
+                auto& track = animation.tracks[trackIndex];
 
-                glm::vec3 pos = InterpolatePosition(track, time);
-                glm::quat rot = InterpolateRotation(track, time);
-                glm::vec3 scale = InterpolateScale(track, time);
+                glm::vec3 pos = InterpolatePosition(track, time, 1);
+                glm::quat rot = InterpolateRotation(track, time, 1);
+                //glm::vec3 scale = InterpolateScale(track, time, 1);
 
-                localTransform =
-                    glm::translate(glm::mat4(1.0f), pos) *
-                    glm::toMat4(rot) *
-                    glm::scale(glm::mat4(1.0f), scale);
+                localTransform = glm::translate(localTransform, pos);
+                localTransform *= glm::toMat4(rot);
+                localTransform = glm::scale(localTransform, glm::vec3(1.0f)); // for now no scaling
             }
 
             int parent = skeleton.bones[i].parentIndex;
@@ -123,12 +114,13 @@ namespace Lengine
         }
     }
 
-    glm::vec3 AnimationSystem::InterpolatePosition(AnimationTrack& track, float time)
+    glm::vec3 AnimationSystem::InterpolatePosition(AnimationTrack& track, float time, int delta)
     {
         if (track.positions.size() == 1)
             return track.positions[0].position;
 
-        for (size_t i = 0; i < track.positions.size() - 1; i++)
+
+        for (size_t i = 0; i < track.positions.size() - 1; i+=delta)
         {
             if (time < track.positions[i + 1].timeStamp)
             {
@@ -148,12 +140,12 @@ namespace Lengine
         return track.positions.back().position;
     }
 
-    glm::quat AnimationSystem::InterpolateRotation(AnimationTrack& track, float time)
+    glm::quat AnimationSystem::InterpolateRotation(AnimationTrack& track, float time, int delta)
     {
         if (track.rotations.size() == 1)
             return track.rotations[0].rotation;
 
-        for (size_t i = 0; i < track.rotations.size() - 1; i++)
+        for (size_t i = 0; i < track.rotations.size() - 1; i+=delta)
         {
             if (time < track.rotations[i + 1].timeStamp)
             {
@@ -173,12 +165,12 @@ namespace Lengine
         return track.rotations.back().rotation;
     }
 
-    glm::vec3 AnimationSystem::InterpolateScale(AnimationTrack& track, float time)
+    glm::vec3 AnimationSystem::InterpolateScale(AnimationTrack& track, float time, int delta)
     {
         if (track.scales.size() == 1)
             return track.scales[0].scale;
 
-        for (size_t i = 0; i < track.scales.size() - 1; i++)
+        for (size_t i = 0; i < track.scales.size() - 1; i+delta)
         {
             if (time < track.scales[i + 1].timeStamp)
             {

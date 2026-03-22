@@ -494,58 +494,6 @@ Entity* AssetManager::InstantiatePrefab(
                 }
             }
 
-            // -------- SKELETON --------
-            if (node.skeletonID != UUID::Null)
-            {
-                if (!scene.Skeletons().Has(e->getID()))
-                {
-                    auto& sk = scene.Skeletons().Add(e->getID());
-
-                    sk.skeletonID = node.skeletonID;
-
-                    // load skeleton asset
-                    if (GetSkeleton(sk.skeletonID)) {
-                        sk.skeleton = GetSkeleton(sk.skeletonID);
-                    }
-                    else {
-                        if (LoadSkeleton(sk.skeletonID)) {
-                            sk.skeleton = GetSkeleton(sk.skeletonID);
-                        }
-
-                    }
-                }
-                
-            }
-
-            // -------- ANIMATION --------
-            if (!node.animationIDs.empty())
-            {
-                if (!scene.Animations().Has(e->getID()))
-                {
-                    auto& anim = scene.Animations().Add(e->getID());
-
-                    anim.animationIDs = node.animationIDs;
-
-                    // Load first animation as default
-                    UUID firstAnimID = node.animationIDs[0];
-
-                    if (GetAnimation(firstAnimID))
-                    {
-                        anim.currentAnimationID = firstAnimID;
-                    }
-                    else
-                    {
-                        if (LoadAnimation(firstAnimID))
-                            anim.currentAnimationID = firstAnimID;
-                       
-                    }
-
-                    anim.currentTime = 0.0f;
-                    anim.playbackSpeed = 1.0f;
-                    anim.looping = true;
-                }
-            }
-       
         }  
     }
 
@@ -557,6 +505,64 @@ Entity* AssetManager::InstantiatePrefab(
                 entities[node.index]->getID(),
                 entities[node.parentIndex]->getID()
             );
+        }
+    }
+
+    for (auto& e : entities) {
+        if (scene.MeshFilters().Has(e->getID())) {
+            auto& m = scene.MeshFilters().Get(e->getID());
+            m.rootParent = entities[0]->getID();
+        }
+    }
+
+    // -------- SKELETON (root) --------
+    if (prefab.skeletonID != UUID::Null)
+    {
+        if (!scene.Skeletons().Has(entities[0]->getID()))
+        {
+            auto& sk = scene.Skeletons().Add(entities[0]->getID());
+
+            sk.skeletonID = prefab.skeletonID;
+
+            // load skeleton asset
+            if (GetSkeleton(sk.skeletonID)) {
+                sk.skeleton = GetSkeleton(sk.skeletonID);
+            }
+            else {
+                if (LoadSkeleton(sk.skeletonID)) {
+                    sk.skeleton = GetSkeleton(sk.skeletonID);
+                }
+
+            }
+        }
+
+    }
+
+    // -------- ANIMATION (root) --------
+    if (!prefab.animationIDs.empty())
+    {
+        if (!scene.Animations().Has(entities[0]->getID()))
+        {
+            auto& anim = scene.Animations().Add(entities[0]->getID());
+
+            anim.animationIDs = prefab.animationIDs;
+
+
+            for (auto& animID : anim.animationIDs) {
+                if (!GetAnimation(animID)) {
+                    LoadAnimation(animID);
+                }
+            }
+
+            UUID firstAnimID = prefab.animationIDs[0];
+            if (GetAnimation(firstAnimID))
+            {
+                anim.currentAnimationID = firstAnimID;
+            }
+
+            anim.currentTime = 0.0f;
+            anim.playbackSpeed = 1.0f;
+            anim.looping = true;
         }
     }
 

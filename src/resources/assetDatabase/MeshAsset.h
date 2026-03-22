@@ -322,55 +322,65 @@ namespace Lengine {
         float ticksPerSecond;
 
         std::vector<LAnimationTrack> tracks;
+        std::vector<int> boneTrackMap;
     };
 
     static void WriteLAnimation(const std::filesystem::path& path, const LAnimationFile& anim)
-{
+    {
     
-        // TODO : path too long , so error 
-    std::ofstream out(path, std::ios::binary);
 
-    if (!out) {
-        std::cout << ("Failed to open .lanim file for writing") <<std::endl;
-    }
+        std::filesystem::path longPath = std::filesystem::path("\\\\?\\") / path;
+
+        std::ofstream out(longPath, std::ios::binary);
+
+        if (!out) {
+            std::cout << "Failed to open .lanim file for writing :"<< path <<std::endl;
+        }
         
 
 
-    out.write((char*)&anim.animationID, sizeof(UUID));
-    out.write((char*)&anim.skeletonID, sizeof(UUID));
+        out.write((char*)&anim.animationID, sizeof(UUID));
+        out.write((char*)&anim.skeletonID, sizeof(UUID));
 
-    size_t nameLen = anim.name.size();
-    out.write((char*)&nameLen, sizeof(uint32_t));
-    out.write(anim.name.data(), nameLen);
+        size_t nameLen = anim.name.size();
+        out.write((char*)&nameLen, sizeof(uint32_t));
+        out.write(anim.name.data(), nameLen);
 
-    out.write((char*)&anim.duration, sizeof(float));
-    out.write((char*)&anim.ticksPerSecond, sizeof(float));
+        out.write((char*)&anim.duration, sizeof(float));
+        out.write((char*)&anim.ticksPerSecond, sizeof(float));
 
-    size_t trackCount = anim.tracks.size();
-    out.write((char*)&trackCount, sizeof(uint32_t));
+        size_t trackCount = anim.tracks.size();
+        out.write((char*)&trackCount, sizeof(uint32_t));
 
-    for (const auto& track : anim.tracks)
-    {
-        size_t boneLen = track.boneName.size();
-        out.write((char*)&boneLen, sizeof(uint32_t));
-        out.write(track.boneName.data(), boneLen);
 
-        size_t boneIdx = track.boneIndex;
-        out.write((char*)&boneIdx, sizeof(uint32_t));
 
-        size_t posCount = track.positions.size();
-        out.write((char*)&posCount, sizeof(uint32_t));
-        out.write((char*)track.positions.data(), posCount * sizeof(LKeyPosition));
 
-        size_t rotCount = track.rotations.size();
-        out.write((char*)&rotCount, sizeof(uint32_t));
-        out.write((char*)track.rotations.data(), rotCount * sizeof(LKeyRotation));
+        for (const auto& track : anim.tracks)
+        {
+            size_t boneLen = track.boneName.size();
+            out.write((char*)&boneLen, sizeof(uint32_t));
+            out.write(track.boneName.data(), boneLen);
 
-        size_t scaleCount = track.scales.size();
-        out.write((char*)&scaleCount, sizeof(uint32_t));
-        out.write((char*)track.scales.data(), scaleCount * sizeof(LKeyScale));
+            size_t boneIdx = track.boneIndex;
+            out.write((char*)&boneIdx, sizeof(uint32_t));
+
+            size_t posCount = track.positions.size();
+            out.write((char*)&posCount, sizeof(uint32_t));
+            out.write((char*)track.positions.data(), posCount * sizeof(LKeyPosition));
+
+            size_t rotCount = track.rotations.size();
+            out.write((char*)&rotCount, sizeof(uint32_t));
+            out.write((char*)track.rotations.data(), rotCount * sizeof(LKeyRotation));
+
+            size_t scaleCount = track.scales.size();
+            out.write((char*)&scaleCount, sizeof(uint32_t));
+            out.write((char*)track.scales.data(), scaleCount * sizeof(LKeyScale));
+        }
+
+        size_t mapSize = anim.boneTrackMap.size();
+        out.write((char*)&mapSize, sizeof(uint32_t));
+        out.write((char*)anim.boneTrackMap.data(), mapSize * sizeof(int));
     }
-}
 
 
 }

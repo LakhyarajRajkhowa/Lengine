@@ -20,8 +20,7 @@ namespace Lengine {
 
 		UUID meshID = UUID::Null;
 		UUID materialID = UUID::Null;
-		UUID skeletonID = UUID::Null;
-		std::vector<UUID> animationIDs = { UUID::Null };
+
 
 		PrefabNode* parent;
 		std::vector<PrefabNode*> children;
@@ -44,13 +43,15 @@ namespace Lengine {
 		std::unordered_map<const aiMaterial*, UUID> importedMaterials;
 
 
+		UUID skeletonID = UUID::Null;
+		std::vector<UUID> animationIDs = { UUID::Null };
+
 		PrefabNode* rootPrefabNode; 
 
 
 		~Prefab() {
 			delete rootPrefabNode;
 		}
-
 
 	};
 
@@ -64,8 +65,6 @@ namespace Lengine {
 
 		UUID meshID = UUID::Null;
 		UUID materialID = UUID::Null;
-		UUID skeletonID = UUID::Null;
-		std::vector<UUID> animationIDs = { UUID::Null };
 
 
 		std::optional<UUID> map_albedo;
@@ -75,6 +74,9 @@ namespace Lengine {
 	{
 		UUID id;
 		std::string name;
+
+		UUID skeletonID = UUID::Null;
+		std::vector<UUID> animationIDs = { UUID::Null };
 
 		std::vector<PrefabNodeData> nodes ;
 	};
@@ -94,8 +96,6 @@ namespace Lengine {
 		data.localTransform = node->localTransform;
 		data.meshID = node->meshID;
 		data.materialID = node->materialID;
-		data.skeletonID = node->skeletonID;
-		data.animationIDs = node->animationIDs;
 
 		outNodes.push_back(data);
 
@@ -110,6 +110,8 @@ namespace Lengine {
 		PrefabData data;
 		data.id = prefab.id;
 		data.name = prefab.name;
+		data.skeletonID = prefab.skeletonID;
+		data.animationIDs = prefab.animationIDs;
 
 		CollectPrefabNodes(prefab.rootPrefabNode, -1, data.nodes);
 
@@ -125,6 +127,16 @@ namespace Lengine {
 		uint32_t nodeCount = (uint32_t)data.nodes.size();
 		out.write((char*)&nodeCount, sizeof(uint32_t));
 
+		// skeleton
+		out.write((char*)&data.skeletonID, sizeof(UUID));
+
+		// animations
+		uint32_t animCount = (uint32_t)data.animationIDs.size();
+		out.write((char*)&animCount, sizeof(uint32_t));
+
+		for (auto& animID : data.animationIDs)
+			out.write((char*)&animID, sizeof(UUID));
+
 		// ---- Nodes ----
 		for (auto& n : data.nodes)
 		{
@@ -138,14 +150,16 @@ namespace Lengine {
 			out.write((char*)&n.localTransform, sizeof(glm::mat4));
 			out.write((char*)&n.meshID, sizeof(UUID));
 			out.write((char*)&n.materialID, sizeof(UUID));
-			out.write((char*)&n.skeletonID, sizeof(UUID));
 
-			uint32_t animCount = (uint32_t)n.animationIDs.size();
-			out.write((char*)&animCount, sizeof(uint32_t));
+			// optional albedo map
+			bool hasAlbedo = n.map_albedo.has_value();
+			out.write((char*)&hasAlbedo, sizeof(bool));
 
-			for (auto& animID : n.animationIDs)
-				out.write((char*)&animID, sizeof(UUID));
-
+			if (hasAlbedo)
+			{
+				UUID id = n.map_albedo.value();
+				out.write((char*)&id, sizeof(UUID));
+			}
 		}
 	}
 
@@ -165,6 +179,18 @@ namespace Lengine {
 		in.read((char*)&nodeCount, sizeof(uint32_t));
 		data.nodes.resize(nodeCount);
 
+		// skeleton
+		in.read((char*)&data.skeletonID, sizeof(UUID));
+
+		// animations
+		uint32_t animCount;
+		in.read((char*)&animCount, sizeof(uint32_t));
+
+		data.animationIDs.resize(animCount);
+		for (uint32_t i = 0; i < animCount; i++)
+			in.read((char*)&data.animationIDs[i], sizeof(UUID));
+
+		// ---- Nodes ----
 		for (uint32_t i = 0; i < nodeCount; i++)
 		{
 			auto& n = data.nodes[i];
@@ -180,15 +206,17 @@ namespace Lengine {
 			in.read((char*)&n.localTransform, sizeof(glm::mat4));
 			in.read((char*)&n.meshID, sizeof(UUID));
 			in.read((char*)&n.materialID, sizeof(UUID));
-			in.read((char*)&n.skeletonID, sizeof(UUID));
 
-			uint32_t animCount;
-			in.read((char*)&animCount, sizeof(uint32_t));
+			// optional albedo
+			bool hasAlbedo;
+			in.read((char*)&hasAlbedo, sizeof(bool));
 
-			n.animationIDs.resize(animCount);
-
-			for (uint32_t j = 0; j < animCount; j++)
-				in.read((char*)&n.animationIDs[j], sizeof(UUID));
+			if (hasAlbedo)
+			{
+				UUID id;
+				in.read((char*)&id, sizeof(UUID));
+				n.map_albedo = id;
+			}
 		}
 
 		return data;

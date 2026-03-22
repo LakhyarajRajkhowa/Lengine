@@ -30,9 +30,9 @@ namespace Lengine
             std::vector<glm::mat4>& boneMatrices
         );
 
-        glm::vec3 InterpolatePosition(AnimationTrack& track, float time);
-        glm::quat InterpolateRotation(AnimationTrack& track, float time);
-        glm::vec3 InterpolateScale(AnimationTrack& track, float time);
+        glm::vec3 InterpolatePosition(AnimationTrack& track, float time, int delta);
+        glm::quat InterpolateRotation(AnimationTrack& track, float time, int delta);
+        glm::vec3 InterpolateScale(AnimationTrack& track, float time, int delta);
 
         size_t FindKeyframeIndex(const std::vector<AnimationKeyPosition>& keys, float time);
         size_t FindKeyframeIndex(const std::vector<AnimationKeyRotation>& keys, float time);

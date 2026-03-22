@@ -12,9 +12,6 @@ InspectorPanel::InspectorPanel(
 }
 
 
-
-
-
 void InspectorPanel::OnImGuiRender() {
     ImGui::Begin("Inspector");
 
@@ -425,96 +422,29 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
     {
         auto& tr = scene->Transforms().Get(entity->getID());
 
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Text("Transform");
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        // ---------- POSITION ----------
-        ImGui::Text("Position");
-        ImGui::SameLine();
-
-        if (ImGui::Button("Reset##pos"))
-        {
-            tr.localPosition = { 0.0f, 0.0f, 0.0f };
-            tr.localDirty = true;
-            tr.worldDirty = true;
-
-            TransformSystem::Dirty = true;
-            
-        }
-
-        if (ImGui::DragFloat3(
-            "##Position",
-            glm::value_ptr(tr.localPosition),
-            0.1f
-        ))
-        {
-            tr.localDirty = true;
-            tr.worldDirty = true;
-
-            TransformSystem::Dirty = true;
+        if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
 
 
-        }
+            // ---------- POSITION ----------
+            ImGui::Text("Position");
+            ImGui::SameLine();
 
-        // ---------- ROTATION (Degrees UI) ----------
-        ImGui::Text("Rotation");
-        ImGui::SameLine();
-
-        if (ImGui::Button("Reset##rot"))
-        {
-            tr.localRotation = glm::vec3(0.0f);
-            tr.localDirty = true;
-            tr.worldDirty = true;
-
-            TransformSystem::Dirty = true;
-
-
-        }
-
-        glm::vec3 rotationDeg = glm::degrees(glm::eulerAngles(tr.localRotation));
-
-        if (ImGui::DragFloat3(
-            "##Rotation",
-            glm::value_ptr(rotationDeg),
-            0.5f
-        ))
-        {
-            tr.localRotation = glm::radians(rotationDeg);
-            tr.localDirty = true;
-            tr.worldDirty = true;
-
-            TransformSystem::Dirty = true;
-
-
-        }
-
-        // ---------- SCALE ----------
-        ImGui::Text("Scale");
-        ImGui::SameLine();
-
-        if (ImGui::Button("Reset##scale"))
-        {
-            tr.localScale = { 1.0f, 1.0f, 1.0f };
-            tr.localDirty = true;
-            tr.worldDirty = true;
-
-            TransformSystem::Dirty = true;
-
-
-        }
-
-        bool& uniformScale = inspectorState.uniformScale;
-        ImGui::Checkbox("Uniform", &uniformScale);
-
-        if (uniformScale)
-        {
-            float s = tr.localScale.x;
-            if (ImGui::DragFloat("##UniformScale", &s, 0.05f))
+            if (ImGui::Button("Reset##pos"))
             {
-                tr.localScale = { s, s, s };
+                tr.localPosition = { 0.0f, 0.0f, 0.0f };
+                tr.localDirty = true;
+                tr.worldDirty = true;
+
+                TransformSystem::Dirty = true;
+
+            }
+
+            if (ImGui::DragFloat3(
+                "##Position",
+                glm::value_ptr(tr.localPosition),
+                0.1f
+            ))
+            {
                 tr.localDirty = true;
                 tr.worldDirty = true;
 
@@ -522,19 +452,84 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
 
 
             }
-        }
-        else
-        {
-            if (ImGui::DragFloat3(
-                "##Scale",
-                glm::value_ptr(tr.localScale),
-                0.05f
-            ))
+
+            // ---------- ROTATION (Degrees UI) ----------
+            ImGui::Text("Rotation");
+            ImGui::SameLine();
+
+            if (ImGui::Button("Reset##rot"))
             {
+                tr.localRotation = glm::vec3(0.0f);
                 tr.localDirty = true;
+                tr.worldDirty = true;
 
                 TransformSystem::Dirty = true;
 
+
+            }
+
+            glm::vec3 rotationDeg = glm::degrees(glm::eulerAngles(tr.localRotation));
+
+            if (ImGui::DragFloat3(
+                "##Rotation",
+                glm::value_ptr(rotationDeg),
+                0.5f
+            ))
+            {
+                tr.localRotation = glm::radians(rotationDeg);
+                tr.localDirty = true;
+                tr.worldDirty = true;
+
+                TransformSystem::Dirty = true;
+
+
+            }
+
+            // ---------- SCALE ----------
+            ImGui::Text("Scale");
+            ImGui::SameLine();
+
+            if (ImGui::Button("Reset##scale"))
+            {
+                tr.localScale = { 1.0f, 1.0f, 1.0f };
+                tr.localDirty = true;
+                tr.worldDirty = true;
+
+                TransformSystem::Dirty = true;
+
+
+            }
+
+            bool& uniformScale = inspectorState.uniformScale;
+            ImGui::Checkbox("Uniform", &uniformScale);
+
+            if (uniformScale)
+            {
+                float s = tr.localScale.x;
+                if (ImGui::DragFloat("##UniformScale", &s, 0.05f))
+                {
+                    tr.localScale = { s, s, s };
+                    tr.localDirty = true;
+                    tr.worldDirty = true;
+
+                    TransformSystem::Dirty = true;
+
+
+                }
+            }
+            else
+            {
+                if (ImGui::DragFloat3(
+                    "##Scale",
+                    glm::value_ptr(tr.localScale),
+                    0.05f
+                ))
+                {
+                    tr.localDirty = true;
+
+                    TransformSystem::Dirty = true;
+
+                }
             }
         }
     }
@@ -560,45 +555,45 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
     if (scene->MeshFilters().Has(entityID)) {
         MeshFilter& mf = scene->MeshFilters().Get(entity->getID());
 
-        ImGui::Separator();
-        ImGui::Text("Mesh Filter");
-        ImGui::Separator();
-        ImGui::Spacing();
-        // --- Draw a centered box ---
-        ImGui::BeginGroup();
+        if (ImGui::CollapsingHeader("Mesh Filter", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-        // Mesh name string
-        std::string submeshName = "None";
-        const UUID& submeshID = mf.submeshID;
+            // --- Draw a centered box ---
+            ImGui::BeginGroup();
 
-        if (!submeshID.isNull() && !mf.HasPendingSubmesh() ) {
-            const AssetMetadata* submeshMetaData = assets.GetAssetMetaData(mf.submeshID);
-            submeshName = submeshMetaData ? submeshMetaData->name : "Invalid Submesh";
-        }
-        ImGui::Button((submeshName + "##Submesh").c_str(), buttonSize);
+            // Mesh name string
+            std::string submeshName = "None";
+            const UUID& submeshID = mf.submeshID;
 
-        // --- Drag Drop Target ---
-        if (ImGui::BeginDragDropTarget())
-        {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SUBMESH_ASSET"))
-            {
-                const MeshDragPayload* data = (const MeshDragPayload*)payload->Data;
-
-                UUID droppedID = data->id;
-
-                if (assets.assetStates[droppedID] == AssetState::Loaded) {
-                    mf.submeshID = droppedID;
-                }
-                else {
-                    assets.RequestSubmeshLoad(droppedID, entity->getID());
-                    mf.RequestSubmesh(droppedID);
-                }
-
+            if (!submeshID.isNull() && !mf.HasPendingSubmesh() ) {
+                const AssetMetadata* submeshMetaData = assets.GetAssetMetaData(mf.submeshID);
+                submeshName = submeshMetaData ? submeshMetaData->name : "Invalid Submesh";
             }
-            ImGui::EndDragDropTarget();
+            ImGui::Button((submeshName + "##Submesh").c_str(), buttonSize);
+
+            // --- Drag Drop Target ---
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SUBMESH_ASSET"))
+                {
+                    const MeshDragPayload* data = (const MeshDragPayload*)payload->Data;
+
+                    UUID droppedID = data->id;
+
+                    if (assets.assetStates[droppedID] == AssetState::Loaded) {
+                        mf.submeshID = droppedID;
+                    }
+                    else {
+                        assets.RequestSubmeshLoad(droppedID, entity->getID());
+                        mf.RequestSubmesh(droppedID);
+                    }
+
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            ImGui::EndGroup();
         }
 
-        ImGui::EndGroup();
     }
     else {
         ImGui::Spacing();
@@ -610,7 +605,6 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
 
         ImGui::Separator();
         ImGui::Spacing();
-
     }
 
 
@@ -618,53 +612,51 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
         MeshRenderer& mr = scene->MeshRenderers().Get(entity->getID());
 
 
+        if (ImGui::CollapsingHeader("Mesh Renderer", ImGuiTreeNodeFlags_DefaultOpen)) {
+            // --- Draw a centered box ---
+            ImGui::BeginGroup();
 
-        ImGui::Separator();
-        ImGui::Text("Mesh Renderer");
-        ImGui::Separator();
-        ImGui::Spacing();
-        // --- Draw a centered box ---
-        ImGui::BeginGroup();
+            // Mesh name string
+            std::string materialName = "None";
+            UUID materialID = mr.inst.baseMaterial;
 
-        // Mesh name string
-        std::string materialName = "None";
-        UUID materialID = mr.inst.baseMaterial;
+            if (!materialID.isNull()) {
+                const AssetMetadata* materialMetaData = assets.GetAssetMetaData(materialID);
+                materialName = materialMetaData ? materialMetaData->name : "Invalid Material";
+            }
+            ImGui::Button((materialName + "##Material").c_str(), buttonSize);
 
-        if (!materialID.isNull()) {
-            const AssetMetadata* materialMetaData = assets.GetAssetMetaData(materialID);
-            materialName = materialMetaData ? materialMetaData->name : "Invalid Material";
-        }
-        ImGui::Button((materialName + "##Material").c_str(), buttonSize);
-
-        // --- Drag Drop Target ---
-        if (ImGui::BeginDragDropTarget())
-        {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PBRMATERIAL_ASSET"))
+            // --- Drag Drop Target ---
+            if (ImGui::BeginDragDropTarget())
             {
-                const MaterialDragPayload* data = (const MaterialDragPayload*)payload->Data;
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PBRMATERIAL_ASSET"))
+                {
+                    const MaterialDragPayload* data = (const MaterialDragPayload*)payload->Data;
 
-                UUID droppedID = data->id;
+                    UUID droppedID = data->id;
 
-                if (assets.GetMaterial(droppedID)) {
-                    mr.inst.baseMaterial = droppedID;
-                    mr.inst.dirty = true;
-                }
-                else {
-                    if (assets.LoadMaterial(droppedID)) {
+                    if (assets.GetMaterial(droppedID)) {
                         mr.inst.baseMaterial = droppedID;
                         mr.inst.dirty = true;
                     }
+                    else {
+                        if (assets.LoadMaterial(droppedID)) {
+                            mr.inst.baseMaterial = droppedID;
+                            mr.inst.dirty = true;
+                        }
 
+
+                    }
 
                 }
-
+                ImGui::EndDragDropTarget();
             }
-            ImGui::EndDragDropTarget();
+
+            DrawEntityMaterialEditor(entityID);
+
+            ImGui::EndGroup();
         }
-
-        DrawEntityMaterialEditor(entityID);
-
-        ImGui::EndGroup();
+ 
     }
     else {
         ImGui::Spacing();
@@ -684,110 +676,110 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
     {
         auto& light = scene->Lights().Get(entity->getID());
 
-        ImGui::Separator();
-        ImGui::Text("Lighting");
-        ImGui::Separator();
-        ImGui::Spacing();
+        if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-        // ---------------- Light Type ----------------
-        const char* lightTypes[] = { "Directional", "Point", "Spotlight" };
-        int currentType = static_cast<int>(light.type);
+            // ---------------- Light Type ----------------
+            const char* lightTypes[] = { "Directional", "Point", "Spotlight" };
+            int currentType = static_cast<int>(light.type);
 
-        if (ImGui::Combo("Type", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
-        {
-            light.type = static_cast<LightType>(currentType);
-        }
-
-        ImGui::Spacing();
-
-        // ---------------- Color ----------------
-        ImGui::Text("Color");
-        ImGui::SameLine();
-        ImGui::ColorEdit3(
-            "##LightColor",
-            glm::value_ptr(light.color)
-        );
-
-        // ---------------- Intensity ----------------
-        ImGui::Spacing();
-        ImGui::DragFloat(
-            "Intensity",
-            &light.intensity,
-            0.1f,
-            0.0f,
-            100000.0f,
-            "%.2f"
-        );
-
-        // ---------------- Cast Shadows ----------------
-        ImGui::Spacing();
-
-        if (ImGui::Checkbox("Cast Shadows", &light.castShadow))
-        {
-            if (light.castShadow) // turned ON
+            if (ImGui::Combo("Type", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
             {
-                if (light.type == LightType::Directional)
-                    scene->Lights().SetDirectionalShadowCaster(entityID);
-                else
-                    scene->Lights().SetPointShadowCaster(entityID);
+                light.type = static_cast<LightType>(currentType);
             }
-            else // turned OFF
-            {
-                if (light.type == LightType::Directional)
-                    scene->Lights().ClearDirectionalShadowCaster(entityID);
-                else
-                    scene->Lights().ClearPointShadowCaster(entityID);
-            }
-        }
 
-
-        // ---------------- Range ----------------
-        if (light.type == LightType::Point || light.type == LightType::Spotlight)
-        {
             ImGui::Spacing();
-            ImGui::DragFloat(
-                "Range",
-                &light.range,
-                0.1f,
-                0.1f,
-                1000.0f,
-                "%.2f"
+
+            // ---------------- Color ----------------
+            ImGui::Text("Color");
+            ImGui::SameLine();
+            ImGui::ColorEdit3(
+                "##LightColor",
+                glm::value_ptr(light.color)
             );
-        }
 
-        // ---------------- Spotlight Angles ----------------
-        if (light.type == LightType::Spotlight)
-        {
+            // ---------------- Intensity ----------------
             ImGui::Spacing();
             ImGui::DragFloat(
-                "Inner Angle",
-                &light.innerAngle,
+                "Intensity",
+                &light.intensity,
                 0.1f,
                 0.0f,
-                light.outerAngle - 0.1f,
-                "%.1f deg"
+                100000.0f,
+                "%.2f"
             );
 
-            ImGui::DragFloat(
-                "Outer Angle",
-                &light.outerAngle,
-                0.1f,
-                light.innerAngle + 0.1f,
-                90.0f,
-                "%.1f deg"
-            );
+            // ---------------- Cast Shadows ----------------
+            ImGui::Spacing();
+
+            if (ImGui::Checkbox("Cast Shadows", &light.castShadow))
+            {
+                if (light.castShadow) // turned ON
+                {
+                    if (light.type == LightType::Directional)
+                        scene->Lights().SetDirectionalShadowCaster(entityID);
+                    else
+                        scene->Lights().SetPointShadowCaster(entityID);
+                }
+                else // turned OFF
+                {
+                    if (light.type == LightType::Directional)
+                        scene->Lights().ClearDirectionalShadowCaster(entityID);
+                    else
+                        scene->Lights().ClearPointShadowCaster(entityID);
+                }
+            }
+
+
+            // ---------------- Range ----------------
+            if (light.type == LightType::Point || light.type == LightType::Spotlight)
+            {
+                ImGui::Spacing();
+                ImGui::DragFloat(
+                    "Range",
+                    &light.range,
+                    0.1f,
+                    0.1f,
+                    1000.0f,
+                    "%.2f"
+                );
+            }
+
+            // ---------------- Spotlight Angles ----------------
+            if (light.type == LightType::Spotlight)
+            {
+                ImGui::Spacing();
+                ImGui::DragFloat(
+                    "Inner Angle",
+                    &light.innerAngle,
+                    0.1f,
+                    0.0f,
+                    light.outerAngle - 0.1f,
+                    "%.1f deg"
+                );
+
+                ImGui::DragFloat(
+                    "Outer Angle",
+                    &light.outerAngle,
+                    0.1f,
+                    light.innerAngle + 0.1f,
+                    90.0f,
+                    "%.1f deg"
+                );
+            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+
+            // ---------------- Remove ----------------
+            if (ImGui::Button("Remove Light Component"))
+            {
+                scene->Lights().Remove(entity->getID());
+            }
+
+            ImGui::Spacing();
         }
 
-        ImGui::Spacing();
-        ImGui::Separator();
 
-        // ---------------- Remove ----------------
-        if (ImGui::Button("Remove Light Component"))
-        {
-            scene->Lights().Remove(entity->getID());
-        }
-
-        ImGui::Spacing();
     }
     else
     {
@@ -801,6 +793,94 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
 
         ImGui::Separator();
         ImGui::Spacing();
+    }
+
+    // --------- ANIMATION COMPONENT -------
+
+    if (scene->Animations().Has(entityID) )
+    {
+        AnimationComponent* animComponent = scene->Animations().Get(entityID);
+
+        if (ImGui::CollapsingHeader("Animation", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // ---------------- Animation Dropdown ----------------
+            const char* preview = "None";
+
+            Animation* currentAnim = nullptr;
+            if (animComponent->currentAnimationID != UUID::Null)
+            {
+                currentAnim = assets.GetAnimation(animComponent->currentAnimationID);
+                if (currentAnim)
+                    preview = currentAnim->name.c_str();
+            }
+
+            if (ImGui::BeginCombo("Animation Clip", preview))
+            {
+                for (UUID animID : animComponent->animationIDs)
+                {
+                    Animation* anim = assets.GetAnimation(animID);
+                    if (!anim) continue;
+
+                    bool selected = (animID == animComponent->currentAnimationID);
+
+                    if (ImGui::Selectable(anim->name.c_str(), selected))
+                    {
+                        animComponent->currentAnimationID = animID;
+                        animComponent->currentTime = 0.0f;
+                    }
+
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                ImGui::EndCombo();
+            }
+
+            // ---------------- Playback Controls ----------------
+
+            static bool paused = false;
+
+            if (ImGui::Button(paused ? "Play" : "Pause"))
+            {
+                paused = !paused;
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Stop"))
+            {
+                animComponent->currentTime = 0.0f;
+                paused = true;
+            }
+
+            // ---------------- Loop Toggle ----------------
+
+            ImGui::Checkbox("Loop", &animComponent->looping);
+
+            // ---------------- Playback Speed ----------------
+
+            ImGui::DragFloat("Speed", &animComponent->playbackSpeed, 0.05f, 0.0f, 5.0f);
+
+            // ---------------- Time Scrubber ----------------
+
+            if (currentAnim)
+            {
+                float duration = currentAnim->duration;
+
+                ImGui::SliderFloat("Time",
+                    &animComponent->currentTime,
+                    0.0f,
+                    duration);
+
+                ImGui::Text("Duration: %.2f", duration);
+                ImGui::Text("Ticks/Sec: %.2f", currentAnim->ticksPerSecond);
+                ImGui::Text("Tracks: %d", (int)currentAnim->tracks.size());
+            }
+            else
+            {
+                ImGui::TextDisabled("No Animation Selected");
+            }
+        }
     }
 
        

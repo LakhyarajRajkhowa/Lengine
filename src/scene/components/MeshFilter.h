@@ -14,6 +14,8 @@ namespace Lengine
         bool pendingSubmesh = false;
         UUID pendingSubmeshID = UUID::Null;
 
+        UUID rootParent = UUID::Null;
+
         void RequestSubmesh(const UUID& id)
         {
             pendingSubmeshID = id;
@@ -34,6 +36,8 @@ namespace Lengine
         {
             pendingSubmesh = false;
         }
+
+
     };
 
 }
