@@ -8,7 +8,10 @@ namespace Lengine {
 
     struct RenderContext {
         Scene* scene;
-        Camera3d* camera;
+
+        glm::mat4 cameraView;
+        glm::mat4 cameraProjection;
+        glm::vec3 cameraPos;
 
         ShadowMap* shadowMap;
         ShadowCubeMap* shadowCubeMap;
@@ -18,6 +21,8 @@ namespace Lengine {
         GLTexture brdfLUTMap;
 
         RenderSettings* settings;
+
+
     };
 
     enum class DebugView : int {

@@ -18,7 +18,7 @@ namespace Lengine {
 	class InputHandler {
 	public:
 		InputHandler(Camera3d& cam, InputManager& inputmgr, Window& win, bool& running) :
-			camera(cam),
+			editorCamera(cam),
 			inputManager(inputmgr),
 			window(win),
 			isRunning(running)
@@ -27,7 +27,7 @@ namespace Lengine {
 		}
 		void handleInputs(ImGuiLayer& imguiLayer, EditorLayer& editorLayer, const float deltaTime);
 	
-		Camera3d& camera;
+		Camera3d& editorCamera;
 		InputManager& inputManager;
 		
 		Window& window;

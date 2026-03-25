@@ -51,7 +51,7 @@ void ShadowMap::renderDepthMap(
     const MeshFilterStorage& mfs,
     const UUID& mainDirectionalLight,
     AssetManager& assetManager,
-    const Camera3d& camera
+    const glm::vec3& camPos
 ) {
     if (mainDirectionalLight == UUID::Null || !trs.Has(mainDirectionalLight) || prevLight != mainDirectionalLight) {
 
@@ -74,7 +74,7 @@ void ShadowMap::renderDepthMap(
     auto& lightTf = trs.Get(mainDirectionalLight);
     glm::vec3 lightDir = glm::normalize(lightTf.localRotation * glm::vec3(0.0f, -1.0f, 0.0f));
 
-    glm::vec3 center = camera.getCameraPosition();  // anchor to camera
+    glm::vec3 center = camPos;  // anchor to camera
 
     glm::vec3 lightPos = center - lightDir * 20.0f; // move back along light dir
 

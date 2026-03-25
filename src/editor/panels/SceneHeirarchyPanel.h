@@ -18,7 +18,6 @@ namespace Lengine {
     class SceneHierarchyPanel {
     public:
         SceneHierarchyPanel(
-            Camera3d& camera,
             SceneManager& sceneManager,
             AssetManager& assetManager
         );
@@ -29,7 +28,6 @@ namespace Lengine {
         void drawCreateScenePopup();
         void drawRenameScenePopup();
     private:
-        Camera3d& camera;
         SceneManager& sceneManager;
         AssetManager& assetManager;
     private:

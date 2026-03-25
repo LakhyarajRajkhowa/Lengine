@@ -21,6 +21,57 @@ using namespace Lengine;
 
         return entityPtr;
     }
+    UUID Scene::DuplicateEntityRecursive(UUID originalID, UUID newParent, UUID newRoot)
+    {
+        auto entity = std::make_unique<Entity>(UUID());
+
+        Entity* newEntity = addEntity(std::move(entity), originalID);
+        UUID newID = newEntity->getID();
+
+        if (newRoot == UUID::Null)
+            newRoot = newID;
+
+        // hierarchy
+        if (newParent != UUID::Null)
+        {
+            auto& h = hierarchys.Add(newID);
+            h.parent = newParent;
+            hierarchys.Get(newParent).children.push_back(newID);
+
+            rootEntities.erase(
+                std::remove(rootEntities.begin(), rootEntities.end(), newID),
+                rootEntities.end()
+            );
+        }
+        else
+        {
+            hierarchys.Add(newID);
+        }
+
+        // fix mesh filter root
+        if (meshFilters.Has(newID))
+        {
+            meshFilters.Get(newID).rootParent = newRoot;
+        }
+
+        // duplicate children
+        if (hierarchys.Has(originalID))
+        {
+            const auto& children = hierarchys.Get(originalID).children;
+
+            for (UUID child : children)
+            {
+                DuplicateEntityRecursive(child, newID, newRoot);
+            }
+        }
+
+        return newID;
+    }
+
+    UUID Scene::DuplicateHierarchy(UUID rootID)
+    {
+        return DuplicateEntityRecursive(rootID, UUID::Null, UUID::Null);
+    }
 
     Entity* Scene::addEntity(std::unique_ptr<Entity> entity, const UUID originalEntityId)
     {
@@ -54,8 +105,10 @@ using namespace Lengine;
         // Copy mesh filters
         if (MeshFilters().Has(originalEntityId)) {
             const MeshFilter& oldMf = MeshFilters().Get(originalEntityId);
-            MeshFilter newMf = MeshFilter(oldMf);
-            meshFilters.Add(entityId, newMf);
+            meshFilters.Add(entityId, MeshFilter(oldMf.submeshID, entityId));
+
+            std::cout << "root: " << GetRootParent(entityId) << std::endl;
+
         }
 
         // Copy mesh Renderer
@@ -76,20 +129,53 @@ using namespace Lengine;
         if (NameTags().Has(originalEntityId))
         {
             auto& tag = NameTags().Get(originalEntityId);
-
             std::string newName = GenerateDuplicateName(this, tag.name);
-
             NameTags().Add(entityId, NameTagComponent(newName));
         }
         
-        
+        //// -------- SKELETON (root) --------
+        if (Skeletons().Has(originalEntityId)) {
+            auto& sk = Skeletons().Get(originalEntityId);
 
+           Skeletons().Add(entityId, SkeletonComponent(sk.skeletonID));
+
+           std::cout << "actual root: " << entityId << std::endl;
+
+        }
+
+
+        //// -------- ANIMATION (root) --------
+
+        if (Animations().Has(originalEntityId)) {
+            AnimationComponent* anim = Animations().Get(originalEntityId);
+
+           Animations().Add(entityId , AnimationComponent(anim->animationIDs));
+
+
+        }
+
+        
         entities.push_back(std::move(entity));
         rootEntities.push_back(entityId);
         return entities.back().get();
     }
 
-   
+    UUID Scene::GetRootParent(const UUID& entityID)
+    {
+        UUID currentID = entityID;
+
+        while (Hierarchys().Has(currentID))
+        {
+            auto& h = Hierarchys().Get(currentID);
+
+            if (h.parent == UUID::Null)
+                break;
+
+            currentID = h.parent;
+        }
+
+        return currentID;
+    }
 
     void Scene::RemoveEntity(const UUID id)
     {
@@ -149,6 +235,8 @@ using namespace Lengine;
         if (lights.Has(id))         lights.Remove(id);
         if (nameTags.Has(id))       nameTags.Remove(id);
         if (animations.Has(id))     animations.Remove(id);
+        if (cameras.Has(id))     cameras.Remove(id);
+
 
     }
 

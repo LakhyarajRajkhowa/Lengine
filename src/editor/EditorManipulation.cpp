@@ -13,8 +13,8 @@ void EditorManipulator::CheckForHoveredEntity()
     ImVec2 mouse = viewportPanel.getMousePosInViewport();
     ImVec2 vpSize = viewportPanel.GetViewportSize();
 
-    glm::mat4 view = camera.getViewMatrix();
-    glm::mat4 projection = camera.getProjectionMatrix();
+    glm::mat4 view = editorCamera.getViewMatrix();
+    glm::mat4 projection = editorCamera.getProjectionMatrix();
 
     glm::vec3 rayDir = ComputeRayDirection(
         mouse.x,
@@ -25,7 +25,7 @@ void EditorManipulator::CheckForHoveredEntity()
         projection
     );
 
-    glm::vec3 rayOrigin = camera.getCameraPosition();
+    glm::vec3 rayOrigin = editorCamera.getCameraPosition();
 
     const auto& entities = sceneManager.getActiveScene()->getEntities();
     float closest = 999999.0f;

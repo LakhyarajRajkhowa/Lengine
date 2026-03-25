@@ -55,6 +55,9 @@ namespace Lengine
 
         const AnimationComponent* Get(UUID entity) const
         {
+            if (entity == UUID::Null)
+                return nullptr;
+
             auto it = entityToIndex.find(entity);
             if (it == entityToIndex.end())
                 return nullptr;

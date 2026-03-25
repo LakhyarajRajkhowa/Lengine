@@ -200,6 +200,11 @@ void InspectorPanel::DrawEntityMaterialEditor(const UUID& entityID)
     // Helpers
     // ------------------------------------------------------------
 
+    if (ImGui::Checkbox("Render", &mr.render))
+    {
+        
+    }
+
     auto DrawVec3Override = [&](const char* label,
         const glm::vec3& baseValue,
         std::optional<glm::vec3>& overrideValue)
@@ -810,6 +815,7 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
             if (animComponent->currentAnimationID != UUID::Null)
             {
                 currentAnim = assets.GetAnimation(animComponent->currentAnimationID);
+                
                 if (currentAnim)
                     preview = currentAnim->name.c_str();
             }
@@ -881,6 +887,144 @@ void InspectorPanel::DrawEntityInspector(const UUID& entityID)
                 ImGui::TextDisabled("No Animation Selected");
             }
         }
+    }
+
+    // ------ CAMERA COMPONENT -----
+
+    if (scene->Cameras().Has(entity->getID()))
+    {
+        auto& editorCamera = scene->Cameras().Get(entity->getID());
+
+        if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            // ---------------- Projection Type ----------------
+            const char* projectionTypes[] = { "Perspective", "Orthographic" };
+            int currentType = static_cast<int>(editorCamera.projectionType);
+
+            if (ImGui::Combo("Projection", &currentType, projectionTypes, IM_ARRAYSIZE(projectionTypes)))
+            {
+                editorCamera.projectionType = static_cast<CameraComponent::ProjectionType>(currentType);
+                editorCamera.recalculateProjection();
+            }
+
+            ImGui::Spacing();
+
+            // ---------------- Perspective Settings ----------------
+            if (editorCamera.projectionType == CameraComponent::ProjectionType::Perspective)
+            {
+                if (ImGui::DragFloat(
+                    "FOV",
+                    &editorCamera.fov,
+                    0.1f,
+                    1.0f,
+                    179.0f,
+                    "%.1f deg"
+                ))
+                {
+                    editorCamera.recalculateProjection();
+                }
+
+                if (ImGui::DragFloat(
+                    "Aspect Ratio",
+                    &editorCamera.aspectRatio,
+                    0.01f,
+                    0.1f,
+                    10.0f
+                ))
+                {
+                    editorCamera.recalculateProjection();
+                }
+            }
+
+            // ---------------- Orthographic Settings ----------------
+            if (editorCamera.projectionType == CameraComponent::ProjectionType::Orthographic)
+            {
+                if (ImGui::DragFloat(
+                    "Ortho Size",
+                    &editorCamera.orthoSize,
+                    0.1f,
+                    0.1f,
+                    1000.0f
+                ))
+                {
+                    editorCamera.recalculateProjection();
+                }
+
+                if (ImGui::DragFloat(
+                    "Aspect Ratio",
+                    &editorCamera.aspectRatio,
+                    0.01f,
+                    0.1f,
+                    10.0f
+                ))
+                {
+                    editorCamera.recalculateProjection();
+                }
+            }
+
+            ImGui::Spacing();
+
+            // ---------------- Near Clip ----------------
+            if (ImGui::DragFloat(
+                "Near Clip",
+                &editorCamera.nearClip,
+                0.01f,
+                0.001f,
+                editorCamera.farClip - 0.01f
+            ))
+            {
+                editorCamera.recalculateProjection();
+            }
+
+            // ---------------- Far Clip ----------------
+            if (ImGui::DragFloat(
+                "Far Clip",
+                &editorCamera.farClip,
+                1.0f,
+                editorCamera.nearClip + 0.01f,
+                100000.0f
+            ))
+            {
+                editorCamera.recalculateProjection();
+            }
+
+            ImGui::Spacing();
+
+           
+            bool isPrimary = scene->Cameras().GetPrimaryCameraID() == entity->getID();
+
+            if (ImGui::Checkbox("Primary Camera", &isPrimary))
+            {
+                if (isPrimary)
+                    scene->Cameras().SetPrimaryCamera(entity->getID());
+                else
+                    scene->Cameras().SetPrimaryCamera(UUID::Null);
+            }
+
+            ImGui::Separator();
+
+            // ---------------- Remove ----------------
+            if (ImGui::Button("Remove Camera Component"))
+            {
+                scene->Cameras().Remove(entity->getID());
+            }
+
+            ImGui::Spacing();
+        }
+    }
+    else
+    {
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        if (ImGui::Button("Add Camera Component", buttonSize))
+        {
+            auto& cam = scene->Cameras().Add(entity->getID());
+            cam.recalculateProjection();
+        }
+
+        ImGui::Separator();
+        ImGui::Spacing();
     }
 
        

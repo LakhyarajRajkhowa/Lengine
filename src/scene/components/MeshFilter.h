@@ -37,6 +37,12 @@ namespace Lengine
             pendingSubmesh = false;
         }
 
+        MeshFilter() = default;
+
+        MeshFilter(UUID submeshID, UUID rootParent):
+            submeshID(submeshID),
+            rootParent(rootParent)
+        {}
 
     };
 

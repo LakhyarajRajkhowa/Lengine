@@ -194,7 +194,6 @@ void RenderPipeline::BuildGraph()
 } 
 
 
-
 void RenderPipeline::Render(RenderContext& ctx)
 {
     if (ctx.settings->needsReload) {

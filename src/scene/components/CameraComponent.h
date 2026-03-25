@@ -20,10 +20,12 @@ public:
     float aspectRatio = 1.778f;
 
     float orthoSize = 10.0f;
-
     glm::mat4 projection = glm::mat4(1.0f);
 
 public:
+    CameraComponent() {
+        recalculateProjection();
+    }
 
     void recalculateProjection()
     {

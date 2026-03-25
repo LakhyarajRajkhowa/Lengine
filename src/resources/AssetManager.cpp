@@ -525,14 +525,10 @@ Entity* AssetManager::InstantiatePrefab(
             sk.skeletonID = prefab.skeletonID;
 
             // load skeleton asset
-            if (GetSkeleton(sk.skeletonID)) {
-                sk.skeleton = GetSkeleton(sk.skeletonID);
-            }
-            else {
-                if (LoadSkeleton(sk.skeletonID)) {
-                    sk.skeleton = GetSkeleton(sk.skeletonID);
+            if (!GetSkeleton(sk.skeletonID)) {
+                if (!LoadSkeleton(sk.skeletonID)) {
+                    sk.skeletonID == UUID::Null;
                 }
-
             }
         }
 

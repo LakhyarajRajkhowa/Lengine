@@ -18,6 +18,7 @@
 #include "../editor/panels/PerformancePanel.h"
 #include "../editor/panels/RendererSettingsPanel.h"
 
+#include "../editor/MainMenuBar.h"
 #include "../editor/EditorManipulation.h"
 
 #include "../graphics/geometry/ray.h"
@@ -25,13 +26,15 @@
 
 namespace Lengine {
    
+
+
     class EditorLayer {
     public:
         EditorLayer(
             LogBuffer& buffer,
             SceneManager& sceneManager,
             GizmoRenderer& gizmoRndr,
-            Camera3d& camera,
+            Camera3d& editorCamera,
             InputManager& inputManager,
             AssetManager& assetManager,
             RenderSettings& rndrSett,
@@ -46,8 +49,7 @@ namespace Lengine {
         ViewportPanel& GetViewportPanel() { return viewportPanel; }
         PerformancePanel& GetPerformancePanel() { return performancePanel; }
         
-        EditorManipulator manipulator;
-
+        EditorMode mode = EditorMode::EDIT;
 
     private:
         // Selection state
@@ -55,6 +57,7 @@ namespace Lengine {
         Entity* hoveredEntity = nullptr;
 
         bool layoutInitialized = false;
+
 
         void BeginDockspace();
         void SetupDefaultLayout();
@@ -69,10 +72,12 @@ namespace Lengine {
         PerformancePanel performancePanel;
         RendererSettingsPanel rendererSettingsPanel;
 
+        MainMenuBar mainMenuBar;
+
         // External engine systems (not owned)
         SceneManager& sceneManager;
         GizmoRenderer& gizmoRenderer;
-        Camera3d& camera;
+        Camera3d& editorCamera;
         InputManager& inputManager;
         AssetManager& assetManager;
         RenderSettings& renderSettings;

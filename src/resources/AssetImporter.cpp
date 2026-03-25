@@ -711,6 +711,8 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
                 skeletonDir / assetName.replace_extension("").string();
 
 
+
+
         std::filesystem::create_directories(outSkeletonDir);
 
         skeletonID = UUID();
@@ -722,7 +724,7 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
             skeletonID,
             skeleton,
             skeletonBoneMap,
-            assetName.replace_extension("").string()
+            std::to_string(skeletonID.toUint64())
         );
 
         AnimationImporter::ImportAnimations(
@@ -730,7 +732,7 @@ Prefab* PrefabImporter::Import(const std::filesystem::path& assetPath, UUID sour
             assetPath,
             outSkeletonDir,  
             skeleton,
-            assetName.replace_extension("").string(),
+            std::to_string(skeletonID.toUint64()),
             skeletonBoneMap,
             animationIDs
         );
@@ -1444,7 +1446,7 @@ void AnimationImporter::ImportAnimations(
         std::string cleanName = SanitizeFilename(animFile.name);
 
         std::filesystem::path outPath =
-            outDir / (skeletonName + "_" + cleanName + ".lanim");
+            outDir / (skeletonName + "_" + std::to_string(animFile.animationID) + ".lanim");
 
         WriteLAnimation(outPath, animFile);
 

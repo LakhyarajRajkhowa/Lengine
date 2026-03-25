@@ -11,6 +11,7 @@
 #include "../scene/components/NameTagComponentStorage.h"
 #include "../scene/components/SkeletonComponentStorage.h"
 #include "../scene/components/AnimationComponentStorage.h"
+#include "../scene/components/CameraComponentStorage.h"
 
 #include "../scene/TransformSystem.h"
 #include "../assets/MaterialRegistry.h"
@@ -27,6 +28,12 @@ namespace Lengine {
             const std::string& name,
             UUID entityID = UUID()
         );
+
+        UUID GetRootParent(const UUID& entityID);
+
+        UUID DuplicateEntityRecursive(UUID originalID, UUID newParent, UUID newRoot);
+        UUID DuplicateHierarchy(UUID rootID);
+
 
         Entity* addEntity(std::unique_ptr<Entity> entity, const UUID originalEntityId);
        
@@ -176,6 +183,15 @@ namespace Lengine {
             return animations;
         }
 
+        CameraComponentStorage& Cameras() {
+            return cameras;
+        }
+
+        const CameraComponentStorage& Cameras() const {
+            return cameras;
+        }
+
+
 
         void UpdateWorldTransformRecursive(
             UUID entityID,
@@ -203,6 +219,7 @@ namespace Lengine {
         NameTagComponentStorage nameTags;
         SkeletonComponentStorage skeletons;
         AnimationComponentStorage animations;
+        CameraComponentStorage cameras;
 
     };
 }

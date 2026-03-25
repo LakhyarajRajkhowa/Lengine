@@ -11,6 +11,8 @@ namespace Lengine {
         bool castShadows = true;
         bool receiveShadows = true;
 
+        bool render = true;
+
     };
 
 }

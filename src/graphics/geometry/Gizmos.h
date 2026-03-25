@@ -48,11 +48,14 @@ namespace Lengine {
 			const bool& highlight
 		);
 
-		void drawGizmoSpheres(Scene* activeScene, Camera3d* camera);
-		void drawGizmoGrid(Camera3d* camera);
-		void drawGizmoArrows(Scene* activeScene, Camera3d* camera);
+		void drawGizmoSpheres(Scene* activeScene, Camera3d* editorCamera);
+		void drawGizmoGrid(
+			const glm::mat4& view,
+			const glm::mat4 proj,
+			const glm::vec3 pos);
+		void drawGizmoArrows(Scene* activeScene, Camera3d* editorCamera);
 		void drawDebugCapsuleForArrow(
-			Camera3d* camera,
+			Camera3d* editorCamera,
 			const glm::vec3& position,
 			const glm::vec3& axis,
 			float size

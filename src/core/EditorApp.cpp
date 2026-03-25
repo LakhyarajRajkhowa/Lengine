@@ -36,21 +36,21 @@ namespace Lengine {
             logBuffer,
             sceneManager,
             editorOverlays.getGizmos(),
-            camera,
+            editorCamera,
             inputManager,
             assetManager,
             renderSettings,
             runtimeStats
         ),
 
-        inputHandler(camera, inputManager, window, isRunning)
+        inputHandler(editorCamera, inputManager, window, isRunning)
 
     {
     }
 
     void Editor::init()
     {
-        camera.init(
+        editorCamera.init(
             &inputManager
         );
         redirect = new OutputRedirect(logBuffer);
@@ -76,12 +76,37 @@ namespace Lengine {
 
         imguiLayer.beginFrame();
 
+        Scene* activeScene = sceneManager.getActiveScene();
+
         RenderContext ctx;
-        ctx.scene = sceneManager.getActiveScene();
+        ctx.scene = activeScene;
         ctx.settings = &renderSettings;
-        ctx.camera = &camera;
+
+        if (editorLayer.mode == EditorMode::EDIT) {
+            ctx.cameraView = editorCamera.getViewMatrix();
+            ctx.cameraProjection = editorCamera.getProjectionMatrix();
+            ctx.cameraPos = editorCamera.getCameraPosition();
+        }
+        else if (editorLayer.mode == EditorMode::PLAY) {
+            UUID camID = activeScene->Cameras().GetPrimaryCameraID();
+
+            glm::mat4 camView = glm::mat4(1.0f);
+            glm::mat4 camProj = glm::mat4(1.0f);
+            glm::vec3 camPos = glm::vec3(1.0f);
+
+            if (camID != UUID::Null && activeScene->Transforms().Has(camID)) {
+                camView = activeScene->Transforms().Get(camID).getViewMatrix();
+                camProj = activeScene->Cameras().GetPrimaryCamera()->projection;
+                camPos = activeScene->Transforms().Get(camID).GetWorldPosition();
+            }
+          
+            ctx.cameraView = camView;
+            ctx.cameraProjection = camProj;
+            ctx.cameraPos = camPos;
+        }
 
 
+        
         renderPipeline.Render(ctx);
 
         editorOverlays.RenderGizmoGrid(ctx, renderPipeline.GetFinalFramebuffer());

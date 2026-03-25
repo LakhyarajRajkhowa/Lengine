@@ -37,6 +37,7 @@ namespace Lengine
                 anim.currentTime = std::min(anim.currentTime, animation->duration);
             }
 
+
             ApplyAnimation(scene, entity, anim, anim.currentTime);
         }
     }
@@ -52,7 +53,7 @@ namespace Lengine
             return;
         }
 
-        Skeleton* skeleton = sk.skeleton;
+        Skeleton* skeleton = assetManager.GetSkeleton(sk.skeletonID);
         if (!skeleton)
         {
             return;
@@ -68,6 +69,7 @@ namespace Lengine
         // Ensure finalBoneMatrices array is the correct size and initialized to identity
         if (anim.finalBoneMatrices.size() != skeleton->bones.size())
             anim.finalBoneMatrices.resize(skeleton->bones.size(), glm::mat4(1.0f));
+
 
         // Compute the bone transforms
         ComputeBoneTransforms(*skeleton, *animation, time, anim.finalBoneMatrices);
@@ -170,7 +172,7 @@ namespace Lengine
         if (track.scales.size() == 1)
             return track.scales[0].scale;
 
-        for (size_t i = 0; i < track.scales.size() - 1; i+delta)
+        for (size_t i = 0; i < track.scales.size() - 1; i+=delta)
         {
             if (time < track.scales[i + 1].timeStamp)
             {

@@ -21,6 +21,7 @@ namespace Lengine {
 
         TransformComponent& Get(UUID entity)
         {
+       
             return m_Data.at(entity);
         }
 

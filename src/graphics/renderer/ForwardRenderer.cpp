@@ -9,14 +9,14 @@ using namespace Lengine;
 void ForwardRenderer::bindCameraUniforms(
     GLSLProgram& shader,
     const glm::mat4& model,
-    Camera3d& camera
+    Camera3d& editorCamera
 ) {
 
     shader.setMat4("model", model); 
-    shader.setMat4("view", camera.getViewMatrix());
-    shader.setMat4("projection", camera.getProjectionMatrix());
-    shader.setVec3("cameraPos", camera.getCameraPosition());
-    shader.setVec3("viewPos", camera.getCameraPosition());
+    shader.setMat4("view", editorCamera.getViewMatrix());
+    shader.setMat4("projection", editorCamera.getProjectionMatrix());
+    shader.setVec3("cameraPos", editorCamera.getCameraPosition());
+    shader.setVec3("viewPos", editorCamera.getCameraPosition());
 
 }
 
@@ -174,7 +174,6 @@ void ForwardRenderer::RenderScene_pbr(
     const RenderContext& ctx
 ) {
     const Scene* activeScene = ctx.scene;
-    const Camera3d* camera = ctx.camera;
 
     GLSLProgram* pbrShader = assetManager.getShader(ShaderRegistry::universalPbr.name);
     pbrShader->use();
@@ -196,9 +195,9 @@ void ForwardRenderer::RenderScene_pbr(
 
 
     // Bind camera once (view & projection are global)
-    pbrShader->setMat4("view", camera->getViewMatrix());
-    pbrShader->setMat4("projection", camera->getProjectionMatrix());
-    pbrShader->setVec3("cameraPos", camera->getCameraPosition());
+    pbrShader->setMat4("view", ctx.cameraView);
+    pbrShader->setMat4("projection", ctx.cameraProjection);
+    pbrShader->setVec3("cameraPos", ctx.cameraPos);
 
     // bind pre-computed IBL data
     glActiveTexture(GL_TEXTURE0 + static_cast<unsigned int>(TextureUnit::Irradiance));
@@ -219,7 +218,7 @@ void ForwardRenderer::RenderScene_pbr(
             *pbrShader,
             *ctx.shadowMap,
             transforms.Get(lightComponents.GetDirectionalShadowCasteer()),
-            camera->getCameraPosition()
+            ctx.cameraPos
         );
     }
 
@@ -286,19 +285,17 @@ void ForwardRenderer::RenderScene_pbr(
             glm::cos(glm::radians(l.outerAngle))
         );
 
-
         const TransformComponent& t = transforms.Get(id);
 
-        // ---------------- Position ----------------
-        // Used by point & spot, ignored by directional
+        glm::vec3 position = t.GetWorldPosition();
+        glm::quat rotation = t.GetWorldRotation();
+
         pbrShader->setVec3(
             "lightPositions[" + std::to_string(lightNum) + "]",
-            t.localPosition
+            position
         );
 
-        // ---------------- Direction ----------------
-        // Used by directional & spot
-        glm::vec3 direction = glm::normalize(t.localRotation * glm::vec3(0.0f, -1.0f, 0.0f));
+        glm::vec3 direction = glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f));
 
         pbrShader->setVec3(
             "lightDirections[" + std::to_string(lightNum) + "]",
@@ -325,7 +322,7 @@ void ForwardRenderer::RenderScene_pbr(
 
 
         if (mf.HasPendingSubmesh()) continue;
-        if (mr.inst.baseMaterial.isNull()) continue;
+        if (mr.inst.baseMaterial.isNull() || !mr.render) continue;
 
         glm::mat4 model = t.worldMatrix;
         pbrShader->setMat4("model", model);
@@ -339,7 +336,7 @@ void ForwardRenderer::RenderScene_pbr(
         // Animation
         if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
         {
-
+            DEBUG_LOG_GAP(std::to_string(entityID), 1000);
             for (int i = 0; i < sm->bonePalette.size(); i++)
             {
                 int globalID = sm->bonePalette[i];
@@ -350,6 +347,11 @@ void ForwardRenderer::RenderScene_pbr(
                 );
             }
 
+            pbrShader->setBool("useSkeleton", true);
+
+        }
+        else {
+            pbrShader->setBool("useSkeleton", false);
 
         }
 
@@ -444,7 +446,7 @@ void ForwardRenderer::RenderScene_debug(
 
 
     const Scene* activeScene = ctx.scene;
-    const Camera3d* camera = ctx.camera;
+    
 
     GLSLProgram* shader = assetManager.getShader(ShaderRegistry::debug.name);
     GLSLProgram* outlineShader = assetManager.getShader(ShaderRegistry::outline.name);
@@ -464,9 +466,9 @@ void ForwardRenderer::RenderScene_debug(
         shader->use();
 
         shader->setInt("u_DebugMode", static_cast<int>(IRenderer::debugViewMode));
-        shader->setMat4("view", camera->getViewMatrix());
-        shader->setMat4("projection", camera->getProjectionMatrix());
-        shader->setVec3("cameraPos", camera->getCameraPosition());
+        shader->setMat4("view", ctx.cameraView);
+        shader->setMat4("projection", ctx.cameraProjection);
+        shader->setVec3("cameraPos", ctx.cameraPos);
 
         for (auto& [entityID, mr] : meshRenderers.All())
         {
@@ -509,8 +511,8 @@ void ForwardRenderer::RenderScene_debug(
         glLineWidth(1.5f);
 
         outlineShader->use();
-        outlineShader->setMat4("view", camera->getViewMatrix());
-        outlineShader->setMat4("projection", camera->getProjectionMatrix());
+        outlineShader->setMat4("view", ctx.cameraView);
+        outlineShader->setMat4("projection", ctx.cameraProjection);
 
         for (auto& [entityID, mr] : meshRenderers.All())
         {
@@ -559,9 +561,9 @@ void ForwardRenderer::RenderScene_debug(
 
 
     // Bind camera once (view & projection are global)
-    shader->setMat4("view", camera->getViewMatrix());
-    shader->setMat4("projection", camera->getProjectionMatrix());
-    shader->setVec3("cameraPos", camera->getCameraPosition());
+    shader->setMat4("view", ctx.cameraView);
+    shader->setMat4("projection", ctx.cameraProjection);
+    shader->setVec3("cameraPos", ctx.cameraPos);
 
 
     for (auto& [entityID, mr] : meshRenderers.All()) {

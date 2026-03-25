@@ -4,12 +4,10 @@
 
 using namespace Lengine;
 SceneHierarchyPanel::SceneHierarchyPanel(
-    Camera3d& cam,
     SceneManager& scnMgr,
     AssetManager& assetMgr
 )
     :
-    camera(cam),
     sceneManager(scnMgr),
     assetManager(assetMgr)
 {
@@ -118,10 +116,7 @@ void SceneHierarchyPanel::OnImGuiRender() {
 
                 // Create Queued Entities
                 while (!createdEntityQueue.empty()) {
-                    scene->addEntity(
-                        std::unique_ptr<Entity>(createdEntityQueue.front().first),
-                        createdEntityQueue.front().second
-                    );
+                    scene->DuplicateHierarchy(createdEntityQueue.front().second);
 
                     createdEntityQueue.pop();
                 }

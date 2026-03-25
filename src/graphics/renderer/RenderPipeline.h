@@ -36,7 +36,7 @@ namespace Lengine {
                 ctx.scene->MeshFilters(),
                 ctx.scene->Lights().GetDirectionalShadowCasteer(),
                 assetManager,
-                *ctx.camera
+                ctx.cameraPos
             );
             glCullFace(GL_BACK);
 
@@ -204,7 +204,7 @@ namespace Lengine {
         void Execute(RenderContext& ctx) override
         {
             target.Bind();
-            hdrSkybox.Render(ctx.camera->getViewMatrix(), ctx.camera->getProjectionMatrix());
+            hdrSkybox.Render(ctx.cameraView, ctx.cameraProjection);
             target.Unbind();
         }
     private:

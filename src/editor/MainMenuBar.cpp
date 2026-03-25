@@ -1,66 +1,41 @@
-//#include "MainMenuBar.h"
-//
-//using namespace Lengine;
-//
-//void MainMenuBar::DrawMainMenuBar()
-//{
-//    if (ImGui::BeginMainMenuBar())
-//    {
-//        if (ImGui::BeginMenu("File"))
-//        {
-//            if (ImGui::MenuItem("New Project")) { ShowNewProjectDialog(); }
-//            if (ImGui::MenuItem("Open Project")) { ShowOpenProjectDialog(); }
-//
-//
-//            ImGui::EndMenu();
-//        }
-//
-//        ImGui::EndMainMenuBar();
-//    }
-//}
-//void MainMenuBar::LoadProject(const fs::path& folder)
-//{
-//   
-//}
-//
-//void MainMenuBar::ShowOpenProjectDialog()
-//{
-//    std::string path = FileDialog::OpenFolder("Select Project Folder");
-//    if (!path.empty())
-//    {
-//        LoadProject(path);
-//    }
-//}
-//
-//void MainMenuBar::ShowNewProjectDialog()
-//{
-//    ImGui::OpenPopup("New Project");
-//
-//    if (ImGui::BeginPopupModal("New Project"))
-//    {
-//        static char projectName[128] = "NewProject";
-//        static char pathBuffer[256] = "C:/Projects/";
-//
-//        ImGui::InputText("Project Name", projectName, 128);
-//        ImGui::InputText("Location", pathBuffer, 256);
-//
-//        if (ImGui::Button("Create"))
-//        {
-//            
-//            fs::path newFolder = fs::path(pathBuffer) / projectName;
-//
-//            CreateProjectFolderStructure(newFolder);
-//            LoadProject(newFolder);
-//
-//            ImGui::CloseCurrentPopup();
-//        }
-//
-//        ImGui::SameLine();
-//
-//        if (ImGui::Button("Cancel"))
-//            ImGui::CloseCurrentPopup();
-//
-//        ImGui::EndPopup();
-//    }
-//}
-//
+#include "MainMenuBar.h"
+
+using namespace Lengine;
+
+void MainMenuBar::OnImGuiRender(EditorMode& mode) {
+    DrawMainToolbar(mode);
+}
+
+void MainMenuBar::DrawMainToolbar(EditorMode& mode)
+{
+    if (ImGui::BeginMenuBar())
+    {
+        float windowWidth = ImGui::GetWindowSize().x;
+        float buttonWidth = 60.0f;
+        float totalWidth = buttonWidth * 2 + 10;
+
+        ImGui::SetCursorPosX((windowWidth - totalWidth) * 0.5f);
+
+        // PLAY / STOP
+        if (ImGui::Button(mode == EditorMode::EDIT ? "Play" : "Stop"))
+        {
+            if (mode == EditorMode::EDIT)
+                mode = EditorMode::PLAY;
+            else
+                mode = EditorMode::EDIT;
+        }
+
+        ImGui::SameLine();
+
+        // PAUSE / RESUME
+        if (ImGui::Button(mode == EditorMode::PAUSE ? "Resume" : "Pause"))
+        {
+            if (mode == EditorMode::PLAY)
+                mode = EditorMode::PAUSE;
+            else if (mode == EditorMode::PAUSE)
+                mode = EditorMode::PLAY;
+        }
+
+        ImGui::EndMenuBar();
+    }
+}

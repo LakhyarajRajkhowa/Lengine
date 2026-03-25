@@ -15,8 +15,8 @@ using namespace Lengine;
         ImGui::Begin("Viewport");
         ImGui::Separator();
          
-        if (ImGui::Button(camera.isFixed ? "Fix Camera: ON" : "Fix Camera: OFF"))
-            camera.isFixed = !camera.isFixed;
+        if (ImGui::Button(editorCamera.isFixed ? "Fix Camera: ON" : "Fix Camera: OFF"))
+            editorCamera.isFixed = !editorCamera.isFixed;
 
         ImGui::SameLine();
         if (ImGui::Button("Fullscreen Mode"))
@@ -38,7 +38,7 @@ using namespace Lengine;
             viewportModeLabels,
             static_cast<int>(ViewportMode::count)))
         {
-            camera.controlMode = static_cast<CameraControlMode>(currentModeIndex);
+            editorCamera.controlMode = static_cast<CameraControlMode>(currentModeIndex);
             mode = static_cast<ViewportMode>(currentModeIndex);
 
         }
@@ -61,7 +61,7 @@ using namespace Lengine;
             {
                 
                 m_LastViewportSize = m_ViewportSize;
-                camera.setAspectRatio(m_ViewportSize.x / m_ViewportSize.y);
+                editorCamera.setAspectRatio(m_ViewportSize.x / m_ViewportSize.y);
             }
         }
         
@@ -96,8 +96,8 @@ using namespace Lengine;
 
     void ViewportPanel::RenderFullscreen(const uint32_t finalImage)
     {
-        camera.isFixed = false;
-        camera.setAspectRatio(fullscreenAspectRatio);
+        editorCamera.isFixed = false;
+        editorCamera.setAspectRatio(fullscreenAspectRatio);
 
         ImGuiViewport* vp = ImGui::GetMainViewport();
 
@@ -168,8 +168,8 @@ using namespace Lengine;
     TransformComponent& transform = scene->Transforms().Get(selectedEntity);
 
     // Camera
-    glm::mat4 view = camera.getViewMatrix();
-    glm::mat4 projection = camera.getProjectionMatrix();
+    glm::mat4 view = editorCamera.getViewMatrix();
+    glm::mat4 projection = editorCamera.getProjectionMatrix();
 
     // --- Configure gizmo ---
     ImGuizmo::SetOrthographic(false);

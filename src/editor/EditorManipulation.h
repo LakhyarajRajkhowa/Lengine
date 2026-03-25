@@ -19,13 +19,13 @@ namespace Lengine {
         EditorManipulator(
             SceneManager& sceneManager,
             AssetManager& assetManager,
-            Camera3d& camera,
+            Camera3d& editorCamera,
             ViewportPanel& viewportPanel,
             InputManager& inputManager
             ) :
             sceneManager(sceneManager),
             assetManager(assetManager),
-            camera(camera),
+            editorCamera(editorCamera),
             viewportPanel(viewportPanel),
             inputManager(inputManager)
             
@@ -51,7 +51,7 @@ namespace Lengine {
 
         SceneManager& sceneManager;
         AssetManager& assetManager;
-        Camera3d& camera;
+        Camera3d& editorCamera;
         ViewportPanel& viewportPanel;
         InputManager& inputManager;
 

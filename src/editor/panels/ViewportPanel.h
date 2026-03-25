@@ -36,7 +36,7 @@ namespace Lengine {
     public:
         
         ViewportPanel(Camera3d& camera_, SceneManager& scene_) :
-            camera(camera_),
+            editorCamera(camera_),
             sceneManager(scene_)
         {}
 
@@ -62,7 +62,7 @@ namespace Lengine {
         void DrawTransformGizmo();
         
     private:
-        Camera3d& camera;
+        Camera3d& editorCamera;
         SceneManager& sceneManager;
 
         float fullscreenAspectRatio = 16.0f / 9.0f;

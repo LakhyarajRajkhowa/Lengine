@@ -23,25 +23,26 @@ const int MAX_BONES = 200;
 const int MAX_BONE_INFLUENCE = 4;
 
 uniform mat4 finalBonesMatrices[MAX_BONES];
+uniform bool useSkeleton;
+
 
 void main()
 {
     // ---- SKINNING ----
    mat4 skinMatrix = mat4(1.0); // Identity by default
+    
 
-    bool hasBone = false;
-    for(int i = 0; i < MAX_BONE_INFLUENCE; i++)
+    if(useSkeleton)
     {
-        if(boneIds[i] >= 0 && boneIds[i] < MAX_BONES && weights[i] > 0.0)
+
+        for(int i = 0; i < MAX_BONE_INFLUENCE; i++)
         {
-            skinMatrix = mat4(0.0);
-            hasBone = true;
-            break;
+            if(boneIds[i] >= 0 && boneIds[i] < MAX_BONES && weights[i] > 0.0)
+            {
+                skinMatrix = mat4(0.0);
+            }
         }
-    }
 
-    if(hasBone)
-    {
         for(int i = 0; i < MAX_BONE_INFLUENCE; i++)
         {   
             if(boneIds[i] >= 0 && boneIds[i] < MAX_BONES)

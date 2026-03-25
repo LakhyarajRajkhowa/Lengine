@@ -81,7 +81,7 @@ namespace Lengine {
         void bindCameraUniforms(
             GLSLProgram& shader,
             const glm::mat4& model,
-            Camera3d& camera
+            Camera3d& editorCamera
         );
 
 

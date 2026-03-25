@@ -21,29 +21,29 @@ namespace Lengine {
 
 
         // ---- MODE 2: EDITOR MODE ----
-        if (camera.isFixed)
+        if (editorCamera.isFixed)
         {
             if (viewportHovered)
             {
 
-                for (SDL_Keycode key : EditorKeys::All)
-                {
-                    editorLayer.manipulator.HandleKeyboardShortcuts(key);
-                }
+                //for (SDL_Keycode key : EditorKeys::All)
+                //{
+                //    editorLayer.manipulator.HandleKeyboardShortcuts(key);
+                //}
 
-                if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
-                    editorLayer.manipulator.SelectHoveredEntity();
-                }
+                //if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
+                //    editorLayer.manipulator.SelectHoveredEntity();
+                //}
             }
             else {
                 
             }
         }
 
-        if (!camera.isFixed)
+        if (!editorCamera.isFixed)
         {
             
-            if (camera.controlMode == CameraControlMode::first) {
+            if (editorCamera.controlMode == CameraControlMode::first) {
                 SDL_ShowCursor(SDL_DISABLE);
                 SDL_SetRelativeMouseMode(SDL_TRUE);
                 int mx, my;
@@ -61,7 +61,7 @@ namespace Lengine {
                 if (mx != clampedX || my != clampedY)
                     SDL_WarpMouseInWindow(window.getWindow(), clampedX, clampedY);
 
-                camera.Update(dt, relativeMouseCoords);
+                editorCamera.Update(dt, relativeMouseCoords);
             }
 
 
@@ -73,7 +73,7 @@ namespace Lengine {
                 glm::vec2 relativeMouseCoords = { mx,my };
 
 
-                camera.Update(dt, relativeMouseCoords);
+                editorCamera.Update(dt, relativeMouseCoords);
                 // reset each frame otherwise the scroll activates in next frame
                 inputManager.resetScroll();
 

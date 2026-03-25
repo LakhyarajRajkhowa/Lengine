@@ -2,6 +2,9 @@
 
 namespace Lengine {
 
+    static bool isPlaying = false;
+    static bool isPaused = false;
+
     EditorLayer::EditorLayer(
         LogBuffer& buffer,
         SceneManager& scnMgr,
@@ -12,20 +15,19 @@ namespace Lengine {
         RenderSettings& rndrSett,
         RuntimeStats& stats_
     )
-        :camera(cam),
+        :editorCamera(cam),
         sceneManager(scnMgr),
         gizmoRenderer(gizmoRndr),
         inputManager(inputMgr),
         assetManager(assetMgr),
         renderSettings(rndrSett), 
-        hierarchyPanel(cam,  scnMgr,assetMgr),
+        hierarchyPanel(scnMgr,assetMgr),
         inspectorPanel(scnMgr, assetMgr),
         consolePanel(buffer),
         assetPanel(Paths::ActiveGameFolder, assetMgr),
         rendererSettingsPanel(rndrSett),
         performancePanel(stats_),
-        viewportPanel(cam, scnMgr),
-        manipulator(scnMgr, assetMgr, cam, viewportPanel, inputMgr)
+        viewportPanel(cam, scnMgr)
     {
 
     }
@@ -37,18 +39,16 @@ namespace Lengine {
     void EditorLayer::OnDetach() {
         // cleanup if you want later
     }
-
+    
     void EditorLayer::OnImGuiRender(const uint32_t& finalImage) {
 
         BeginDockspace();
 
-        if (!layoutInitialized) {
-            // SetupDefaultLayout(); 
-            layoutInitialized = true;
-        }
+
 
         //  Render panels
         if (!viewportPanel.viewportFullscreen) {
+
             viewportPanel.OnImGuiRender(finalImage);
             hierarchyPanel.OnImGuiRender();
             inspectorPanel.OnImGuiRender();
@@ -56,19 +56,19 @@ namespace Lengine {
             assetPanel.OnImGuiRender();
             performancePanel.OnImGuiRender();
             rendererSettingsPanel.OnImGuiRender();
+
         }
         else {
 
             viewportPanel.RenderFullscreen(finalImage);
-            performancePanel.OnImGuiRender();
         }
 
     }
 
  
     // Dockspace
-    void EditorLayer::BeginDockspace() {
-
+    void EditorLayer::BeginDockspace()
+    {
         ImGuiWindowFlags window_flags =
             ImGuiWindowFlags_NoDocking |
             ImGuiWindowFlags_NoTitleBar |
@@ -76,7 +76,8 @@ namespace Lengine {
             ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoBringToFrontOnFocus |
-            ImGuiWindowFlags_NoNavFocus;
+            ImGuiWindowFlags_NoNavFocus |
+            ImGuiWindowFlags_MenuBar;
 
         ImGuiViewport* viewport = ImGui::GetMainViewport();
 
@@ -90,6 +91,8 @@ namespace Lengine {
         ImGui::Begin("MainDockspace", nullptr, window_flags);
 
         ImGui::PopStyleVar(2);
+
+        mainMenuBar.OnImGuiRender(mode);
 
         ImGuiID dockspace_id = ImGui::GetID("MainDockspaceID");
         ImGui::DockSpace(dockspace_id, ImVec2(0, 0));

@@ -329,12 +329,14 @@ namespace Lengine {
     {
     
 
-        std::filesystem::path longPath = std::filesystem::path("\\\\?\\") / path;
 
-        std::ofstream out(longPath, std::ios::binary);
-
+        std::ofstream out(path, std::ios::binary);
+        
         if (!out) {
             std::cout << "Failed to open .lanim file for writing :"<< path <<std::endl;
+        }
+        else {
+            std::cout << "Writing file  :" << path << std::endl;
         }
         
 

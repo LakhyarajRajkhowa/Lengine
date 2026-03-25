@@ -16,18 +16,22 @@ void GizmoRenderer::initGizmoSpheres() {
 }
 
 
-void GizmoRenderer::drawGizmoGrid(Camera3d* camera){
+void GizmoRenderer::drawGizmoGrid(
+    const glm::mat4& view,
+    const glm::mat4 proj,
+    const glm::vec3 pos
+){
     gizmoGridShader.use();
-    gizmoGridShader.setMat4("view", camera->getViewMatrix());
-    gizmoGridShader.setMat4("projection", camera->getProjectionMatrix());
-    gizmoGridShader.setVec3("cameraPos", camera->getCameraPosition());
+    gizmoGridShader.setMat4("view", view);
+    gizmoGridShader.setMat4("projection", proj);
+    gizmoGridShader.setVec3("cameraPos", pos);
     if(gizmoGrid) gizmoGrid->draw();
     gizmoGridShader.unuse();
 
 }
 
 
-void GizmoRenderer::drawGizmoSpheres(Scene* activeScene, Camera3d* camera) {
+void GizmoRenderer::drawGizmoSpheres(Scene* activeScene, Camera3d* editorCamera) {
 
     if (EditorSelection::GetEntity() == UUID::Null) return;
 
@@ -40,8 +44,8 @@ void GizmoRenderer::drawGizmoSpheres(Scene* activeScene, Camera3d* camera) {
     TransformComponent& tr = activeScene->Transforms().Get(e->getID());
 
     gizmoSphereShader.use();
-    gizmoSphereShader.setMat4("view", camera->getViewMatrix());
-    gizmoSphereShader.setMat4("projection", camera->getProjectionMatrix());
+    gizmoSphereShader.setMat4("view", editorCamera->getViewMatrix());
+    gizmoSphereShader.setMat4("projection", editorCamera->getProjectionMatrix());
     gizmoSphereShader.setVec4("color", glm::vec4(1, 1, 1, 0.1f));
 
 
@@ -100,7 +104,7 @@ void GizmoRenderer::drawGizmoSpheres(Scene* activeScene, Camera3d* camera) {
 }
 
 
-void GizmoRenderer::drawGizmoArrows(Scene* activeScene, Camera3d* camera)
+void GizmoRenderer::drawGizmoArrows(Scene* activeScene, Camera3d* editorCamera)
 {
     if (EditorSelection::GetEntity() == UUID::Null) return;
 
@@ -114,8 +118,8 @@ void GizmoRenderer::drawGizmoArrows(Scene* activeScene, Camera3d* camera)
     for (GizmoArrows* a : { &arrowX, &arrowY, &arrowZ }) {
         GLSLProgram& shader = a->gizmoArrowShader;
         shader.use();
-        shader.setMat4("view", camera->getViewMatrix());
-        shader.setMat4("projection", camera->getProjectionMatrix());
+        shader.setMat4("view", editorCamera->getViewMatrix());
+        shader.setMat4("projection", editorCamera->getProjectionMatrix());
     }
 
    
@@ -224,7 +228,7 @@ void GizmoRenderer::drawSingleArrow(
 
 
 void GizmoRenderer::drawDebugCapsuleForArrow(
-    Camera3d* camera,
+    Camera3d* editorCamera,
     const glm::vec3& position,
     const glm::vec3& axis,
     float size
@@ -241,8 +245,8 @@ void GizmoRenderer::drawDebugCapsuleForArrow(
     glm::vec3 end = position + dir * length;
     glm::vec3 mid = (start + end) * 0.5f;
 
-    gizmoSphereShader.setMat4("view", camera->getViewMatrix());
-    gizmoSphereShader.setMat4("projection", camera->getProjectionMatrix());
+    gizmoSphereShader.setMat4("view", editorCamera->getViewMatrix());
+    gizmoSphereShader.setMat4("projection", editorCamera->getProjectionMatrix());
     gizmoSphereShader.setVec4("color", glm::vec4(1, 1, 1, 0.15f));
 
     // ----------------------------

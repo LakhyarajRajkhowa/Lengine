@@ -19,7 +19,7 @@ namespace Lengine {
 			const MeshFilterStorage& mfs,
 			const UUID& mainDirectionalLight,
 			AssetManager& assetManager,
-			const Camera3d& camera
+			const glm::vec3& camPos
 			);
 
 		const GLuint& getDepthTexture() { return shadowDepthTex; }

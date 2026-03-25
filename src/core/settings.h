@@ -17,6 +17,12 @@ enum WindowMode {
 	FULLSCREEN = 2
 };
 
+enum class EditorMode {
+	EDIT = 0,
+	PLAY = 1,
+	PAUSE = 2
+};
+
 enum class RenderPath {
 	Forward,
 	Deferred
@@ -40,7 +46,6 @@ struct RenderSettings {
 
 };
 
-;
 
 class EngineSettings {
 public:

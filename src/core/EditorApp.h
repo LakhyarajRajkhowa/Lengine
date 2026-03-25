@@ -35,7 +35,7 @@ namespace Lengine {
 
             glDisable(GL_CULL_FACE);
 
-            gizmos.drawGizmoGrid(ctx.camera);
+            gizmos.drawGizmoGrid(ctx.cameraView, ctx.cameraProjection, ctx.cameraPos);
 
             glEnable(GL_CULL_FACE);
 
@@ -80,7 +80,7 @@ namespace Lengine {
 
         bool& isRunning;
 
-        Camera3d camera;
+        Camera3d editorCamera;
         InputHandler inputHandler;
 
         ImGuiLayer imguiLayer;
@@ -90,6 +90,7 @@ namespace Lengine {
         OutputRedirect* redirect = nullptr;
 
         EditorOverlayPass editorOverlays;
+
     
     };
 
