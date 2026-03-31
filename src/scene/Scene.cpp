@@ -273,61 +273,6 @@ using namespace Lengine;
 
 
  
-    void Scene::UpdateWorldTransformRecursive(
-        UUID entityID,
-        const glm::mat4& parentWorld,
-        bool parentWorldDirty
-    )
-    {
-        if (!transforms.Has(entityID)) return;
-
-        auto& t = transforms.Get(entityID);
-
-        if (t.localDirty)
-        {
-            TransformSystem::RecalculateLocalMatrix(t);
-            t.localDirty = false;
-        }
-
-        bool worldDirty = parentWorldDirty || t.worldDirty;
-
-        if (worldDirty)
-        {
-            t.worldMatrix = parentWorld * t.localMatrix;
-            t.worldDirty = false;
-        }
-
-        if (hierarchys.Has(entityID)) {
-            const auto& h = hierarchys.Get(entityID);
-            for (UUID child : h.children)
-                UpdateWorldTransformRecursive(child, t.worldMatrix, worldDirty);
-        }
-        
-    }
-
-
-
-    void Scene::UpdateWorldTransforms()
-    {
-        if (TransformSystem::Dirty) {
-            const glm::mat4 identity(1.0f);
-
-            for (UUID root : rootEntities)
-            {
-                UpdateWorldTransformRecursive(root, identity, true);
-            }
-
-            TransformSystem::Dirty = false;
-        }
-
-
-    }
-
-    void Scene::Update() {
-       
-        UpdateWorldTransforms();
-    }
-
     bool Scene::HasChildren(UUID entityID) const
     {
         if (!hierarchys.Has(entityID))

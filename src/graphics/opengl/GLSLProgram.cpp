@@ -1,5 +1,5 @@
 /*
-    This is also the Shader class. 
+    This is the Shader class. 
 */
 
 

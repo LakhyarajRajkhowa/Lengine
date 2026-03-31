@@ -1,6 +1,9 @@
 #pragma once
 
-#include "../scene/Scene.h"
+#include "../scene/components/AnimationComponentStorage.h"
+#include "../scene/components/SkeletonComponentStorage.h"
+
+
 #include "../resources/AssetManager.h"
 
 namespace Lengine
@@ -11,13 +14,17 @@ namespace Lengine
     public:
         AnimationSystem(AssetManager& assetManager) : assetManager(assetManager) {}
 
-        void Update(Scene* scene, float dt);
+        void Update(
+            AnimationComponentStorage& animComponent,
+            SkeletonComponentStorage& skeletons,
+            float dt
+        );
 
     private:
         AssetManager& assetManager;
 
         void ApplyAnimation(
-            Scene* scene,
+            SkeletonComponentStorage& skeletons,
             UUID entity,
             AnimationComponent& anim,
             float time
@@ -34,9 +41,6 @@ namespace Lengine
         glm::quat InterpolateRotation(AnimationTrack& track, float time, int delta);
         glm::vec3 InterpolateScale(AnimationTrack& track, float time, int delta);
 
-        size_t FindKeyframeIndex(const std::vector<AnimationKeyPosition>& keys, float time);
-        size_t FindKeyframeIndex(const std::vector<AnimationKeyRotation>& keys, float time);
-        size_t FindKeyframeIndex(const std::vector<AnimationKeyScale>& keys, float time);
 
 
 

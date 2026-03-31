@@ -6,10 +6,14 @@ namespace Lengine
 
     // TODO : Optimise using SoA and parallel animation
 
-    void AnimationSystem::Update(Scene* scene, float dt)
+    void AnimationSystem::Update(
+        AnimationComponentStorage& animComponent,
+        SkeletonComponentStorage& skeletons,
+        float dt
+    )
     {
-        auto& anims = scene->Animations().GetAll();
-        const auto& entities = scene->Animations().GetEntities();
+        auto& anims = animComponent.GetAll();
+        const auto& entities = animComponent.GetEntities();
 
         for (size_t i = 0; i < anims.size(); i++)
         {
@@ -38,16 +42,16 @@ namespace Lengine
             }
 
 
-            ApplyAnimation(scene, entity, anim, anim.currentTime);
+            ApplyAnimation(skeletons, entity, anim, anim.currentTime);
         }
     }
     void AnimationSystem::ApplyAnimation(
-        Scene* scene,
+        SkeletonComponentStorage& skeletons,
         UUID entity,
         AnimationComponent& anim,
         float time)
     {
-        auto& sk = scene->Skeletons().Get(entity);
+        auto& sk = skeletons.Get(entity);
         if (sk.skeletonID == UUID::Null)
         {
             return;

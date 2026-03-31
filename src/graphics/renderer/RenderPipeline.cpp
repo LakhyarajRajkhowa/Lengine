@@ -18,7 +18,7 @@ void RenderPipeline::Init() {
     // MSAA
     glEnable(GL_MULTISAMPLE);
 
-    GLTexture hdrTex = ImageLoader::LoadHDRTexture(Paths::Textures + "Hdr/" + "rogland_clear_night_4k.hdr");
+    GLTexture hdrTex = ImageLoader::LoadHDRTexture(Paths::Textures + "Hdr/" + "citrus_orchard_road_puresky_2k.hdr");
     hdrSkybox.Init(512);
     hdrSkybox.SetHDRTexture(hdrTex);
 
@@ -120,7 +120,7 @@ void RenderPipeline::BuildGraph()
             std::make_unique<SkyboxPass>(
                 *msaaFramebuffer,
                 hdrSkybox,
-                Paths::Textures + "Hdr/" + "wooden_studio_09_4k.hdr",
+                Paths::Textures + "Hdr/" + "autumn_field_puresky_4k.hdr",
                 512
             )
         );
@@ -157,7 +157,7 @@ void RenderPipeline::BuildGraph()
             std::make_unique<SkyboxPass>(
                 target,
                 hdrSkybox,
-                Paths::Textures + "Hdr/" + "wooden_studio_09_4k.hdr",
+                Paths::Textures + "Hdr/" + "autumn_field_puresky_4k.hdr",
                 512
             )
         );
@@ -210,6 +210,9 @@ void RenderPipeline::Render(RenderContext& ctx)
     ctx.shadowCubeMap = &shadowCubemap;
     ctx.prefilterMap = hdrSkybox.GetPrefilterMap();
     ctx.brdfLUTMap = hdrSkybox.GetbrdfLUTMap();
+    ctx.envIntensity = hdrSkybox.envIntensity;
+    ctx.envTint = hdrSkybox.envTint;
+    ctx.envRotation = hdrSkybox.rot;
 
     // Execute passes in order
     renderGraph.Execute(ctx);

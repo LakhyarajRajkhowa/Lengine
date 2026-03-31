@@ -11,35 +11,7 @@ namespace Lengine {
     )
     {
 
-        bool imguiCapturesMouse = imguiLayer.wantsCaptureMouse();
-        bool imguiCapturesKeyboard = imguiLayer.wantsCaptureKeyboard();
-
-        bool viewportFocused = editorLayer.GetViewportPanel().IsViewportFocused();
-        bool viewportHovered = editorLayer.GetViewportPanel().IsViewportHovered();
-
         const float dt = deltaTime;
-
-
-        // ---- MODE 2: EDITOR MODE ----
-        if (editorCamera.isFixed)
-        {
-            if (viewportHovered)
-            {
-
-                //for (SDL_Keycode key : EditorKeys::All)
-                //{
-                //    editorLayer.manipulator.HandleKeyboardShortcuts(key);
-                //}
-
-                //if (inputManager.isMouseButtonPressed(SDL_BUTTON_LEFT)) {
-                //    editorLayer.manipulator.SelectHoveredEntity();
-                //}
-            }
-            else {
-                
-            }
-        }
-
         if (!editorCamera.isFixed)
         {
             
@@ -72,10 +44,7 @@ namespace Lengine {
                 SDL_GetRelativeMouseState(&mx, &my);
                 glm::vec2 relativeMouseCoords = { mx,my };
 
-
                 editorCamera.Update(dt, relativeMouseCoords);
-                // reset each frame otherwise the scroll activates in next frame
-                inputManager.resetScroll();
 
             }   
         

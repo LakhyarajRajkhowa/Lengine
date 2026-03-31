@@ -19,6 +19,9 @@ namespace Lengine {
         GLTexture irradianceMap;
         GLTexture prefilterMap;
         GLTexture brdfLUTMap;
+        float envIntensity;
+        glm::vec3 envTint;
+        glm::mat3 envRotation;
 
         RenderSettings* settings;
 

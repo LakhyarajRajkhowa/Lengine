@@ -6,6 +6,7 @@ namespace Lengine {
     static bool isPaused = false;
 
     EditorLayer::EditorLayer(
+        Window& window,
         LogBuffer& buffer,
         SceneManager& scnMgr,
         GizmoRenderer& gizmoRndr,
@@ -15,7 +16,9 @@ namespace Lengine {
         RenderSettings& rndrSett,
         RuntimeStats& stats_
     )
-        :editorCamera(cam),
+        :
+        window(window),
+        editorCamera(cam),
         sceneManager(scnMgr),
         gizmoRenderer(gizmoRndr),
         inputManager(inputMgr),
@@ -27,7 +30,7 @@ namespace Lengine {
         assetPanel(Paths::ActiveGameFolder, assetMgr),
         rendererSettingsPanel(rndrSett),
         performancePanel(stats_),
-        viewportPanel(cam, scnMgr)
+        viewportPanel(window, cam, scnMgr)
     {
 
     }
@@ -40,7 +43,7 @@ namespace Lengine {
         // cleanup if you want later
     }
     
-    void EditorLayer::OnImGuiRender(const uint32_t& finalImage) {
+    void EditorLayer::OnImGuiRender(const uint32_t& finalImage, HDREnvironment& hdrSkybox) {
 
         BeginDockspace();
 
@@ -56,6 +59,7 @@ namespace Lengine {
             assetPanel.OnImGuiRender();
             performancePanel.OnImGuiRender();
             rendererSettingsPanel.OnImGuiRender();
+            environmentPanel.OnImGuiRender(hdrSkybox);
 
         }
         else {

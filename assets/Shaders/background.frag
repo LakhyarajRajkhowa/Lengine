@@ -1,12 +1,26 @@
 #version 330 core
-out vec4 FragColor;
+
+
 in vec3 WorldPos;
+out vec4 FragColor;
 
 uniform samplerCube environmentMap;
+uniform mat3 envRotation;
+uniform float envIntensity;
+uniform vec3 envTint;
 
 void main()
-{		
-    vec3 envColor = texture(environmentMap, WorldPos).rgb;
-     
-    FragColor = vec4(envColor, 1.0);
+{
+    vec3 dir = normalize(WorldPos);
+
+    // rotate environment
+    dir = envRotation * dir;
+
+    vec3 color = texture(environmentMap, dir).rgb;
+
+    // apply tint + intensity
+    color *= envTint;
+    color *= envIntensity;
+
+    FragColor = vec4(color, 1.0);
 }

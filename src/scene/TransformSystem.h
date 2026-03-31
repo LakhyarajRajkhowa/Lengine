@@ -7,7 +7,8 @@
 #include <glm/gtx/quaternion.hpp>   // eulerAngles, angleAxis helpers
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "../scene/components/Transform.h"
+#include "../scene/components/TransformStorage.h"
+#include "../scene/components/HierarchyStorage.h"
 #include "../utils/UUID.h"
 
 namespace Lengine {
@@ -51,6 +52,21 @@ namespace Lengine {
 
             rotation = glm::quat_cast(rotMat);  // ← no euler conversion, no drift
         }
+
+        void Update(
+            TransformStorage& transforms,
+            const HierarchyStorage& hierarchys,
+            const std::vector<UUID> rootEntites
+        );
+
+        void UpdateWorldTransformRecursive(
+            UUID entityID,
+            const glm::mat4& parentWorld,
+            bool parentWorldDirty,
+            TransformStorage& transforms,
+            const HierarchyStorage& hierarchys
+        );
+       
     };
 
 

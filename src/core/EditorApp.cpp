@@ -33,6 +33,7 @@ namespace Lengine {
         ),
         editorOverlays(assetManager),
         editorLayer(
+            window,
             logBuffer,
             sceneManager,
             editorOverlays.getGizmos(),
@@ -68,11 +69,7 @@ namespace Lengine {
 
     void Editor::run()
     {
-        inputHandler.handleInputs(
-            imguiLayer,
-            editorLayer,
-            runtimeStats.frameStats.deltaTime
-        );
+
 
         imguiLayer.beginFrame();
 
@@ -86,6 +83,11 @@ namespace Lengine {
             ctx.cameraView = editorCamera.getViewMatrix();
             ctx.cameraProjection = editorCamera.getProjectionMatrix();
             ctx.cameraPos = editorCamera.getCameraPosition();
+
+
+            int mx, my;
+            SDL_GetRelativeMouseState(&mx, &my);
+            editorCamera.Update(runtimeStats.frameStats.deltaTime, { mx, my });
         }
         else if (editorLayer.mode == EditorMode::PLAY) {
             UUID camID = activeScene->Cameras().GetPrimaryCameraID();
@@ -111,7 +113,7 @@ namespace Lengine {
 
         editorOverlays.RenderGizmoGrid(ctx, renderPipeline.GetFinalFramebuffer());
 
-        editorLayer.OnImGuiRender(renderPipeline.GetFinalImage());
+        editorLayer.OnImGuiRender(renderPipeline.GetFinalImage(), renderPipeline.GetHDRSkybox());
 
         assetManager.drawLoadingScreens();
         assetManager.drawImportingScreens();

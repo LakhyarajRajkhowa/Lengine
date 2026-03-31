@@ -15,10 +15,14 @@
 #include "../graphics/camera/Camera3d.h"
 #include "../graphics/frameBuffers/Framebuffer.h"
 
+
 #include "../utils/fps.h"
 #include "../utils/imGuiScreens.h"
 
 #include "../scene/SceneManager.h"
+
+#include "../platform/Window.h"
+
 
 
 namespace Lengine {
@@ -35,11 +39,13 @@ namespace Lengine {
     class ViewportPanel {
     public:
         
-        ViewportPanel(Camera3d& camera_, SceneManager& scene_) :
+        ViewportPanel(Window& window, Camera3d& camera_, SceneManager& scene_) :
+            window(window),
             editorCamera(camera_),
             sceneManager(scene_)
         {}
 
+       
         void OnImGuiRender(const uint32_t finalImage);
         void RenderFullscreen(const uint32_t finalImage);
 
@@ -62,6 +68,7 @@ namespace Lengine {
         void DrawTransformGizmo();
         
     private:
+        Window& window;
         Camera3d& editorCamera;
         SceneManager& sceneManager;
 
@@ -83,7 +90,8 @@ namespace Lengine {
         bool m_Hovered = false;  
 
         ViewportMode mode = ViewportMode::first;
-   
+        
+        void handleMouseInViewport();
 
     };
 

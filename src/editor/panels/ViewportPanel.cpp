@@ -11,12 +11,18 @@ using namespace Lengine;
 
     void ViewportPanel::OnImGuiRender(const uint32_t finalImage)
     {
+        handleMouseInViewport();
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Viewport");
         ImGui::Separator();
          
-        if (ImGui::Button(editorCamera.isFixed ? "Fix Camera: ON" : "Fix Camera: OFF"))
+        if (
+            ImGui::Button(editorCamera.isFixed ? "Fix Camera: ON" : "Fix Camera: OFF")
+            || ImGui::IsKeyPressed(ImGuiKey_C)
+            )
             editorCamera.isFixed = !editorCamera.isFixed;
+
 
         ImGui::SameLine();
         if (ImGui::Button("Fullscreen Mode"))
@@ -96,6 +102,8 @@ using namespace Lengine;
 
     void ViewportPanel::RenderFullscreen(const uint32_t finalImage)
     {
+        handleMouseInViewport();
+
         editorCamera.isFixed = false;
         editorCamera.setAspectRatio(fullscreenAspectRatio);
 
@@ -250,3 +258,33 @@ using namespace Lengine;
         TransformSystem::Dirty = true;
     }
 }
+
+   void ViewportPanel::handleMouseInViewport() {
+
+       if (!editorCamera.isFixed && editorCamera.controlMode == CameraControlMode::first)
+       {
+            int mx, my;
+            SDL_GetRelativeMouseState(&mx, &my);
+
+            // this is for bounding the cursor inside the viewport and recentering the cursor        
+            ImVec2 pos = GetViewportPos();
+            ImVec2 size = GetViewportSize();
+
+            int clampedX = std::clamp(mx, (int)pos.x, (int)(pos.x + size.x - 1));
+            int clampedY = std::clamp(my, (int)pos.y, (int)(pos.y + size.y - 1));
+
+            if (mx != clampedX || my != clampedY)
+                SDL_WarpMouseInWindow(window.getWindow(), clampedX, clampedY);
+
+            SDL_SetRelativeMouseMode(SDL_TRUE);
+            SDL_ShowCursor(SDL_DISABLE);
+                   
+       }
+       else
+       {
+           SDL_SetRelativeMouseMode(SDL_FALSE);
+           SDL_ShowCursor(SDL_ENABLE);
+       }
+
+   }
+   

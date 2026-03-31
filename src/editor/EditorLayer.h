@@ -8,7 +8,6 @@
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
 #include "../platform/KeyBindings.h"
-#include "../platform/Window.h"
 
 #include "../editor/panels/ViewportPanel.h"
 #include "../editor/panels/SceneHeirarchyPanel.h"
@@ -17,6 +16,7 @@
 #include "../editor/panels/AssetPanel.h"
 #include "../editor/panels/PerformancePanel.h"
 #include "../editor/panels/RendererSettingsPanel.h"
+#include "../editor/panels/EnvironmentPanel.h"
 
 #include "../editor/MainMenuBar.h"
 #include "../editor/EditorManipulation.h"
@@ -31,6 +31,7 @@ namespace Lengine {
     class EditorLayer {
     public:
         EditorLayer(
+            Window& window,
             LogBuffer& buffer,
             SceneManager& sceneManager,
             GizmoRenderer& gizmoRndr,
@@ -43,7 +44,7 @@ namespace Lengine {
         ~EditorLayer() = default;
 
         void OnAttach();
-        void OnImGuiRender(const uint32_t& finalImage);
+        void OnImGuiRender(const uint32_t& finalImage, HDREnvironment& hdrSkybox);
         void OnDetach();
 
         ViewportPanel& GetViewportPanel() { return viewportPanel; }
@@ -71,10 +72,12 @@ namespace Lengine {
         AssetPanel assetPanel;
         PerformancePanel performancePanel;
         RendererSettingsPanel rendererSettingsPanel;
+        EnvironmentPanel environmentPanel;
 
         MainMenuBar mainMenuBar;
 
         // External engine systems (not owned)
+        Window& window;
         SceneManager& sceneManager;
         GizmoRenderer& gizmoRenderer;
         Camera3d& editorCamera;

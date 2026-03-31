@@ -429,6 +429,8 @@ Entity* AssetManager::InstantiatePrefab(
         Entity* e = scene.createEntity(node.name);
         entities[node.index] = e;
 
+        std::cout << node.index << std::endl;
+
         auto& t = scene.Transforms().Add(e->getID());
 
         TransformSystem::DecomposeMatrix(

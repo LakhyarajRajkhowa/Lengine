@@ -11,6 +11,7 @@ namespace Lengine {
     class HDREnvironment {
     public:
         void Init(const uint32_t texRes);
+        void CompileShaders();
         void Render(const glm::mat4& view, const glm::mat4& projection);
 
         const GLTexture GetHDRTexture() { return hdrTexture; }
@@ -53,5 +54,11 @@ namespace Lengine {
         unsigned int cubeVBO = 0;
 
         void renderCube();
+
+    public:
+        float envRotationAngle = 0.0f;
+        glm::mat3 rot = glm::mat3(1.0f);
+        float envIntensity = 1.0f;
+        glm::vec3 envTint = glm::vec3(1.0f);
     };
 }

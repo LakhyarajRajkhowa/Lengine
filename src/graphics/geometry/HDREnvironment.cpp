@@ -101,6 +101,7 @@ void HDREnvironment::Init(const uint32_t texRes) {
   
 }
 
+
 void HDREnvironment::Render(const glm::mat4& view, const glm::mat4& projection)
 {
     glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
@@ -108,6 +109,16 @@ void HDREnvironment::Render(const glm::mat4& view, const glm::mat4& projection)
     glm::mat4 skyboxView = glm::mat4(glm::mat3(view)); // remove translation
     backgroundShader.setMat4("view", skyboxView);
     backgroundShader.setMat4("projection", projection);
+
+    rot = glm::mat3(
+        glm::rotate(glm::mat4(1.0f),
+            glm::radians(envRotationAngle),
+            glm::vec3(0, 1, 0))
+    );
+
+    backgroundShader.setMat3("envRotation", rot);
+    backgroundShader.setFloat("envIntensity", envIntensity);
+    backgroundShader.setVec3("envTint", envTint);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap.id);

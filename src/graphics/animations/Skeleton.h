@@ -86,7 +86,6 @@ namespace Lengine {
 
         skeleton->bones.resize(boneCount);
 
-        std::cout << "Skeeton UUID : " << skeleton->skeletonID << " | Bone Size : " << boneCount << std::endl;
 
         for (uint32_t i = 0; i < boneCount; i++)
         {

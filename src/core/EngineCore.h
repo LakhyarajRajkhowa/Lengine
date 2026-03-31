@@ -12,6 +12,7 @@
 #include "../platform/Window.h"
 
 #include "../graphics/animations/AnimationSystem.h"
+#include "../scene/TransformSystem.h"
 
 namespace Lengine {
 
@@ -64,6 +65,7 @@ namespace Lengine {
         RenderPipeline renderPipeline;
 
         AnimationSystem animationSystem;
+        TransformSystem transformSystem;
 
         bool running = true;
 

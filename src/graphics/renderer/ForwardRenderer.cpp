@@ -181,6 +181,9 @@ void ForwardRenderer::RenderScene_pbr(
     pbrShader->setInt("irradianceMap", static_cast<unsigned int>(TextureUnit::Irradiance));
     pbrShader->setInt("prefilterMap", static_cast<unsigned int>(TextureUnit::Prefilter));
     pbrShader->setInt("brdfLUT", static_cast<unsigned int>(TextureUnit::BRDF_LUT));
+    pbrShader->setFloat("envIntensity", ctx.envIntensity);
+    pbrShader->setVec3("envTint", ctx.envTint);
+    pbrShader->setMat3("envRotation", ctx.envRotation);
 
 
     pbrShader->setInt("shadowMap", static_cast<unsigned int>(TextureUnit::Shadow2D));
@@ -336,7 +339,6 @@ void ForwardRenderer::RenderScene_pbr(
         // Animation
         if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
         {
-            DEBUG_LOG_GAP(std::to_string(entityID), 1000);
             for (int i = 0; i < sm->bonePalette.size(); i++)
             {
                 int globalID = sm->bonePalette[i];

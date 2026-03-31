@@ -38,15 +38,15 @@ namespace Lengine {
 
     void EngineCore::updateRuntime()
     {
+        Scene* activeScene = sceneManager.getActiveScene();
         UpdateTimer();
 
         inputManager.Update();
 
-        assetManager.Update(*sceneManager.getActiveScene());
+        assetManager.Update(*activeScene);
 
-        sceneManager.getActiveScene()->Update();
-
-        animationSystem.Update(sceneManager.getActiveScene(), deltaTime);
+        animationSystem.Update(activeScene->Animations(), activeScene->Skeletons(),  deltaTime);
+        transformSystem.Update(activeScene->Transforms(), activeScene->Hierarchys(), activeScene->getRootEntities());
     }
 
     void EngineCore::pollEvents()

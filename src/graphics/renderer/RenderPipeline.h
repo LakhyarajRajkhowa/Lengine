@@ -272,6 +272,11 @@ namespace Lengine {
             return mainFramebuffer->GetColorAttachment(0);
         }
 
+        HDREnvironment& RenderPipeline::GetHDRSkybox() 
+        {
+            return hdrSkybox;
+        }
+
     private:
 
         // =============================

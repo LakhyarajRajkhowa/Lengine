@@ -12,6 +12,8 @@
 #include "../scene/components/SkeletonComponentStorage.h"
 #include "../scene/components/AnimationComponentStorage.h"
 #include "../scene/components/CameraComponentStorage.h"
+#include "../scene/components/MovementComponentStorage.h"
+#include "../scene/components/ControllerComponentStorage.h"
 
 #include "../scene/TransformSystem.h"
 #include "../assets/MaterialRegistry.h"
@@ -220,6 +222,9 @@ namespace Lengine {
         SkeletonComponentStorage skeletons;
         AnimationComponentStorage animations;
         CameraComponentStorage cameras;
+        ControllerStorage controllers;
+
+
 
     };
 }

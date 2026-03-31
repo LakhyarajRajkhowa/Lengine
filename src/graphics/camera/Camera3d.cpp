@@ -58,6 +58,8 @@ namespace Lengine {
     }
    
     void Camera3d::Update(const float& deltaTime, const glm::vec2& mouseCoords){
+            
+        if (isFixed) return;
 
             speedMultiplier = _inputManager->isKeyDown(SDLK_LCTRL) ? 5.0f : 1.0f;
             const float speed =  deltaTime * speedFactor * speedMultiplier;
@@ -110,7 +112,10 @@ namespace Lengine {
                 if (_inputManager->getScrollY() < 0.0f)
                     position -= glm::normalize(front) * speed * scrollFactor;
 
+                _inputManager->resetScroll();
+
             }
+
         }
 
         front = glm::normalize(direction);
@@ -166,10 +171,6 @@ namespace Lengine {
             }
         }
 
-        if (_inputManager->isKeyPressed(SDLK_ESCAPE))
-        {
-            isFixed = !isFixed;
-        }
     }
 
     glm::vec3 Camera3d::getForward() const {
