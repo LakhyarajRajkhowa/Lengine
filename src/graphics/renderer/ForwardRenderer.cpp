@@ -175,7 +175,7 @@ void ForwardRenderer::RenderScene_pbr(
 ) {
     const Scene* activeScene = ctx.scene;
 
-    GLSLProgram* pbrShader = assetManager.getShader(ShaderRegistry::universalPbr.name);
+    GLSLProgram* pbrShader = assetManager.getShader(ShaderRegistry::UNIVERSAL_PBR);
     pbrShader->use();
 
     pbrShader->setInt("irradianceMap", static_cast<unsigned int>(TextureUnit::Irradiance));
@@ -450,8 +450,8 @@ void ForwardRenderer::RenderScene_debug(
     const Scene* activeScene = ctx.scene;
     
 
-    GLSLProgram* shader = assetManager.getShader(ShaderRegistry::debug.name);
-    GLSLProgram* outlineShader = assetManager.getShader(ShaderRegistry::outline.name);
+    GLSLProgram* shader = assetManager.getShader(ShaderRegistry::DEBUG);
+    GLSLProgram* outlineShader = assetManager.getShader(ShaderRegistry::OUTLINE);
 
     const auto& entities = activeScene->getEntities();
     auto& meshRenderers = activeScene->MeshRenderers();

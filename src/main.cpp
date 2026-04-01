@@ -3,8 +3,8 @@
 #define SDL_MAIN_HANDLED
 
 
-#include "../core/EngineCore.h"
-#include "../core/EditorApp.h"
+#include "core/EngineCore.h"
+#include "core/EditorApp.h"
 
 int main(int argc, char* argv[])
 {

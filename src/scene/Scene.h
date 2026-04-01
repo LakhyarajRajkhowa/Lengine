@@ -44,64 +44,20 @@ namespace Lengine {
 
 
         const std::vector<std::unique_ptr<Entity>>& getEntities() const { return entities; }
-        std::vector<std::unique_ptr<Entity>>& Scene::getEntities() {
+        std::vector<std::unique_ptr<Entity>>& getEntities() {
             return entities;
         }
 
         const std::vector<UUID>& getRootEntities() const { return rootEntities; }
-        std::vector<UUID>& Scene::getRootEntities() {
+        std::vector<UUID>& getRootEntities() {
             return rootEntities;
         }
 
-        bool Scene::IsRootEntity(const UUID& id)
+        bool IsRootEntity(const UUID& id)
         {
             const auto& roots = getRootEntities();
 
             return std::find(roots.begin(), roots.end(), id) != roots.end();
-        }
-
-        const UUID& GetMainDirectionalLight() {
-            Light light;
-            bool hasDirectionalLight = false;
-
-            for (auto& l : lights.GetAll()) {
-                if (l.second.type == LightType::Directional) {
-                    light.id = l.first;
-                    light.outerAngle = l.second.outerAngle;
-                    hasDirectionalLight = true;
-                    break;
-                }
-            }
-            if (!hasDirectionalLight) return UUID::Null;
-
-            if (!transforms.Has(light.id)) return UUID::Null;
-
-
-
-            return light.id;
-        }
-
-        UUID GetMainDirectionalLight() const {
-            Light light;
-            bool hasDirectionalLight = false;
-
-            for (auto& l : lights.GetAll()) {
-                if (l.second.type == LightType::Directional) {
-                    light.id = l.first;
-                    light.outerAngle = l.second.outerAngle;
-                    hasDirectionalLight = true;
-
-
-                    break;
-                }
-            }
-
-            if (!hasDirectionalLight) return UUID::Null;
-
-            if (!transforms.Has(light.id)) return UUID::Null;
-
-
-            return light.id;
         }
 
 

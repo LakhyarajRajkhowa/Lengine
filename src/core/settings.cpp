@@ -50,7 +50,10 @@ const bool EngineSettings::loadSettings() {
     cameraFov = j.value("cameraFov", cameraFov);
 
     gameFolderPath = j.value("gameFolderPath", gameFolderPath);
-    Lengine::Paths::setGameFolderPath(gameFolderPath);
+    engineFolderPath = j.value("engineFolderPath", engineFolderPath);
+    editorFolderPath = j.value("editorFolderPath", editorFolderPath);
+
+    Lengine::Paths::setPaths(gameFolderPath, engineFolderPath, editorFolderPath);
 
     std::cout << "Loaded settings from " << configPath << "\n";
     return true;

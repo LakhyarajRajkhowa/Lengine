@@ -1,5 +1,5 @@
 #pragma once
-#include <SDL2/SDL.h>
+#include <external/SDL2/SDL.h>
 
 inline Uint32 gStartTime = 0; // Global start time
 

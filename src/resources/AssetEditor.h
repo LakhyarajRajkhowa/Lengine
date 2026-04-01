@@ -49,7 +49,7 @@ namespace Lengine {
 
     class MaterialSaver {
     public:
-        static void MaterialSaver::Save(
+        static void Save(
             const Material& mat,
             const std::filesystem::path& libPath
         )

@@ -4,8 +4,6 @@
 #include <GL/glew.h>
 #include <string>
 
-#include <imgui/backends/imgui_impl_sdl2.h>
-#include <imgui/backends/imgui_impl_opengl3.h>
 
 #include "../core/Errors.h"
 

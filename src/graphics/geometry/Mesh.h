@@ -25,7 +25,7 @@ namespace Lengine {
     public:
         std::vector<Vertex> vertices;
 
-        Submesh::Submesh() = default;
+        Submesh() = default;
         Submesh(
             const std::string& name,
             std::vector<Vertex>&& verts,

@@ -2,6 +2,7 @@
     This is the Shader class. 
 */
 
+#include <iostream>
 
 #include <fstream>
 #include <vector>
@@ -126,7 +127,6 @@ namespace Lengine {
     }
     void GLSLProgram::compileShader(const std::string& filePath, GLuint id)
     {
-        
         std::ifstream shaderFile(filePath);
         if (shaderFile.fail())
         {

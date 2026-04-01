@@ -1,6 +1,6 @@
 #pragma once
 
-#include <json.hpp>
+#include <external/json.hpp>
 
 #include "../core/Lengine.h"
 #include "../core/Timer.h"
@@ -13,6 +13,8 @@
 
 #include "../graphics/animations/AnimationSystem.h"
 #include "../scene/TransformSystem.h"
+
+#include "utils/fps.h"
 
 namespace Lengine {
 

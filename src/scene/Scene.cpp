@@ -122,7 +122,7 @@ using namespace Lengine;
         if (Lights().Has(originalEntityId)) {
             const Light& oldLight = Lights().Get(originalEntityId);
             Light newLight = Light(oldLight);
-            lights.Add(entityId, newLight);
+            lights.Add(entityId);
         }
 
         // Name tag 

@@ -10,7 +10,6 @@
 #include "../graphics/opengl/GLSLProgram.h"
 
 #include "../core/paths.h"
-#include <imgui.h>
 
 
 namespace Lengine {

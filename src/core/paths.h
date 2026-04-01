@@ -3,20 +3,21 @@
 #include <filesystem>
 
 #include "../core/settings.h"
+
 namespace Lengine {
 
     struct Paths
     {
-        
-        static inline std::string Assets = "../assets/";
-        static inline std::string Shaders = Assets + "shaders/";
-        static inline std::string Materials = Assets + "Materials/";
-        static inline std::string Textures = Assets + "Textures/";
-        static inline std::string Mesh = Assets + "Mesh/";
-        static inline std::string Icons = Assets + "icons/";
-        static inline std::string Defaults = "../defaults/";
-        static inline std::string Default_Scenes = Defaults + "scenes/";
-        static inline std::string Default_skybox = Defaults + "skybox/";
+        static inline std::string EngineFolder;
+        static inline std::string EditorFolder;
+
+        static inline std::string Assets;
+        static inline std::string Shaders;
+        static inline std::string Materials;
+        static inline std::string Textures;
+        static inline std::string Mesh;
+        static inline std::string Icons;
+        static inline std::string Fonts;
 
         static inline std::string ActiveGameFolder;
 
@@ -38,29 +39,41 @@ namespace Lengine {
         static inline std::string GameLibrary_Assets_Prefab;
         static inline std::string GameLibrary_Assets_Skeleton;
 
-
-
         static inline std::string GameAssetDatabase;
 
+        static inline std::string PBRVertexPath;
+        static inline std::string PBRFragmentPath;
 
 
-        static void setGameFolderPath(const std::string& gameFolderPath)
+        static void setPaths(
+            const std::string& gameFolderPath,
+            const std::string& engineFolder,
+            const std::string& editorFolder
+        )
         {
             ActiveGameFolder = gameFolderPath;
+            EngineFolder = engineFolder;
+            EditorFolder = editorFolder;
+
+            Assets = engineFolder + "/assets/";
+            Shaders = Assets + "Shaders/";
+            Materials = Assets + "Materials/";
+            Textures = Assets + "Textures/";
+            Mesh = Assets + "Mesh/";
+            Icons = Assets + "icons/";
+            Fonts = Assets + "fonts/";
+
 
             GameAssets = ActiveGameFolder + "/Assets/";
-            GameAssetRegistryFolder = ActiveGameFolder + "AssetRegistry/";
+            GameAssetRegistryFolder = ActiveGameFolder + "/AssetRegistry/";
             GameScenes = ActiveGameFolder + "/Scenes/";
             GameLibrary = ActiveGameFolder + "/Library/";
-
-
 
             GameAssets_Shaders = GameAssets + "Shaders/";
             GameAssets_Materials = GameAssets + "Materials/";
             GameAssets_Mesh = GameAssets + "Mesh/";
             GameAssets_Textures = GameAssets + "Textures/";
             GameAssets_Prefab = GameAssets + "Prefab/";
-
 
             GameLibrary_Assets = GameLibrary + "Assets/";
             GameLibrary_Assets_Mesh = GameLibrary_Assets + "Mesh/";
@@ -69,41 +82,87 @@ namespace Lengine {
             GameLibrary_Assets_Prefab = GameLibrary_Assets + "Prefab/";
             GameLibrary_Assets_Skeleton = GameLibrary_Assets + "Skeleton/";
 
-
             GameAssetDatabase = ActiveGameFolder + "/AssetDatabase/";
+
+            PBRVertexPath = Shaders + "pbr.vert";
+            PBRFragmentPath = Shaders + "pbr.frag";
+
         }
-
-         
-
     };
 
-  
-    struct ShaderPath {
-        static std::string Vert(const std::string& name) {
+
+
+    struct ShaderPath
+    {
+        static std::string Vert(const std::string& name)
+        {
             return Paths::Shaders + name + ".vert";
         }
-        static std::string Frag(const std::string& name) {
+
+        static std::string Frag(const std::string& name)
+        {
             return Paths::Shaders + name + ".frag";
         }
 
-        static inline std::string defaultVertexShaderPath = Vert("defaultShader");
-        static inline std::string defaultFragmentShaderPath = Frag("defaultShader");
+        static std::string DefaultVert()
+        {
+            return Vert("defaultShader");
+        }
 
-        static inline std::string lightSourceVertexShaderPath = Vert("lightSource");
-        static inline std::string lightSourceFragmentShaderPath = Frag("lightSource");
+        static std::string DefaultFrag()
+        {
+            return Frag("defaultShader");
+        }
 
-        static inline std::string pbrVertexShaderPath = Vert("pbr");
-        static inline std::string pbrFragmentShaderPath = Frag("pbr");
+        static std::string LightVert()
+        {
+            return Vert("lightSource");
+        }
 
-        static inline std::string debugVertexShaderPath = Vert("debug");
-        static inline std::string debugFragmentShaderPath = Frag("debug");
+        static std::string LightFrag()
+        {
+            return Frag("lightSource");
+        }
 
-        static inline std::string outlineShaderVertexShaderPath = Vert("outlineShader");
-        static inline std::string outlineShaderFragmentShaderPath = Frag("outlineShader");
+        static std::string PBRVert()
+        {
+            return Vert("pbr");
+        }
 
-        static inline std::string gizmoGridShaderVertexShaderPath = Vert("grid");
-        static inline std::string gizmoGridShaderFragmentShaderPath = Frag("grid");
+        static std::string PBRFrag()
+        {
+            return Frag("pbr");
+        }
+
+        static std::string DebugVert()
+        {
+            return Vert("debug");
+        }
+
+        static std::string DebugFrag()
+        {
+            return Frag("debug");
+        }
+
+        static std::string OutlineVert()
+        {
+            return Vert("outlineShader");
+        }
+
+        static std::string OutlineFrag()
+        {
+            return Frag("outlineShader");
+        }
+
+        static std::string GridVert()
+        {
+            return Vert("grid");
+        }
+
+        static std::string GridFrag()
+        {
+            return Frag("grid");
+        }
     };
-
 
 }

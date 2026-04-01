@@ -77,7 +77,7 @@ namespace Lengine {
 		TextureCache textureCache;
 		
 	public:
-		AssetManager::AssetManager(EngineSettings& set):
+		AssetManager(EngineSettings& set):
 			settings(set)
 		{
 			
@@ -167,7 +167,7 @@ namespace Lengine {
 		// SCENE
 		Scene* createScene(const std::string& name, const std::string& folderPath);
 		void saveScene(const Scene& scene, const std::string& filePath);
-		Scene* AssetManager::loadScene(const std::string& filePath);
+		Scene* loadScene(const std::string& filePath);
 
 
 		std::unordered_map<UUID, AssetState> assetStates;

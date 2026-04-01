@@ -2,11 +2,11 @@
 
 #include <string>
 
-#include <GL/glew.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <external/GL/glew.h>
+#include <external/glm/glm.hpp>
+#include <external/glm/gtc/type_ptr.hpp>
 
-#include "../core/Errors.h"
+#include "core/Errors.h"
 namespace Lengine {
 
 

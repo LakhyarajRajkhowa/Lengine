@@ -23,7 +23,9 @@ namespace Lengine {
 
         glm::vec3& GetWorldPosition()
         {
-            return glm::vec3(worldMatrix[3]);
+            glm::vec3 position;
+            position = glm::vec3(worldMatrix[3]);
+            return position;
         }
 
         glm::vec3 GetWorldPosition() const

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../editor/EditorLayer.h"
 #include "../scene/Scene.h"
 #include "../scene/SceneManager.h"
 #include "../graphics/opengl/GLSLProgram.h"
@@ -117,7 +116,7 @@ namespace Lengine {
         );
 
         GLSLProgram outlineShader;
-        void ForwardRenderer::drawMeshAllSubMeshes(
+        void drawMeshAllSubMeshes(
             Mesh& mesh,
             GLSLProgram& shader
         );

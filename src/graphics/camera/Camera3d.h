@@ -1,8 +1,8 @@
 #pragma once
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <SDL2/SDL.h>
+#include <external/glm/glm.hpp>
+#include <external/glm/gtc/matrix_transform.hpp>
+#include <external/glm/gtc/type_ptr.hpp>
+#include <external/SDL2/SDL.h>
 
 #include "../platform/InputManager.h"
 
@@ -46,9 +46,9 @@ namespace Lengine {
 
         bool isFixed = true;
 
-        glm::vec3 Camera3d::getForward() const;
-        glm::vec3 Camera3d::getRight() const;
-        glm::vec3 Camera3d::getUp() const;
+        glm::vec3 getForward() const;
+        glm::vec3 getRight() const;
+        glm::vec3 getUp() const;
 
         CameraControlMode controlMode = CameraControlMode::first;
     private:

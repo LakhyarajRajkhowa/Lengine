@@ -18,7 +18,7 @@ void AssetManager::LoadAllDefaultAssets() {
     }
 
     for (auto shader : ShaderRegistry::GetAllDefaults()) {
-        loadShader(shader.name, shader.vertexShaderPath, shader.fragemnetShaderPath);
+        loadShader(shader.name, shader.vertexShaderPath, shader.fragmentShaderPath);
     }
 
     for (auto asset : AssetDatabase::GetAllAssets()) {
@@ -1137,7 +1137,7 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                         jl.at("color")[2]
                     };
 
-                    scene->Lights().Add(entityID, light);
+                    scene->Lights().Add(entityID);
                 }
             }
             catch (const json::exception& e) {

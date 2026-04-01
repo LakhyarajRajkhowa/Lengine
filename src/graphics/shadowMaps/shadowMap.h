@@ -13,7 +13,7 @@ namespace Lengine {
 		}
 		ShadowMap() = default;
 		void init();
-		void ShadowMap::renderDepthMap(
+		void renderDepthMap(
 			const std::vector<std::unique_ptr<Entity>>& entities,
 			const TransformStorage& trs,
 			const MeshFilterStorage& mfs,

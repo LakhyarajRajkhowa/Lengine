@@ -1,6 +1,6 @@
 #pragma once
-#include "../external/json.hpp"
-#include "../glm/glm.hpp"
+#include "json.hpp"
+#include "glm/glm.hpp"
 
 namespace Lengine {
 	using json = nlohmann::json;

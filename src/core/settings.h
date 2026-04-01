@@ -68,6 +68,8 @@ public:
 	float cameraFov = 45;
 
 	std::string gameFolderPath ;
+	std::string engineFolderPath;
+	std::string editorFolderPath;
 
 	const bool loadSettings();
 	const bool saveSettings();

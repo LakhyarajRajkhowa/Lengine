@@ -267,12 +267,12 @@ namespace Lengine {
         RenderSettings& GetRenderSettings();
 
         // -------- Output --------
-        uint32_t RenderPipeline::GetFinalImage() const
+        uint32_t GetFinalImage() const
         {
             return mainFramebuffer->GetColorAttachment(0);
         }
 
-        HDREnvironment& RenderPipeline::GetHDRSkybox() 
+        HDREnvironment& GetHDRSkybox() 
         {
             return hdrSkybox;
         }

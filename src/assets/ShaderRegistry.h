@@ -1,57 +1,50 @@
 #pragma once
-#include "../utils/UUID.h"
-
+#include <vector>
 #include "../core/paths.h"
+
 namespace Lengine {
 
     struct ShaderAsset
     {
         std::string name;
         std::string vertexShaderPath;
-        std::string fragemnetShaderPath;
-
+        std::string fragmentShaderPath;
     };
 
-    struct ShaderRegistry {
-        static inline const ShaderAsset universalPbr = ShaderAsset{
-            "Universal PBR shader",
-            ShaderPath::pbrVertexShaderPath,
-            ShaderPath::pbrFragmentShaderPath
-        };
 
-        static inline const ShaderAsset debug = ShaderAsset{
-           "Debug shader",
-           ShaderPath::debugVertexShaderPath,
-           ShaderPath::debugFragmentShaderPath
-        };
+    struct ShaderRegistry
+    {
+        // shader names (safe static constants)
+        static constexpr const char* UNIVERSAL_PBR = "Universal PBR shader";
+        static constexpr const char* DEBUG = "Debug shader";
+        static constexpr const char* OUTLINE = "Outline shader";
+        static constexpr const char* GIZMO_GRID = "Gizmo Grid";
 
-        static inline const ShaderAsset outline = ShaderAsset{
-           "Outline shader",
-           ShaderPath::outlineShaderVertexShaderPath,
-           ShaderPath::outlineShaderFragmentShaderPath
-        };
-
-        static inline const ShaderAsset gizmoGrid = ShaderAsset{
-           "Gizmo Grid",
-           ShaderPath::gizmoGridShaderVertexShaderPath,
-           ShaderPath::gizmoGridShaderFragmentShaderPath
-        };
-
-        static const std::vector<ShaderAsset>& GetAllDefaults()
+        static std::vector<ShaderAsset> GetAllDefaults()
         {
-            static const std::vector<ShaderAsset> defaults = {
-                universalPbr,
-                debug,
-                outline,
-                gizmoGrid
+            return {
+                {
+                    UNIVERSAL_PBR,
+                    ShaderPath::PBRVert(),
+                    ShaderPath::PBRFrag()
+                },
+                {
+                    DEBUG,
+                    ShaderPath::DebugVert(),
+                    ShaderPath::DebugFrag()
+                },
+                {
+                    OUTLINE,
+                    ShaderPath::OutlineVert(),
+                    ShaderPath::OutlineFrag()
+                },
+                {
+                    GIZMO_GRID,
+                    ShaderPath::GridVert(),
+                    ShaderPath::GridFrag()
+                }
             };
-
-            return defaults;
         }
-
     };
-
-
-
 
 }

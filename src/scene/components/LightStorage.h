@@ -5,9 +5,9 @@
 namespace Lengine {
     class LightStorage {
     public:
-        void Add(const UUID& entityID, Light& light = Light()) {
+        void Add(const UUID& entityID) {
+            Light light = Light(entityID);
             m_Lights[entityID] = light;
-            light.id = entityID;
         }
 
         void Remove(const UUID& entityID) {

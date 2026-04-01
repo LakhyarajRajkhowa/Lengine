@@ -9,7 +9,7 @@
 namespace Lengine {
     class PhongMaterial {
     public:
-        PhongMaterial::PhongMaterial() = default;
+        PhongMaterial() = default;
         glm::vec3 Kd = {0.5, 0.5, 0.5};        // DiffuseColor
         glm::vec3 Ka = { 0.05, 0.05, 0.05 };        // AmbientColor
         glm::vec3 Ks = { 3.50, 3.50, 3.50 };        // SpecularColor
@@ -50,7 +50,7 @@ namespace Lengine {
 
 
     struct Material {
-        Material::Material() = default;
+        Material() = default;
 
         UUID id = UUID::Null;
         glm::vec3 albedo = glm::vec3(1.0f);

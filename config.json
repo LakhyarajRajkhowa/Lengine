@@ -13,5 +13,9 @@
     "cameraPosZ": 0,
     "cameraFov": 45,
 
-    "gameFolderPath": "C:/Users/llakh/OneDrive/Desktop/Projects/LengineGraphics3D/TestGameFolder"
+    "gameFolderPath": "C:/Users/llakh/OneDrive/Desktop/Projects/LengineGraphics3D/TestGameFolder",
+    "engineFolderPath": "C:/Users/llakh/OneDrive/Desktop/Projects/LengineGraphics3D/engine",
+    "editorFolderPath": "C:/Users/llakh/OneDrive/Desktop/Projects/LengineGraphics3D/editor"
+
+
 }
