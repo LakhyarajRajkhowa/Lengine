@@ -3,6 +3,7 @@ build/
 TestGameFolder/
 bin/Debug
 bin/Release
+src/external/physx/lib
 
 # Ignore Windows executables
 *.exe
