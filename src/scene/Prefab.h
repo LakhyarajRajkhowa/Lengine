@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../utils/UUID.h"
-#include "../graphics/animations/Skeleton.h"
+#include "animations/Skeleton.h"
 #include "external/assimp/Importer.hpp"
 
 namespace Lengine {

@@ -2,17 +2,18 @@
 
 #include <external/json.hpp>
 
-#include "../core/Lengine.h"
-#include "../core/Timer.h"
-#include "../core/settings.h"
-#include "../core/EventSystem.h"
+#include "core/Lengine.h"
+#include "core/Timer.h"
+#include "core/settings.h"
+#include "core/EventSystem.h"
 
-#include "../graphics/renderer/RenderPipeline.h"
-#include "../platform/InputManager.h"
-#include "../platform/Window.h"
+#include "graphics/renderer/RenderPipeline.h"
+#include "platform/InputManager.h"
+#include "platform/Window.h"
 
-#include "../graphics/animations/AnimationSystem.h"
-#include "../scene/TransformSystem.h"
+#include "animations/AnimationSystem.h"
+#include "transform/TransformSystem.h"
+#include "physics/PhysicsSystem.h"
 
 #include "utils/fps.h"
 
@@ -47,6 +48,8 @@ namespace Lengine {
         RenderSettings& getRenderSettings();
         RuntimeStats& getRuntimeStats();
 
+        PhysicsSystem& getPhysicsSystem();
+
     private:
 
         void UpdateTimer();
@@ -68,6 +71,7 @@ namespace Lengine {
 
         AnimationSystem animationSystem;
         TransformSystem transformSystem;
+        PhysicsSystem physicsSystem;
 
         bool running = true;
 

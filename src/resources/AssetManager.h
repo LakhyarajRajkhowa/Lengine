@@ -25,6 +25,7 @@
 #include "../resources/AssetEditor.h"
 #include "../resources/AssetImporter.h"
 
+#include "transform/TransformSystem.h"
 namespace fs = std::filesystem;
 
 namespace Lengine {

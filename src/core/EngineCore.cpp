@@ -34,6 +34,8 @@ namespace Lengine {
         assetManager.Init();
 
         renderPipeline.Init();
+
+        physicsSystem.init();
     }
 
     void EngineCore::updateRuntime()
@@ -45,6 +47,7 @@ namespace Lengine {
 
         assetManager.Update(*activeScene);
 
+        physicsSystem.update(deltaTime, activeScene->Transforms());
         animationSystem.Update(activeScene->Animations(), activeScene->Skeletons(),  deltaTime);
         transformSystem.Update(activeScene->Transforms(), activeScene->Hierarchys(), activeScene->getRootEntities());
     }
@@ -76,6 +79,7 @@ namespace Lengine {
     void EngineCore::shutdown()
     {
         assetManager.saveAssetDatabase();
+        physicsSystem.shutdown();
 
         window.quitWindow();
     }
@@ -129,6 +133,11 @@ namespace Lengine {
     RuntimeStats& EngineCore::getRuntimeStats()
     {
         return runtimeStats;
+    }
+
+    PhysicsSystem& EngineCore::getPhysicsSystem()
+    {
+        return physicsSystem;
     }
 
 }

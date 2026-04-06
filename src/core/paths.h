@@ -2,7 +2,7 @@
 #include <string>
 #include <filesystem>
 
-#include "../core/settings.h"
+#include "core/settings.h"
 
 namespace Lengine {
 

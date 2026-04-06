@@ -64,6 +64,11 @@ namespace Lengine {
             return m_Components;
         }
 
+        std::vector<UUID>& Entities()
+        {
+            return m_Entities;
+        }
+
     private:
         std::vector<TransformComponent> m_Components; // dense
         std::vector<UUID> m_Entities;                  // dense

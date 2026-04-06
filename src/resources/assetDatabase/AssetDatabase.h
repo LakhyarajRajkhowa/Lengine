@@ -9,9 +9,9 @@
 #include "../core/paths.h"
 #include "../external/json.hpp"
 
-#include "../graphics/material/MaterialLoader.h"
-#include "../resources/ImageLoader.h"
-#include "../graphics/animations/Animator.h"
+#include "graphics/material/MaterialLoader.h"
+#include "resources/ImageLoader.h"
+#include "animations/Animator.h"
 
 namespace Lengine {
 

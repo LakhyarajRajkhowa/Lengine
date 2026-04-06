@@ -136,23 +136,22 @@ using namespace Lengine;
         //// -------- SKELETON (root) --------
         if (Skeletons().Has(originalEntityId)) {
             auto& sk = Skeletons().Get(originalEntityId);
-
            Skeletons().Add(entityId, SkeletonComponent(sk.skeletonID));
 
-           std::cout << "actual root: " << entityId << std::endl;
-
         }
-
 
         //// -------- ANIMATION (root) --------
 
         if (Animations().Has(originalEntityId)) {
             AnimationComponent* anim = Animations().Get(originalEntityId);
-
            Animations().Add(entityId , AnimationComponent(anim->animationIDs));
-
-
         }
+
+        // ----- COLLIDER ----
+        //if (Colliders().Has(originalEntityId)) {
+        //    ColliderComponent& col = Colliders().Get(originalEntityId);    
+        //    Colliders().Add(entityId, ColliderComponent(col.shapes));
+        //}
 
         
         entities.push_back(std::move(entity));

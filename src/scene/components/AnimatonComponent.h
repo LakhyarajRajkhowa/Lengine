@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../graphics/animations/Animation.h"
+#include "animations/Animation.h"
 
 
 namespace Lengine {

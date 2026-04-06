@@ -1,22 +1,26 @@
 #pragma once
 
-#include "../resources/TextureCache.h"
+#include "resources/TextureCache.h"
 
-#include "../scene/Entity.h"
-#include "../scene/components/MeshRendererStorage.h"
-#include "../scene/components/MeshFilterStorage.h"
-#include "../scene/components/LightStorage.h"
-#include "../scene/components/TransformStorage.h"
-#include "../scene/components/HierarchyStorage.h"
-#include "../scene/components/NameTagComponentStorage.h"
-#include "../scene/components/SkeletonComponentStorage.h"
-#include "../scene/components/AnimationComponentStorage.h"
-#include "../scene/components/CameraComponentStorage.h"
-#include "../scene/components/MovementComponentStorage.h"
-#include "../scene/components/ControllerComponentStorage.h"
+#include "scene/Entity.h"
+#include "scene/components/MeshRendererStorage.h"
+#include "scene/components/MeshFilterStorage.h"
+#include "scene/components/LightStorage.h"
+#include "scene/components/TransformStorage.h"
+#include "scene/components/HierarchyStorage.h"
+#include "scene/components/NameTagComponentStorage.h"
+#include "scene/components/SkeletonComponentStorage.h"
+#include "scene/components/AnimationComponentStorage.h"
+#include "scene/components/CameraComponentStorage.h"
+#include "scene/components/MovementComponentStorage.h"
+#include "scene/components/ControllerComponentStorage.h"
+#include "scene/components/ColliderComponentStorage.h"
+#include "scene/components/RigidBodyStorage.h"
 
-#include "../scene/TransformSystem.h"
-#include "../assets/MaterialRegistry.h"
+#include "assets/MaterialRegistry.h"
+
+#include "transform/TransformSystem.h"
+#include "physics/PhysicsSystem.h"
 namespace Lengine {
     class Scene {
     public:
@@ -149,16 +153,25 @@ namespace Lengine {
             return cameras;
         }
 
+        ColliderStorage& Colliders() {
+            return colliders;
+        }
+
+        const ColliderStorage& Colliders() const {
+            return colliders;
+        }
 
 
-        void UpdateWorldTransformRecursive(
-            UUID entityID,
-            const glm::mat4& parentWorld,
-            bool parentDirty
-        );
-        void UpdateWorldTransforms();
+        RigidbodyStorage& Rigidbodies() {
+            return rigidbodies;
+        }
 
-        void Update();
+        const RigidbodyStorage& Rigidbodies() const {
+            return rigidbodies;
+        }
+
+        
+
 
         std::string GenerateDuplicateName(Scene* scene, const std::string& baseName);
 
@@ -179,8 +192,8 @@ namespace Lengine {
         AnimationComponentStorage animations;
         CameraComponentStorage cameras;
         ControllerStorage controllers;
-
-
+        ColliderStorage colliders;
+        RigidbodyStorage rigidbodies;
 
     };
 }
