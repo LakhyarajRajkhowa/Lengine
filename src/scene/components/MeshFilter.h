@@ -8,7 +8,7 @@ namespace Lengine
     struct MeshFilter
     {
 
-        UUID submeshID = UUID::Null;
+        UUID meshID = UUID::Null;
 
         // async / deferred loading support
         bool pendingSubmesh = false;
@@ -39,8 +39,8 @@ namespace Lengine
 
         MeshFilter() = default;
 
-        MeshFilter(UUID submeshID, UUID rootParent):
-            submeshID(submeshID),
+        MeshFilter(UUID meshID, UUID rootParent):
+            meshID(meshID),
             rootParent(rootParent)
         {}
 

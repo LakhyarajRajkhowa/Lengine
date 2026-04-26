@@ -94,7 +94,7 @@ void Framebuffer::Invalidate()
     for (uint32_t i = 0; i < m_Spec.colorAttachmentCount; i++)
         buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 
-    glDrawBuffers(buffers.size(), buffers.data());
+    glDrawBuffers((GLsizei)buffers.size(), buffers.data());
 
     // ---------- Depth ----------
     if (m_Spec.useDepth)
@@ -173,7 +173,7 @@ void Framebuffer::Destroy()
 
     if (!m_ColorAttachments.empty())
     {
-        glDeleteTextures(m_ColorAttachments.size(), m_ColorAttachments.data());
+        glDeleteTextures((GLsizei)m_ColorAttachments.size(), m_ColorAttachments.data());
         m_ColorAttachments.clear();
     }
 

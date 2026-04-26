@@ -37,12 +37,11 @@ namespace Lengine {
 
         PhysicsSystem() = default;
         ~PhysicsSystem() = default;
-
        
 
         static PhysicsSystem& getInstance();
 
-        void init();
+        void Init();
         void update(
             float dt,
             TransformStorage& transforms

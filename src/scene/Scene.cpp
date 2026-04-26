@@ -6,7 +6,7 @@ using namespace Lengine;
 
   
 
-    Entity* Scene::createEntity (
+    Entity* Scene::createEntity_root (
         const std::string& name,
         UUID entityID
     ) {
@@ -21,12 +21,26 @@ using namespace Lengine;
 
         return entityPtr;
     }
+
+    Entity* Scene::createEntity(
+        const std::string& name,
+        UUID entityID
+    ) {
+        auto entity = std::make_unique<Entity>(entityID);
+        nameTags.Add(entityID, NameTagComponent(name));
+
+        Entity* entityPtr = entity.get();
+
+        entities.push_back(std::move(entity));
+
+        return entityPtr;
+    }
     UUID Scene::DuplicateEntityRecursive(UUID originalID, UUID newParent, UUID newRoot)
     {
         auto entity = std::make_unique<Entity>(UUID());
 
         Entity* newEntity = addEntity(std::move(entity), originalID);
-        UUID newID = newEntity->getID();
+        UUID newID = *newEntity;
 
         if (newRoot == UUID::Null)
             newRoot = newID;
@@ -79,12 +93,12 @@ using namespace Lengine;
             return nullptr;
 
         // Ensure entity has a valid UUID
-        if (entity->getID().isNull())
+        if (entity->isNull())
         {
-            entity->setID(UUID());
+            *entity = UUID();
         }
 
-        UUID entityId = entity->getID();
+        UUID entityId = *entity;
 
         // Copy Transforms
         if (Transforms().Has(originalEntityId)) {
@@ -105,7 +119,7 @@ using namespace Lengine;
         // Copy mesh filters
         if (MeshFilters().Has(originalEntityId)) {
             const MeshFilter& oldMf = MeshFilters().Get(originalEntityId);
-            meshFilters.Add(entityId, MeshFilter(oldMf.submeshID, entityId));
+            meshFilters.Add(entityId, MeshFilter(oldMf.meshID, entityId));
 
             std::cout << "root: " << GetRootParent(entityId) << std::endl;
 
@@ -221,7 +235,7 @@ using namespace Lengine;
                 entities.end(),
                 [&](const std::unique_ptr<Entity>& e)
                 {
-                    return e->getID() == id;
+                    return *e == id;
                 }
             ),
             entities.end()
@@ -255,7 +269,7 @@ using namespace Lengine;
 
     const Entity* Scene::getEntityByID(const UUID& id) const {
         for (auto& entity : entities) {
-            if (entity->getID() == id) {
+            if (*entity == id) {
                 return entity.get();
             }
         }
@@ -263,7 +277,7 @@ using namespace Lengine;
     }
     Entity* Scene::getEntityByID(const UUID& id) {
         for (auto& entity : entities) {
-            if (entity->getID() == id) {
+            if (*entity == id) {
                 return entity.get();
             }
         }
@@ -357,10 +371,10 @@ using namespace Lengine;
 
             for (auto& e : scene->getEntities())
             {
-                if (!scene->NameTags().Has(e->getID()))
+                if (!scene->NameTags().Has(*e))
                     continue;
 
-                auto& tag = scene->NameTags().Get(e->getID());
+                auto& tag = scene->NameTags().Get(*e);
 
                 if (tag.name == newName)
                 {
@@ -374,6 +388,40 @@ using namespace Lengine;
 
             counter++;
         }
+    }
+
+    std::unique_ptr<Scene> Scene::Clone()
+    {
+        auto newScene = std::make_unique<Scene>(name + "_runtime", UUID());
+
+        std::unordered_map<UUID, UUID> entityMap;
+
+        // 1. Entities
+        for (const auto& e : entities)
+        {
+            UUID newID = UUID();
+            entityMap[*e] = newID;
+
+            newScene->addEntity(std::make_unique<Entity>(newID), *e);
+        }
+
+        // 2. Roots
+        for (auto root : rootEntities)
+            newScene->rootEntities.push_back(entityMap[root]);
+
+        // 3. Components
+        newScene->transforms.CloneFrom(transforms, entityMap);
+        newScene->meshFilters.CloneFrom(meshFilters, entityMap);
+        newScene->meshRenderers.CloneFrom(meshRenderers, entityMap);
+        newScene->skeletons.CloneFrom(skeletons, entityMap);
+        newScene->animations.CloneFrom(animations, entityMap);
+        newScene->cameras.CloneFrom(cameras, entityMap);
+        newScene->rigidbodies.CloneFrom(rigidbodies, entityMap);
+        newScene->colliders.CloneFrom(colliders, entityMap);
+        newScene->hierarchys.CloneFrom(hierarchys, entityMap);
+        newScene->lights.CloneFrom(lights, entityMap);
+
+        return newScene;
     }
 
 

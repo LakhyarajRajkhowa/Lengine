@@ -14,16 +14,15 @@ namespace Lengine {
     enum class AssetType {
         Unknown = -1,
         Mesh = 0,
-        Submesh = 1,
-        PhongMaterial = 2,
-        Material = 3,
-        Texture = 4,
-        Shader = 5,
-        Scene = 6,
-        Prefab = 8,
-        Skeleton = 9,
-        Animation = 10,
-        count = 11
+        PhongMaterial = 1,
+        Material = 2,
+        Texture = 3,
+        Shader = 4,
+        Scene = 5,
+        Prefab = 6,
+        Skeleton = 7,
+        Animation = 8,
+        count = 9
     };
 
     enum class TextureMapType {
@@ -34,7 +33,7 @@ namespace Lengine {
         Roughness = 3,
         AmbientOcclusion = 4,
         MetallicRoughness = 5,
-        count = 7
+        count = 6
     };
 
     enum class TextureTargetType
@@ -62,7 +61,6 @@ namespace Lengine {
     inline std::string AssetTypeToString(AssetType type) {
         switch (type) {
         case AssetType::Mesh:            return "Mesh";
-        case AssetType::Submesh:         return "SubMesh";
         case AssetType::PhongMaterial:   return "PhongMaterial";
         case AssetType::Material:        return "Material";
         case AssetType::Texture:         return "Texture";
@@ -77,7 +75,7 @@ namespace Lengine {
     inline AssetType StringToAssetType(const std::string& str)
     {
         if (str == "Mesh")           return AssetType::Mesh;
-        if (str == "SubMesh")        return AssetType::Submesh;
+        if (str == "SubMesh")        return AssetType::Mesh;
         if (str == "PhongMaterial")  return AssetType::PhongMaterial;
         if (str == "Material")       return AssetType::Material;
         if (str == "Texture")        return AssetType::Texture;

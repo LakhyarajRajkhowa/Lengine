@@ -47,7 +47,7 @@ namespace physx
 template <class Entry, class Key, class HashFn, class GetKey, class PxAllocator, bool compacting>
 class PxHashBase : private PxAllocator
 {
-	void init(uint32_t initialTableSize, float loadFactor)
+	void Init(uint32_t initialTableSize, float loadFactor)
 	{
 		mBuffer = NULL;
 		mEntries = NULL;
@@ -69,17 +69,17 @@ class PxHashBase : private PxAllocator
 
 	PxHashBase(uint32_t initialTableSize = 64, float loadFactor = 0.75f) : PxAllocator("hashBase")
 	{
-		init(initialTableSize, loadFactor);
+		Init(initialTableSize, loadFactor);
 	}
 
 	PxHashBase(uint32_t initialTableSize, float loadFactor, const PxAllocator& alloc) : PxAllocator(alloc)
 	{
-		init(initialTableSize, loadFactor);
+		Init(initialTableSize, loadFactor);
 	}
 
 	PxHashBase(const PxAllocator& alloc) : PxAllocator(alloc)
 	{
-		init(64, 0.75f);
+		Init(64, 0.75f);
 	}
 
 	~PxHashBase()

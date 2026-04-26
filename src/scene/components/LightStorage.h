@@ -5,8 +5,7 @@
 namespace Lengine {
     class LightStorage {
     public:
-        void Add(const UUID& entityID) {
-            Light light = Light(entityID);
+        void Add(const UUID& entityID, Light light = Light()) {
             m_Lights[entityID] = light;
         }
 
@@ -91,6 +90,20 @@ namespace Lengine {
                 pointShadowCaster = UUID::Null;
                 m_Lights[id].castShadow = false;
             }
+        }
+
+        void CloneFrom(
+            const LightStorage& src,
+            const std::unordered_map<UUID, UUID>& map)
+        {
+            for (const auto& [oldEntity, comp] : src.GetAll())
+            {
+                UUID newEntity = map.at(oldEntity);
+                m_Lights[newEntity] = comp;
+            }
+
+            directionalShadowCaster = src.GetDirectionalShadowCasteer();
+            pointShadowCaster = src.GetPointShadowCasteer();
         }
 
         

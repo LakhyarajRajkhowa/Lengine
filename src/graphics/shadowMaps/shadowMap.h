@@ -9,10 +9,10 @@ namespace Lengine {
 	public:
 
 		ShadowMap(uint32_t shadowRes) : SHADOW_RES(shadowRes) {
-			init();
+			Init();
 		}
 		ShadowMap() = default;
-		void init();
+		void Init();
 		void renderDepthMap(
 			const std::vector<std::unique_ptr<Entity>>& entities,
 			const TransformStorage& trs,

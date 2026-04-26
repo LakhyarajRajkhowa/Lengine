@@ -6,7 +6,7 @@ namespace Lengine {
     }
     Camera3d::~Camera3d() {}
 
-    void Camera3d::init(
+    void Camera3d::Init(
         InputManager* inputManager,
         const uint32_t width,
         const uint32_t height,

@@ -5,7 +5,7 @@ using namespace Lengine;
 
 
 void PostProcessing::InitHDRShaders() {
-    fullscreenQuad.init();
+    fullscreenQuad.Init();
 
     hdrToneMappingShader.compileShaders(
         Paths::Shaders + "hdrShader.vert",

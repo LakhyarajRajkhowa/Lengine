@@ -19,9 +19,9 @@ namespace Lengine {
     public:
 
         // Add camera
-        CameraComponent& Add(const UUID& entityID)
+        CameraComponent& Add(const UUID& entityID, CameraComponent camera = CameraComponent())
         {
-            cameras[entityID] = CameraComponent();
+            cameras[entityID] = camera;
 
             if (primaryCamera == UUID::Null)
                 primaryCamera = entityID;
@@ -80,6 +80,37 @@ namespace Lengine {
         const std::unordered_map<UUID, CameraComponent>& GetAllCameras() const
         {
             return cameras;
+        }
+
+        void CloneFrom(
+            const CameraComponentStorage& src,
+            const std::unordered_map<UUID, UUID>& map)
+        {
+            cameras.clear();
+            primaryCamera = UUID::Null;
+
+            // Copy all cameras
+            for (const auto& [oldEntity, comp] : src.GetAllCameras())
+            {
+                auto it = map.find(oldEntity);
+                if (it == map.end())
+                    continue;
+
+                UUID newEntity = it->second;
+                cameras[newEntity] = comp;
+            }
+
+            //  Fix primary camera mapping
+            UUID oldPrimary = src.GetPrimaryCameraID();
+
+            if (oldPrimary != UUID::Null)
+            {
+                auto it = map.find(oldPrimary);
+                if (it != map.end())
+                {
+                    primaryCamera = it->second;
+                }
+            }
         }
 
     };

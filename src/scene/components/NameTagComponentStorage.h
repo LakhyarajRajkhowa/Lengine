@@ -33,6 +33,25 @@ namespace Lengine {
             components.erase(entityID);
         }
 
+        const std::unordered_map<UUID, NameTagComponent>& All() const {
+            return components;
+        }
+
+        std::unordered_map<UUID, NameTagComponent>& All() {
+            return components;
+        }
+
+
+        void CloneFrom(
+            const NameTagComponentStorage& src,
+            const std::unordered_map<UUID, UUID>& map)
+        {
+            for (const auto& [oldEntity, comp] : src.All())
+            {
+                UUID newEntity = map.at(oldEntity);
+                components[newEntity] = comp;
+            }
+        }
     private:
 
         std::unordered_map<UUID, NameTagComponent> components;

@@ -8,9 +8,9 @@ namespace Lengine {
 	public:
 		ShadowCubeMap() = default;
 		ShadowCubeMap(unsigned int shadowRes) : SHADOW_RES(shadowRes) {
-			init();
+			Init();
 		}
-		void init();
+		void Init();
 		void updateTransforms(const glm::vec3& lightPos);
 		const glm::mat4& getShadowProj() { return shadowProj; }
 		const GLuint& getDepthCubeMap() { return depthCubeMap; }

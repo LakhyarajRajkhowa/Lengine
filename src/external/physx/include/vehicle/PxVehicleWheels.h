@@ -884,7 +884,7 @@ protected:
 	*/
 	static PxU32 computeByteSize(const PxU32 nbWheels);
 	static PxU8* patchupPointers(const PxU32 nbWheels, PxVehicleWheels* vehWheels, PxU8* ptr);
-	virtual void init(const PxU32 numWheels);
+	virtual void Init(const PxU32 numWheels);
 
 	/**
 	\brief Deallocate a PxVehicleWheels instance.

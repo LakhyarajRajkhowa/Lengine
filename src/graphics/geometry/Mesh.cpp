@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace Lengine {
-    Submesh::Submesh(
+    Mesh::Mesh(
         const std::string& name,
         std::vector<Vertex>&& verts,
         std::vector<uint32_t>&& inds
@@ -17,13 +17,13 @@ namespace Lengine {
 
     }
 
-    Submesh::~Submesh() {
+    Mesh::~Mesh() {
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
         glDeleteBuffers(1, &EBO);
     }
 
-    void Submesh::computeBounds() {
+    void Mesh::computeBounds() {
         if (vertices.empty()) return;
 
         aabbMin = vertices[0].position;
@@ -46,7 +46,7 @@ namespace Lengine {
 
     
 
-    void Submesh::setupMesh() {
+    void Mesh::setupMesh() {
 
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
@@ -111,63 +111,25 @@ namespace Lengine {
 
     }
 
-    void Submesh::draw() const {
+    void Mesh::draw() const {
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
-    void Submesh::reserve(uint32_t vCount, uint32_t iCount) {
+    void Mesh::reserve(uint32_t vCount, uint32_t iCount) {
         vertices.reserve(vCount);
         indices.reserve(iCount);
     }
 
-    void Submesh::addVertex(const Vertex& v) {
+    void Mesh::addVertex(const Vertex& v) {
         vertices.push_back(v);
     }
 
-    void Submesh::addIndex(uint32_t i) {
+    void Mesh::addIndex(uint32_t i) {
         indices.push_back(i);
     }
 
-    void Mesh::computeBounds() {
-        if (subMeshes.empty()) return;
-
-        // Initialize with first submesh
-        aabbMin = subMeshes[0].aabbMin;
-        aabbMax = subMeshes[0].aabbMax;
-
-        // Expand over all submeshes
-        for (const auto& sm : subMeshes) {
-            aabbMin = glm::min(aabbMin, sm.aabbMin);
-            aabbMax = glm::max(aabbMax, sm.aabbMax);
-        }
-
-        // Mesh center
-        localCenter = (aabbMin + aabbMax) * 0.5f;
-
-        // Bounding sphere radius
-        float maxDist = 0.0f;
-        for (const auto& sm : subMeshes) {
-            // Check submesh corners
-            glm::vec3 corners[8] = {
-                {sm.aabbMin.x, sm.aabbMin.y, sm.aabbMin.z},
-                {sm.aabbMax.x, sm.aabbMin.y, sm.aabbMin.z},
-                {sm.aabbMin.x, sm.aabbMax.y, sm.aabbMin.z},
-                {sm.aabbMax.x, sm.aabbMax.y, sm.aabbMin.z},
-                {sm.aabbMin.x, sm.aabbMin.y, sm.aabbMax.z},
-                {sm.aabbMax.x, sm.aabbMin.y, sm.aabbMax.z},
-                {sm.aabbMin.x, sm.aabbMax.y, sm.aabbMax.z},
-                {sm.aabbMax.x, sm.aabbMax.y, sm.aabbMax.z},
-            };
-
-            for (auto& c : corners) {
-                maxDist = glm::max(maxDist, glm::length(c - localCenter));
-            }
-        }
-
-        boundingRadius = maxDist;
-    }
 
    
 }

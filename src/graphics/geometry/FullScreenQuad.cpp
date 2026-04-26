@@ -2,7 +2,7 @@
 
 using namespace Lengine;
 
-void FullscreenQuad::init() {
+void FullscreenQuad::Init() {
     if (quadVAO == 0)
     {
         float quadVertices[] = {

@@ -38,6 +38,22 @@ namespace Lengine
             return m_MeshFilters;
         }
 
+        const std::unordered_map<UUID, MeshFilter>& GetAll() const
+        {
+            return m_MeshFilters;
+        }
+
+        void CloneFrom(
+            const MeshFilterStorage& src,
+            const std::unordered_map<UUID, UUID>& map)
+        {
+            for (const auto& [oldEntity, comp] : src.GetAll())
+            {
+                UUID newEntity = map.at(oldEntity);
+                m_MeshFilters[newEntity] = comp;
+            }
+        }
+
     private:
         std::unordered_map<UUID, MeshFilter> m_MeshFilters;
     };

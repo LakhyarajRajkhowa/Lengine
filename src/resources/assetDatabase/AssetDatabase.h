@@ -19,17 +19,12 @@ namespace Lengine {
     struct AssetTypeResolver;
 
     template<>
-    struct AssetTypeResolver<Submesh>
-    {
-        static constexpr AssetType Type = AssetType::Submesh;
-    };
-    
-    template<>
     struct AssetTypeResolver<Mesh>
     {
         static constexpr AssetType Type = AssetType::Mesh;
     };
-
+    
+  
     template<>
     struct AssetTypeResolver<Material>
     {
@@ -109,7 +104,7 @@ namespace Lengine {
             // ---------------- Load from disk ----------------
             std::shared_ptr<T> asset;
 
-            if constexpr (std::is_same_v<T, Submesh>)
+            if constexpr (std::is_same_v<T, Mesh>)
             {
                 asset = SubMeshSerializer::Deserialize(meta->libraryPath);
             }

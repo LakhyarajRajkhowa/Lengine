@@ -8,7 +8,7 @@
 namespace Lengine {
 	class Skybox {
 	public:
-		void init();
+		void Init();
 		void Render(const glm::mat4& view, const glm::mat4& projection);
 
 		const GLTexture getCubemapTexture() { return cubemapTexture; }

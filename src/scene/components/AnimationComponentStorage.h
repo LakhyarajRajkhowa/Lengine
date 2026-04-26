@@ -84,6 +84,36 @@ namespace Lengine
         {
             return entityToIndex.find(entity) != entityToIndex.end();
         }
+
+        void CloneFrom(
+            const AnimationComponentStorage& src,
+            const std::unordered_map<UUID, UUID>& entityMap)
+        {
+            components.clear();
+            entities.clear();
+            entityToIndex.clear();
+
+            components.reserve(src.components.size());
+            entities.reserve(src.entities.size());
+
+            for (size_t i = 0; i < src.components.size(); i++)
+            {
+                UUID oldEntity = src.entities[i];
+
+                auto it = entityMap.find(oldEntity);
+                if (it == entityMap.end())
+                    continue;
+
+                UUID newEntity = it->second;
+
+                uint32_t newIndex = (uint32_t)components.size();
+
+                components.push_back(src.components[i]); // copy component
+                entities.push_back(newEntity);
+                entityToIndex[newEntity] = newIndex;
+            }
+        }
+
     private:
 
         std::vector<AnimationComponent> components;

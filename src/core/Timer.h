@@ -3,7 +3,6 @@
 
 inline Uint32 gStartTime = 0; // Global start time
 
-// Call this once after SDL_Init()
 inline void InitTimer() {
     gStartTime = SDL_GetTicks();
 }

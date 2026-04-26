@@ -10,7 +10,6 @@ namespace Lengine {
     {
         UUID skeletonID = UUID::Null;
 
-       // Skeleton* skeleton = nullptr;
 
         std::vector<glm::mat4> localPose;
         std::vector<glm::mat4> globalPose;

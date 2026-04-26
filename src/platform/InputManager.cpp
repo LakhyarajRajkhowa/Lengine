@@ -32,8 +32,8 @@ namespace Lengine {
 	void InputManager::updateMouseCoords() {
 		int mouseX, mouseY;
 		SDL_GetMouseState(&mouseX, &mouseY);
-		_mouseCoords.x = mouseX;
-		_mouseCoords.y = mouseY;
+		_mouseCoords.x = (float)mouseX;
+		_mouseCoords.y = (float)mouseY;
 	}
 
 	bool InputManager::isMouseButtonDown(unsigned int buttonID) {

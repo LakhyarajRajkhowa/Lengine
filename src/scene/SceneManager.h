@@ -9,10 +9,21 @@ namespace Lengine {
         std::unordered_set<Scene*> scenes;
         Scene* activeScene;
 
+        std::unique_ptr<Scene> runtimeScene = nullptr;
         AssetManager& assetManager;
     public:
         SceneManager(AssetManager& asstMgr) : assetManager(asstMgr) {}   
-        Scene* getActiveScene() { return activeScene;  }
+        Scene* GetActiveScene(const EditorMode mode) { 
+            if (mode == EditorMode::EDIT)
+                return activeScene;
+            else
+                return runtimeScene.get();
+        }
+
+        Scene* GetEditorScene() { return activeScene; }
+        std::unique_ptr<Scene>& GetRuntimeScene() { return runtimeScene; }
+
+        void CreateRuntimeScene() { runtimeScene = activeScene->Clone(); }
         void setActiveScene(Scene* scene);
 
         const std::unordered_set<Scene*>& getScenes() const { return scenes; }

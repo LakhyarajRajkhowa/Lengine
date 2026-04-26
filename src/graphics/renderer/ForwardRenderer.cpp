@@ -89,35 +89,12 @@ void ForwardRenderer::bindTexture(
 
 
 void ForwardRenderer::drawSubMesh(
-    Submesh& sm,
+    Mesh& sm,
     GLSLProgram& shader
 ) {
     sm.draw();
 }
 
-void ForwardRenderer::drawSubMeshGroup(
-    Mesh& mesh,
-    const std::vector<uint32_t>& subMeshIDs,
-    GLSLProgram& shader
-) {
-    for (uint32_t smID : subMeshIDs)
-    {
-        Submesh& sm = mesh.subMeshes[smID];
-        drawSubMesh(sm, shader);
-    }
-}
-void ForwardRenderer::drawMeshAllSubMeshes(
-    Mesh& mesh,
-    GLSLProgram& shader
-)
-{
-
-    for (const Submesh& sm : mesh.subMeshes)
-    {
-            sm.draw();
-    }
-
-}
 
 void ForwardRenderer::bindShadowMapUniforms(
     GLSLProgram& shader,
@@ -330,18 +307,18 @@ void ForwardRenderer::RenderScene_pbr(
         glm::mat4 model = t.worldMatrix;
         pbrShader->setMat4("model", model);
 
-        Submesh* sm = nullptr;
+        Mesh* mesh = nullptr;
 
-        if (!mf.submeshID.isNull()) {
-            sm = assetManager.GetSubmesh(mf.submeshID);
+        if (!mf.meshID.isNull()) {
+            mesh = assetManager.GetSubmesh(mf.meshID);
         }
        
         // Animation
-        if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
+        if (mesh && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
         {
-            for (int i = 0; i < sm->bonePalette.size(); i++)
+            for (int i = 0; i < mesh->bonePalette.size(); i++)
             {
-                int globalID = sm->bonePalette[i];
+                int globalID = mesh->bonePalette[i];
 
                 pbrShader->setMat4(
                     "finalBonesMatrices[" + std::to_string(i) + "]",
@@ -433,7 +410,7 @@ void ForwardRenderer::RenderScene_pbr(
         );
 
 
-            if(sm) sm->draw();
+            if(mesh) mesh->draw();
               
                 
     }
@@ -483,7 +460,7 @@ void ForwardRenderer::RenderScene_debug(
             
             shader->setMat4("model", t.worldMatrix);
 
-            Submesh* sm = assetManager.GetSubmesh(meshFilters.Get(entityID).submeshID);
+            Mesh* sm = assetManager.GetSubmesh(meshFilters.Get(entityID).meshID);
 
             // Animation
             if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
@@ -526,7 +503,7 @@ void ForwardRenderer::RenderScene_debug(
 
             outlineShader->setMat4("model", t.worldMatrix);
 
-            Submesh* sm = assetManager.GetSubmesh(meshFilters.Get(entityID).submeshID);
+            Mesh* sm = assetManager.GetSubmesh(meshFilters.Get(entityID).meshID);
 
             // Animation
             if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
@@ -625,8 +602,8 @@ void ForwardRenderer::RenderScene_debug(
 
 
         // new
-        if (!mf.submeshID.isNull()) {
-            Submesh* sm = assetManager.GetSubmesh(mf.submeshID);
+        if (!mf.meshID.isNull()) {
+            Mesh* sm = assetManager.GetSubmesh(mf.meshID);
 
             // Animation
             if (sm && anim && anim->currentAnimationID != UUID::Null && anim->finalBoneMatrices.size())
@@ -654,191 +631,3 @@ void ForwardRenderer::RenderScene_debug(
 
 }
 
-
-/*
- 
- TODO : SSAO 
-
-void ForwardRenderer::renderSceneDepthNormals(
-    Scene& activeScene,
-    const EditorConfig& editorConfig
-) {
-    auto depthNormalShader =
-        assetManager.getShader("depthNormalShader.vert");
-
-    depthNormalShader->use();
-
-    // Camera matrices
-    depthNormalShader->setMat4("uView", camera.getViewMatrix());
-    depthNormalShader->setMat4("uProjection", camera.getProjectionMatrix());
-
-    const auto& entities = activeScene.getEntities();
-
-    for (const auto& entityPtr : entities) {
-
-        Entity* entity = entityPtr.get();
-        if (!entity || !entity->isVisible)
-            continue;
-
-        UUID meshID = entity->getMeshID();
-        Mesh* mesh = assetManager.getMesh(meshID);
-        if (!mesh || entity->hasPendingMesh())
-            continue;
-
-        glm::mat4 model = entity->getTransformMatrix();
-        depthNormalShader->setMat4("uModel", model);
-
-        // IMPORTANT: no materials, no textures
-        for (auto& [matIndex, subMeshes] : mesh->materialGroups) {
-            if (!subMeshes.size()) continue;
-
-            drawSubMeshGroup(
-                *mesh,
-                subMeshes,
-                *depthNormalShader,
-                {} // no hovered submesh highlight
-            );
-        }
-    }
-
-    depthNormalShader->unuse();
-}
-*/
-
-/*
-void Renderer::initOutlineShader() {
-    outlineShader.compileShaders(
-        Paths::Shaders + "defaultShader.vert",
-        Paths::Shaders + "outlineShader.frag"
-    );
-
-    outlineShader.linkShaders();
-}
-
-void Renderer::renderSelectionOutline(
-    Entity& entity,
-    Camera3d& camera,
-    AssetManager& assetManager
-)
-{
-    if (!entity.isSelected)
-        return;
-
-    Mesh* mesh = assetManager.getMesh(entity.getMeshID());
-    if (!mesh || entity.hasPendingMesh())
-        return;
-
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilMask(0x00);
-    glDisable(GL_DEPTH_TEST);
-
-    outlineShader.use();
-
-    glm::mat4 outlineModel =
-        glm::scale(entity.getTransformMatrix(), glm::vec3(1.03f));
-
-    bindCameraUniforms(outlineShader, outlineModel, camera);
-    outlineShader.setVec3("outlineColor", glm::vec3(1.0f, 0.85f, 0.25f));
-
-    drawMeshAllSubMeshes(*mesh, outlineShader);
-
-    outlineShader.unuse();
-
-    glEnable(GL_DEPTH_TEST);
-    glStencilMask(0xFF);
-}
-*/
-
-
-/*
-void Renderer::collectRenderData(Scene& scene, Camera3d& camera, AssetManager& assetManager) {
-
-    for (auto& [entityIndex, mr] : scene.getMeshRenderers())
-    {
-
-        const Entity* entity = scene.getEntityByIndex(entityIndex);
-
-        glm::mat4 model = entity->getTransformMatrix();
-
-        Mesh* mesh = assetManager.getMesh(mr.meshID);
-        if (!mesh) continue;
-
-        for (size_t i = 0; i < mesh->subMeshes.size(); i++)
-        {
-            RenderKey key;
-            key.shader = assetManager.getMaterial(mr.materials[i])->getShader();
-            key.materialID = mr.materials[i];
-            key.meshID = mr.meshID;
-            key.subMeshIndex = i;
-
-            batcher.submit(key, {
-                entityIndex,
-                model
-                });
-        }
-    }
-
-}
-
-void Renderer::applyMaterialUniforms(GLSLProgram* shader,
-    UUID materialID,
-    AssetManager& assetManager)
-{
-    Material* mat = assetManager.getMaterial(materialID);
-    if (!mat) return;
-
-    shader->setVec3("material.Ka", mat->Ka);
-    shader->setVec3("material.Kd", mat->Kd);
-    shader->setVec3("material.Ks", mat->Ks);
-    shader->setVec3("material.Ke", mat->Ke);
-    shader->setFloat("material.Ns", mat->Ns);
-}
-
-void Renderer::flushBatches(Scene& scene,
-    Camera3d& camera,
-    AssetManager& assetManager)
-{
-    for (auto& [key, drawList] : batcher.batches)
-    {
-        GLSLProgram* shader = key.shader;
-        if (!shader) continue;
-
-        shader->use();
-
-        // ---- Camera uniforms (once per batch) ----
-        shader->setMat4("view", camera.getViewMatrix());
-        shader->setMat4("projection", camera.getProjectionMatrix());
-        shader->setVec3("cameraPos", camera.getCameraPosition());
-
-        shader->setVec3("lightColor", lightColor);
-        shader->setVec3("lightPos", lightPos);
-
-        // ---- Material uniforms (once per batch) ----
-        applyMaterialUniforms(shader, key.materialID, assetManager);
-
-        // ---- Geometry ----
-        Mesh* mesh = assetManager.getMesh(key.meshID);
-        if (!mesh) continue;
-
-        SubMesh& sm = mesh->subMeshes[key.subMeshIndex];
-
-        // ---- Draw all entities in this batch ----
-        for (const RenderCommand& cmd : drawList)
-        {
-            shader->setMat4("model", cmd.model);
-            sm.draw();
-        }
-
-        shader->unuse();
-    }
-
-    batcher.clear(); // IMPORTANT: per-frame
-}
-
-void Renderer::renderSceneECS(Scene& scene, Camera3d& camera, AssetManager& assetManager) {
-
-    collectRenderData(scene, camera, assetManager);
-    flushBatches(scene, camera, assetManager);
-
-}
-*/

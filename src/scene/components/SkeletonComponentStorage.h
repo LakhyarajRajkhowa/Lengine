@@ -18,7 +18,7 @@ namespace Lengine {
 
         }
 
-        bool Has(UUID entity)
+        bool Has(UUID entity) const
         {
             return components.find(entity) != components.end();
         }
@@ -45,6 +45,17 @@ namespace Lengine {
         void Remove(UUID entity)
         {
             components.erase(entity);
+        }
+
+        void CloneFrom(
+            const SkeletonComponentStorage& src,
+            const std::unordered_map<UUID, UUID>& map)
+        {
+            for (const auto& [oldEntity, comp] : src.All())
+            {
+                UUID newEntity = map.at(oldEntity);
+                components[newEntity] = comp;
+            }
         }
 
     };

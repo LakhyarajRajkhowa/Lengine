@@ -5,6 +5,8 @@
 #include "../utils/UUID.h"
 #include "Transform.h"
 
+#include <iostream>
+
 namespace Lengine {
 
     class TransformStorage {
@@ -67,6 +69,21 @@ namespace Lengine {
         std::vector<UUID>& Entities()
         {
             return m_Entities;
+        }
+
+        void TransformStorage::CloneFrom(
+            const TransformStorage& src,
+            const std::unordered_map<UUID, UUID>& map)
+        {
+            for (size_t i = 0; i < src.m_Components.size(); i++)
+            {
+                UUID oldEntity = src.m_Entities[i];
+                UUID newEntity = map.at(oldEntity);
+
+                Add(newEntity, src.m_Components[i]); // copy component
+
+                std::cout << newEntity << std::endl;
+            }
         }
 
     private:

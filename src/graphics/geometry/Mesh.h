@@ -5,15 +5,15 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
-#include "../graphics/material/Material.h"
-#include "../logging/LogBuffer.h"
+#include "graphics/material/Material.h"
+#include "logging/LogBuffer.h"
 
-#include "../graphics/geometry/Bounds.h"
+#include "graphics/geometry/Bounds.h"
 
 
 
 namespace Lengine {
-    class Submesh {
+    class Mesh {
     private:
 
         std::string name;
@@ -25,14 +25,14 @@ namespace Lengine {
     public:
         std::vector<Vertex> vertices;
 
-        Submesh() = default;
-        Submesh(
+        Mesh() = default;
+        Mesh(
             const std::string& name,
             std::vector<Vertex>&& verts,
             std::vector<uint32_t>&& inds
         );
       
-        ~Submesh();
+        ~Mesh();
 
         glm::vec3 aabbMin;
         glm::vec3 aabbMax;
@@ -53,34 +53,6 @@ namespace Lengine {
 
     };
 
-    class Mesh {
-    public:
-        
-        std::string name;
-        std::string path;
-        std::unordered_map<unsigned int, std::vector<unsigned int>> materialGroups;
-        std::vector<Submesh> subMeshes;
-
-        std::vector<bool> visibleMaterialGroups ;
-       
-
-        void draw() const {
-            for (const auto& sm : subMeshes) {
-                sm.draw();
-            }
-        }
-        
-        glm::vec3 aabbMin;
-        glm::vec3 aabbMax;
-
-        glm::vec3 localCenter;
-        float boundingRadius;
-
-        void computeBounds();
-        const glm::vec3& getLocalCenter() { return localCenter; }
-        float& getBoundingRadius() { return boundingRadius; }
-
-        uint32_t materialSlotCount = 0;
-    };
+   
 }
 

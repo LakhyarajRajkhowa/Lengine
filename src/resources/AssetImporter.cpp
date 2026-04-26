@@ -9,7 +9,7 @@ using namespace Lengine;
 
 
 // u know all this Import code are almost same...should probably merge them
-// TODO : Merge the import codes for reusability purposes ( DRY :/ )
+// TODO : Merge the import codes 
 bool AssetImporter::ImportMeshFile(const fs::path& externalPath, const UUID& uuid)
 {
     if (!fs::exists(externalPath)) {
@@ -151,12 +151,12 @@ static void ProcessSubMesh(
     const std::filesystem::path& outDir,
     UUID parentMeshID,
     LMeshSubMeshRef& outRef,
-    UUID submeshID = UUID()
+    UUID meshID = UUID()
     
     )
 {
     LSubMeshFile sm;
-    sm.subMeshID = submeshID;
+    sm.subMeshID = meshID;
     sm.parentMeshID = parentMeshID;
     sm.sourcePath = sourcePath.string();
     sm.subMeshIndex = subMeshIndex;
@@ -264,7 +264,7 @@ static void ProcessSubMesh(
     AssetMetadata subMeshMeta;
     subMeshMeta.uuid = sm.subMeshID;
     subMeshMeta.name = name;
-    subMeshMeta.type = AssetType::Submesh;
+    subMeshMeta.type = AssetType::Mesh;
     subMeshMeta.libraryPath = subMeshPath;      // full path is better
     subMeshMeta.sourcePath = sourcePath;
     subMeshMeta.thumbnailPath = Paths::Icons + "submesh_icon.png";
@@ -285,12 +285,12 @@ static void ProcessSubMesh_prefab(
     UUID parentMeshID,
     LMeshSubMeshRef& outRef,
     std::unordered_map<std::string, int>& skeletonBoneMap,
-    UUID submeshID = UUID()
+    UUID meshID = UUID()
 
 )
 {
     LSubMeshFile sm;
-    sm.subMeshID = submeshID;
+    sm.subMeshID = meshID;
     sm.parentMeshID = parentMeshID;
     sm.sourcePath = sourcePath.string();
     sm.subMeshIndex = subMeshIndex;
@@ -432,7 +432,7 @@ static void ProcessSubMesh_prefab(
     AssetMetadata subMeshMeta;
     subMeshMeta.uuid = sm.subMeshID;
     subMeshMeta.name = name;
-    subMeshMeta.type = AssetType::Submesh;
+    subMeshMeta.type = AssetType::Mesh;
     subMeshMeta.libraryPath = subMeshPath;      // full path is better
     subMeshMeta.sourcePath = sourcePath;
     subMeshMeta.thumbnailPath = Paths::Icons + "submesh_icon.png";
@@ -1274,7 +1274,7 @@ void SkeletonImporter::ImportSkeleton(
 
             if (boneMap.find(name) == boneMap.end())
             {
-                size_t id = skeleton.bones.size();
+                int id = (int)skeleton.bones.size(); 
                 boneMap[name] = id;
 
                 LSkeletonBone newBone{};

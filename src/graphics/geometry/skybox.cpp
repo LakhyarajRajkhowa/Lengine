@@ -2,7 +2,7 @@
 
 using namespace Lengine;
 
-void Skybox::init() {
+void Skybox::Init() {
     float skyboxVertices[] = {
         // positions          
         -1.0f,  1.0f, -1.0f,

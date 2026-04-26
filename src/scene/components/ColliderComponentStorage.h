@@ -68,7 +68,34 @@ namespace Lengine {
             return m_Entities;
         }
 
+        void CloneFrom(
+            const ColliderStorage& src,
+            const std::unordered_map<UUID, UUID>& entityMap)
+        {
+            m_Components.clear();
+            m_Entities.clear();
+            m_Lookup.clear();
 
+            m_Components.reserve(src.m_Components.size());
+            m_Entities.reserve(src.m_Entities.size());
+
+            for (size_t i = 0; i < src.m_Components.size(); i++)
+            {
+                UUID oldEntity = src.m_Entities[i];
+
+                auto it = entityMap.find(oldEntity);
+                if (it == entityMap.end())
+                    continue;
+
+                UUID newEntity = it->second;
+
+                size_t newIndex = m_Components.size();
+
+                m_Components.push_back(src.m_Components[i]);
+                m_Entities.push_back(newEntity);
+                m_Lookup[newEntity] = newIndex;
+            }
+        }
 
     private:
 

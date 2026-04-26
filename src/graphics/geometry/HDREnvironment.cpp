@@ -223,8 +223,8 @@ void HDREnvironment::updateTex() {
     for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
     {
         // reisze framebuffer according to mip-level size.
-        unsigned int mipWidth = 128 * std::pow(0.5, mip);
-        unsigned int mipHeight = 128 * std::pow(0.5, mip);
+        unsigned int mipWidth = (unsigned int)(128 * std::pow(0.5, mip));
+        unsigned int mipHeight = (unsigned int)(128 * std::pow(0.5, mip));
         glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
         glViewport(0, 0, mipWidth, mipHeight);
@@ -263,7 +263,7 @@ void HDREnvironment::updateTex() {
     brdfShader.use();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    quad.init();
+    quad.Init();
     quad.draw();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

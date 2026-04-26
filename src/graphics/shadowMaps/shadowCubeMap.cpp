@@ -2,7 +2,7 @@
 
 using namespace Lengine;
 
-void ShadowCubeMap::init(){
+void ShadowCubeMap::Init(){
 
 	shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, nearPlane, farPlane);
 
@@ -99,13 +99,13 @@ void ShadowCubeMap::renderDepthCubeMap(
 
 	for (auto& e : entities)
 	{
-		if (!trs.Has(e->getID()) || !mfs.Has(e->getID()) || e->getID() == mainPointLight) continue;;
+		if (!trs.Has(*e) || !mfs.Has(*e) || *e == mainPointLight) continue;;
 
-		auto& tr = trs.Get(e->getID());
+		auto& tr = trs.Get(*e);
 		depthCubeMapShader.setMat4("model", tr.worldMatrix);
-		auto& mf = mfs.Get(e->getID());
+		auto& mf = mfs.Get(*e);
 
-		auto* mesh = assetManager.GetSubmesh(mf.submeshID);
+		auto* mesh = assetManager.GetSubmesh(mf.meshID);
 		if (mesh) {
 			mesh->draw();
 		}

@@ -60,7 +60,7 @@ void AssetManager::UpdateAllAssetViews()
 
         switch (meta.type)
         {
-        case AssetType::Submesh:
+        case AssetType::Mesh:
             submeshViews.emplace_back(view);
             break;
 
@@ -89,26 +89,26 @@ void AssetManager::UpdateAllAssetViews()
 
 //  ---- SUBMESH ---
 
-void AssetManager::RequestSubmeshLoad(const UUID& submeshID, const UUID& entityID)
+void AssetManager::RequestSubmeshLoad(const UUID& meshID, const UUID& entityID)
 {
-    if (GetSubmesh(submeshID)) {
-        pendingSubmeshes.push({ entityID, submeshID });
-        assetStates[submeshID] = AssetState::LoadedToGPU;
+    if (GetSubmesh(meshID)) {
+        pendingSubmeshes.push({ entityID, meshID });
+        assetStates[meshID] = AssetState::LoadedToGPU;
         return;
     }
 
     {
         std::lock_guard<std::mutex> lock(assetMutex);
-        assetStates[submeshID] = AssetState::Loading;
-        pendingSubmeshes.push({ entityID, submeshID });
+        assetStates[meshID] = AssetState::Loading;
+        pendingSubmeshes.push({ entityID, meshID });
     }
 
-    std::thread([this, submeshID]()
+    std::thread([this, meshID]()
         {
-            bool ok = LoadSubmesh(submeshID);
+            bool ok = LoadSubmesh(meshID);
 
             std::lock_guard<std::mutex> lock(assetMutex);
-            assetStates[submeshID] = ok
+            assetStates[meshID] = ok
                 ? AssetState::LoadedToCPU
                 : AssetState::Failed;
         }).detach();
@@ -116,7 +116,7 @@ void AssetManager::RequestSubmeshLoad(const UUID& submeshID, const UUID& entityI
 
 
 bool AssetManager::LoadSubmesh(const UUID& id) {
-    auto sm = AssetDatabase::LoadAsset<Submesh>(id);
+    auto sm = AssetDatabase::LoadAsset<Mesh>(id);
 
     if (sm)
         submeshes[id] = sm;
@@ -139,7 +139,7 @@ bool AssetManager::processPendingSubmesh(const UUID& id) {
         
 }
 
-Submesh* AssetManager::GetSubmesh(const UUID& id) {
+Mesh* AssetManager::GetSubmesh(const UUID& id) {
     auto it = submeshes.find(id);
     if (it == submeshes.end())
         return nullptr;
@@ -426,10 +426,10 @@ Entity* AssetManager::InstantiatePrefab(
     // ---- Create entities ----
     for (const auto& node : prefab.nodes)
     {
-        Entity* e = scene.createEntity(node.name);
+        Entity* e = scene.createEntity_root(node.name);
         entities[node.index] = e;
 
-        auto& t = scene.Transforms().Add(e->getID());
+        auto& t = scene.Transforms().Add(*e);
 
         TransformSystem::DecomposeMatrix(
             node.localTransform,
@@ -447,21 +447,21 @@ Entity* AssetManager::InstantiatePrefab(
         {
 
             // Submesh
-            if (!scene.MeshFilters().Has(e->getID())) {
-                auto& mf = scene.MeshFilters().Add(e->getID());
-                RequestSubmeshLoad(node.meshID, e->getID());
+            if (!scene.MeshFilters().Has(*e)) {
+                auto& mf = scene.MeshFilters().Add(*e);
+                RequestSubmeshLoad(node.meshID, *e);
 
             }
             else {
-                RequestSubmeshLoad(node.meshID, e->getID());
+                RequestSubmeshLoad(node.meshID, *e);
             }
 
             // Material
             if (node.materialID != UUID::Null)
             {
                 
-                if (!scene.MeshRenderers().Has(e->getID())) {
-                    auto& mr = scene.MeshRenderers().Add(e->getID());
+                if (!scene.MeshRenderers().Has(*e)) {
+                    auto& mr = scene.MeshRenderers().Add(*e);
                     
                     
                     if (LoadMaterial(node.materialID)) {
@@ -470,7 +470,7 @@ Entity* AssetManager::InstantiatePrefab(
                     }
                 }
                 else {
-                    auto& mr = scene.MeshRenderers().Get(e->getID());
+                    auto& mr = scene.MeshRenderers().Get(*e);
 
                     if (LoadMaterial(node.materialID)) {
                         mr.inst.baseMaterial = node.materialID;
@@ -482,13 +482,13 @@ Entity* AssetManager::InstantiatePrefab(
 
             }
             else {
-                if (!scene.MeshRenderers().Has(e->getID())) {
-                    auto& mr = scene.MeshRenderers().Add(e->getID());
+                if (!scene.MeshRenderers().Has(*e)) {
+                    auto& mr = scene.MeshRenderers().Add(*e);
                     mr.inst.baseMaterial = MaterialID::DefaultPbr;
 
                 }
                 else {
-                    auto& mr = scene.MeshRenderers().Get(e->getID());
+                    auto& mr = scene.MeshRenderers().Get(*e);
                     mr.inst.baseMaterial = MaterialID::DefaultPbr;
 
                 }
@@ -502,25 +502,25 @@ Entity* AssetManager::InstantiatePrefab(
         if (node.parentIndex != -1)
         {
             scene.SetParent(
-                entities[node.index]->getID(),
-                entities[node.parentIndex]->getID()
+                *entities[node.index],
+                *entities[node.parentIndex]
             );
         }
     }
 
     for (auto& e : entities) {
-        if (scene.MeshFilters().Has(e->getID())) {
-            auto& m = scene.MeshFilters().Get(e->getID());
-            m.rootParent = entities[0]->getID();
+        if (scene.MeshFilters().Has(*e)) {
+            auto& m = scene.MeshFilters().Get(*e);
+            m.rootParent = *entities[0];
         }
     }
 
     // -------- SKELETON (root) --------
     if (prefab.skeletonID != UUID::Null)
     {
-        if (!scene.Skeletons().Has(entities[0]->getID()))
+        if (!scene.Skeletons().Has(*entities[0]))
         {
-            auto& sk = scene.Skeletons().Add(entities[0]->getID());
+            auto& sk = scene.Skeletons().Add(*entities[0]);
 
             sk.skeletonID = prefab.skeletonID;
 
@@ -537,9 +537,9 @@ Entity* AssetManager::InstantiatePrefab(
     // -------- ANIMATION (root) --------
     if (!prefab.animationIDs.empty())
     {
-        if (!scene.Animations().Has(entities[0]->getID()))
+        if (!scene.Animations().Has(*entities[0]))
         {
-            auto& anim = scene.Animations().Add(entities[0]->getID());
+            auto& anim = scene.Animations().Add(*entities[0]);
 
             anim.animationIDs = prefab.animationIDs;
 
@@ -951,7 +951,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 
     for (const auto& entityPtr : entities)
     {
-        const UUID entityID = entityPtr.get()->getID();
+        const UUID entityID = *entityPtr;
         const std::string entityName = scene.NameTags().Get(entityID).name;
 
 
@@ -976,7 +976,7 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 
             json jMeshFilter;
 
-            jMeshFilter["meshID"] = mf.submeshID.toUint64();
+            jMeshFilter["meshID"] = mf.meshID.toUint64();
 
             jEntity["meshFilter"] = jMeshFilter;
 
@@ -997,15 +997,178 @@ void AssetManager::saveScene(const Scene& scene, const std::string& folderPath)
 
             json jLight;
 
-            
-            if (scene.Transforms().Has(entityID)) {
-                const TransformComponent& entityTransform = scene.Transforms().Get(entityID);
-                jLight["position"] = { entityTransform.localPosition.x,  entityTransform.localPosition.y,  entityTransform.localPosition.z };
-            }
+            // Type (store as int or string)
+            jLight["type"] = static_cast<int>(l.type);
 
+            // Basic properties
             jLight["color"] = { l.color.x, l.color.y, l.color.z };
+            jLight["intensity"] = l.intensity;
+
+            // Range (Point + Spot)
+            jLight["range"] = l.range;
+
+            // Spot angles
+            jLight["innerAngle"] = l.innerAngle;
+            jLight["outerAngle"] = l.outerAngle;
+
+            // Shadow
+            jLight["castShadow"] = l.castShadow;
 
             jEntity["light"] = jLight;
+        }
+
+        if (scene.Cameras().Has(entityID))
+        {
+            const CameraComponent& c = scene.Cameras().Get(entityID);
+
+            json jCam;
+
+            // Projection type
+            jCam["projectionType"] = static_cast<int>(c.projectionType);
+
+            // Perspective params
+            jCam["fov"] = c.fov;
+            jCam["nearClip"] = c.nearClip;
+            jCam["farClip"] = c.farClip;
+            jCam["aspectRatio"] = c.aspectRatio;
+
+            // Ortho params
+            jCam["orthoSize"] = c.orthoSize;
+
+            jEntity["camera"] = jCam;
+        }
+
+        if (scene.Skeletons().Has(entityID))
+        {
+            const SkeletonComponent& s = scene.Skeletons().Get(entityID);
+
+            json jSkeleton;
+
+            // Skeleton ID
+            jSkeleton["skeletonID"] = s.skeletonID.toUint64();
+
+            // Helper lambda to save mat4 vector
+            auto SaveMat4Array = [](const std::vector<glm::mat4>& mats) {
+                json arr = json::array();
+
+                for (const auto& m : mats) {
+                    json mat = json::array();
+                    for (int i = 0; i < 4; i++)
+                        for (int j = 0; j < 4; j++)
+                            mat.push_back(m[i][j]);
+
+                    arr.push_back(mat);
+                }
+                return arr;
+                };
+
+            jSkeleton["localPose"] = SaveMat4Array(s.localPose);
+            jSkeleton["globalPose"] = SaveMat4Array(s.globalPose);
+            jSkeleton["finalMatrices"] = SaveMat4Array(s.finalMatrices);
+
+            jEntity["skeleton"] = jSkeleton;
+        }
+
+        if (scene.Animations().Has(entityID))
+        {
+            const AnimationComponent* a = scene.Animations().Get(entityID);
+
+            json jAnim;
+
+            // Animation IDs
+            json animIDs = json::array();
+            for (const auto& id : a->animationIDs)
+            {
+                animIDs.push_back(id.toUint64()); // or your UUID → string method
+            }
+
+            jAnim["animationIDs"] = animIDs;
+
+            // Current animation
+            jAnim["currentAnimationID"] = a->currentAnimationID.toUint64();
+
+            // Playback state
+            jAnim["currentTime"] = a->currentTime;
+            jAnim["playbackSpeed"] = a->playbackSpeed;
+            jAnim["looping"] = a->looping;
+
+            // Helper to save mat4 array
+            auto SaveMat4Array = [](const std::vector<glm::mat4>& mats) {
+                json arr = json::array();
+
+                for (const auto& m : mats) {
+                    json mat = json::array();
+                    for (int i = 0; i < 4; i++)
+                        for (int j = 0; j < 4; j++)
+                            mat.push_back(m[i][j]);
+
+                    arr.push_back(mat);
+                }
+                return arr;
+                };
+
+            jAnim["finalBoneMatrices"] = SaveMat4Array(a->finalBoneMatrices);
+
+            jEntity["animation"] = jAnim;
+        }
+
+        if (scene.Hierarchys().Has(entityID))
+        {
+            const auto& h = scene.Hierarchys().Get(entityID);
+
+            json jH;
+
+            jH["parent"] = h.parent.toUint64();
+
+            json children = json::array();
+            for (auto& c : h.children)
+                children.push_back(c.toUint64());
+
+            jH["children"] = children;
+
+            jEntity["hierarchy"] = jH;
+        }
+
+        if (scene.Colliders().Has(entityID))
+        {
+            const ColliderComponent& c = scene.Colliders().Get(entityID);
+
+            json jCol;
+            json jShapes = json::array();
+
+            for (const auto& s : c.shapes)
+            {
+                json jShape;
+
+                // Type
+                jShape["type"] = static_cast<int>(s.type);
+
+                // Common
+                jShape["isTrigger"] = s.isTrigger;
+
+                // Shape-specific data
+                switch (s.type)
+                {
+                case ColliderShape::Type::Box:
+                    jShape["size"] = { s.size.x, s.size.y, s.size.z };
+                    break;
+
+                case ColliderShape::Type::Sphere:
+                    jShape["radius"] = s.radius;
+                    break;
+
+                case ColliderShape::Type::Capsule:
+                    jShape["radius"] = s.radius;
+                    jShape["height"] = s.height;
+                    break;
+                }
+
+                jShapes.push_back(jShape);
+            }
+
+            jCol["shapes"] = jShapes;
+
+            jEntity["collider"] = jCol;
         }
 
 
@@ -1109,7 +1272,7 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 if (jEntity.contains("meshFilter"))
                 {
                     MeshFilter mf;
-                    mf.submeshID = UUID(jEntity["meshFilter"].at("meshID").get<uint64_t>());
+                    mf.meshID = UUID(jEntity["meshFilter"].at("meshID").get<uint64_t>());
                     scene->MeshFilters().Add(entityID, mf);
                 }
 
@@ -1126,17 +1289,245 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 {
                     const auto& jl = jEntity.at("light");
 
-                    Light light;
-                   
+                    Light light(entityID);
 
-                    light.color = {
-                        jl.at("color")[0],
-                        jl.at("color")[1],
-                        jl.at("color")[2]
-                    };
+                    // Type
+                    if (jl.contains("type"))
+                        light.type = static_cast<LightType>(jl.at("type").get<int>());
 
-                    scene->Lights().Add(entityID);
+                    // Color
+                    if (jl.contains("color")) {
+                        light.color = {
+                            jl.at("color")[0],
+                            jl.at("color")[1],
+                            jl.at("color")[2]
+                        };
+                    }
+
+                    // Intensity
+                    if (jl.contains("intensity"))
+                        light.intensity = jl.at("intensity");
+
+                    // Range
+                    if (jl.contains("range"))
+                        light.range = jl.at("range");
+
+                    // Spot angles
+                    if (jl.contains("innerAngle"))
+                        light.innerAngle = jl.at("innerAngle");
+
+                    if (jl.contains("outerAngle"))
+                        light.outerAngle = jl.at("outerAngle");
+
+                    // Shadow
+                    if (jl.contains("castShadow"))
+                        light.castShadow = jl.at("castShadow");
+
+                    // Add the fully constructed light
+                    scene->Lights().Add(entityID, light);
+
+                    
                 }
+
+                // ---- Camera ----
+                if (jEntity.contains("camera"))
+                {
+                    const auto& jc = jEntity.at("camera");
+
+                    CameraComponent c;
+
+                    // Projection type
+                    if (jc.contains("projectionType"))
+                        c.projectionType = static_cast<CameraComponent::ProjectionType>(
+                            jc.at("projectionType").get<int>()
+                            );
+
+                    // Perspective params
+                    if (jc.contains("fov"))
+                        c.fov = jc.at("fov");
+
+                    if (jc.contains("nearClip"))
+                        c.nearClip = jc.at("nearClip");
+
+                    if (jc.contains("farClip"))
+                        c.farClip = jc.at("farClip");
+
+                    if (jc.contains("aspectRatio"))
+                        c.aspectRatio = jc.at("aspectRatio");
+
+                    // Ortho params
+                    if (jc.contains("orthoSize"))
+                        c.orthoSize = jc.at("orthoSize");
+
+                    // 🔥 IMPORTANT: recompute projection
+                    c.recalculateProjection();
+
+                    scene->Cameras().Add(entityID, c);
+                }
+
+                // ---- Skeleton ----
+                if (jEntity.contains("skeleton"))
+                {
+                    const auto& js = jEntity.at("skeleton");
+
+                    SkeletonComponent s;
+
+                    // Skeleton ID
+                    if (js.contains("skeletonID"))
+                        s.skeletonID = UUID(js.at("skeletonID").get<uint64_t>());
+
+                    // Helper lambda to load mat4 vector
+                    auto LoadMat4Array = [](const json& arr) {
+                        std::vector<glm::mat4> mats;
+
+                        for (const auto& matJson : arr) {
+                            glm::mat4 m(1.0f);
+
+                            int index = 0;
+                            for (int i = 0; i < 4; i++)
+                                for (int j = 0; j < 4; j++)
+                                    m[i][j] = matJson[index++];
+
+                            mats.push_back(m);
+                        }
+
+                        return mats;
+                        };
+
+                    if (js.contains("localPose"))
+                        s.localPose = LoadMat4Array(js.at("localPose"));
+
+                    if (js.contains("globalPose"))
+                        s.globalPose = LoadMat4Array(js.at("globalPose"));
+
+                    if (js.contains("finalMatrices"))
+                        s.finalMatrices = LoadMat4Array(js.at("finalMatrices"));
+
+                    // Mark dirty so system recalculates if needed
+                    s.dirty = true;
+
+                    scene->Skeletons().Add(entityID, s);
+                }
+
+                // ---- Animation ----
+                if (jEntity.contains("animation"))
+                {
+                    const auto& ja = jEntity.at("animation");
+
+                    AnimationComponent a;
+
+                    // Animation IDs
+                    if (ja.contains("animationIDs"))
+                    {
+                        for (const auto& idStr : ja.at("animationIDs"))
+                        {
+                            a.animationIDs.push_back(UUID(idStr));
+                        }
+                    }
+
+                    // Current animation
+                    if (ja.contains("currentAnimationID"))
+                        a.currentAnimationID = UUID(ja.at("currentAnimationID").get<uint64_t>());
+
+                    // Playback state
+                    if (ja.contains("currentTime"))
+                        a.currentTime = ja.at("currentTime");
+
+                    if (ja.contains("playbackSpeed"))
+                        a.playbackSpeed = ja.at("playbackSpeed");
+
+                    if (ja.contains("looping"))
+                        a.looping = ja.at("looping");
+
+                    // Helper to load mat4 array
+                    auto LoadMat4Array = [](const json& arr) {
+                        std::vector<glm::mat4> mats;
+
+                        for (const auto& matJson : arr) {
+                            glm::mat4 m(1.0f);
+
+                            int index = 0;
+                            for (int i = 0; i < 4; i++)
+                                for (int j = 0; j < 4; j++)
+                                    m[i][j] = matJson[index++];
+
+                            mats.push_back(m);
+                        }
+
+                        return mats;
+                        };
+
+                    if (ja.contains("finalBoneMatrices"))
+                        a.finalBoneMatrices = LoadMat4Array(ja.at("finalBoneMatrices"));
+
+                    scene->Animations().Add(entityID, a);
+                }
+
+                // ---- Collider ----
+                if (jEntity.contains("collider"))
+                {
+                    const auto& jc = jEntity.at("collider");
+
+                    ColliderComponent c;
+
+                    if (jc.contains("shapes"))
+                    {
+                        for (const auto& jShape : jc.at("shapes"))
+                        {
+                            ColliderShape s;
+
+                            // Type
+                            if (jShape.contains("type"))
+                            {
+                                s.type = static_cast<ColliderShape::Type>(
+                                    jShape.at("type").get<int>()
+                                    );
+                            }
+
+                            // Common
+                            if (jShape.contains("isTrigger"))
+                                s.isTrigger = jShape.at("isTrigger");
+
+                            // Shape-specific
+                            switch (s.type)
+                            {
+                            case ColliderShape::Type::Box:
+                                if (jShape.contains("size"))
+                                {
+                                    s.size = {
+                                        jShape.at("size")[0],
+                                        jShape.at("size")[1],
+                                        jShape.at("size")[2]
+                                    };
+                                }
+                                break;
+
+                            case ColliderShape::Type::Sphere:
+                                if (jShape.contains("radius"))
+                                    s.radius = jShape.at("radius");
+                                break;
+
+                            case ColliderShape::Type::Capsule:
+                                if (jShape.contains("radius"))
+                                    s.radius = jShape.at("radius");
+
+                                if (jShape.contains("height"))
+                                    s.height = jShape.at("height");
+                                break;
+                            }
+
+                            // Runtime defaults
+                            s.runtimeShape = nullptr;
+                            s.dirty = true;
+
+                            c.shapes.push_back(s);
+                        }
+                    }
+                    scene->Colliders().Add(entityID, c);
+   
+                }
+
+
             }
             catch (const json::exception& e) {
                 std::cerr << "Skipping invalid entity in scene \"" << sceneName
@@ -1147,6 +1538,36 @@ Scene* AssetManager::loadScene(const std::string& filePath)
                 std::cerr << "Error creating entity: " << e.what() << std::endl;
                 continue;
             } 
+        }
+
+        for (const auto& jEntity : jScene["entities"])
+        {
+            UUID id = UUID(jEntity["entityID"]);
+
+            UUID parent = UUID::Null;
+
+            if (jEntity.contains("hierarchy"))
+            {
+                const auto& jh = jEntity["hierarchy"];
+
+                if (jh.contains("parent"))
+                    parent = UUID(jh["parent"]);
+            }
+
+            if (parent != UUID::Null)
+            {
+                scene->SetParent(id, parent);
+            }
+            else
+            {
+                // ROOT ENTITY (including singletons)
+                if (std::find(scene->GetRootEntities().begin(),
+                    scene->GetRootEntities().end(),
+                    id) == scene->GetRootEntities().end())
+                {
+                    scene->GetRootEntities().push_back(id);
+                }
+            }
         }
 
         std::cout << "Loaded scene: " << scene->getName() << "\n";
@@ -1187,7 +1608,7 @@ void AssetManager::ProcessGpuUploads()
 
         switch (type)
         {
-        case AssetType::Submesh:
+        case AssetType::Mesh:
             ok = processPendingSubmesh(id);
             break;
 
@@ -1219,16 +1640,16 @@ void AssetManager::SyncAssetsToScene(Scene& activeScene) {
     {
         auto req = pendingSubmeshes.front();
 
-        if (assetStates[req.submeshID] == AssetState::LoadedToGPU)
+        if (assetStates[req.meshID] == AssetState::LoadedToGPU)
         {
             auto& mf = activeScene.MeshFilters().Get(req.entityID);
-            mf.submeshID = req.submeshID;
+            mf.meshID = req.meshID;
             mf.ClearPendingSubmesh();
 
-            assetStates[req.submeshID] = AssetState::Loaded;
+            assetStates[req.meshID] = AssetState::Loaded;
             pendingSubmeshes.pop();
         }
-        else if (assetStates[req.submeshID] == AssetState::Failed)
+        else if (assetStates[req.meshID] == AssetState::Failed)
         {
             pendingSubmeshes.pop();
         }
@@ -1449,7 +1870,7 @@ void AssetManager::drawLoadingScreens() {
 
 
         switch (type) {
-        case AssetType::Submesh:
+        case AssetType::Mesh:
             assetPath = GetAssetMetaData(id)->libraryPath.string();
             config.title = "Loading Mesh";
             break;
@@ -1489,7 +1910,7 @@ AssetType AssetManager::getAssetType(const UUID& id) {
 
     if (meta->type == AssetType::Material) return AssetType::Material;
     else if (meta->type == AssetType::Texture) return AssetType::Texture;
-    else if (meta->type == AssetType::Submesh) return AssetType::Submesh;
+    else if (meta->type == AssetType::Mesh) return AssetType::Mesh;
     else return AssetType::Unknown;
 }
 

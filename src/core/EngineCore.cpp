@@ -35,22 +35,31 @@ namespace Lengine {
 
         renderPipeline.Init();
 
-        physicsSystem.init();
+        physicsSystem.Init();
     }
 
-    void EngineCore::updateRuntime()
+    void EngineCore::updateEssentials(const EditorMode& mode)
     {
-        Scene* activeScene = sceneManager.getActiveScene();
-        UpdateTimer();
+        Scene* editorScene = sceneManager.GetActiveScene(mode);
 
         inputManager.Update();
+        assetManager.Update(*editorScene);
 
-        assetManager.Update(*activeScene);
 
-        physicsSystem.update(deltaTime, activeScene->Transforms());
-        animationSystem.Update(activeScene->Animations(), activeScene->Skeletons(),  deltaTime);
-        transformSystem.Update(activeScene->Transforms(), activeScene->Hierarchys(), activeScene->getRootEntities());
+        transformSystem.Update(editorScene->Transforms(), editorScene->Hierarchys(), editorScene->GetRootEntities());
+
     }
+
+    void EngineCore::updateRuntime(const EditorMode& mode)
+    {
+        Scene* editorScene = sceneManager.GetActiveScene(mode);
+
+        UpdateTimer();
+
+        physicsSystem.update(deltaTime, editorScene->Transforms());
+        animationSystem.Update(editorScene->Animations(), editorScene->Skeletons(),  deltaTime);
+    }
+
 
     void EngineCore::pollEvents()
     {
@@ -62,10 +71,13 @@ namespace Lengine {
         }
     }
 
-    void EngineCore::run()
+    void EngineCore::run(const EditorMode mode)
     {
+        updateEssentials(mode);
 
-        updateRuntime();
+        if (mode == EditorMode::PLAY) {
+            updateRuntime(mode);
+        }
 
         pollEvents();
 

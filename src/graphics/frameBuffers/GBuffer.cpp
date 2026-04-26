@@ -9,7 +9,7 @@ GBuffer::GBuffer(const uint32_t width, const uint32_t height)
 {
     Create();
     configureShaders();
-    fullscreenQuad.init();
+    fullscreenQuad.Init();
 }
 
 GBuffer::~GBuffer() {

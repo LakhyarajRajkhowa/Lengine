@@ -106,20 +106,10 @@ namespace Lengine {
         );
 
         void drawSubMesh(
-            Submesh& sm,
-            GLSLProgram& shader
-        );
-        void drawSubMeshGroup(
-            Mesh& mesh,
-            const std::vector<uint32_t>& subMeshIDs,
+            Mesh& sm,
             GLSLProgram& shader
         );
 
-        GLSLProgram outlineShader;
-        void drawMeshAllSubMeshes(
-            Mesh& mesh,
-            GLSLProgram& shader
-        );
 
         GLSLProgram* defaultShader;
         GLSLProgram* lightSourceShader;

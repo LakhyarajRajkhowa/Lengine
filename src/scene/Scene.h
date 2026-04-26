@@ -30,6 +30,11 @@ namespace Lengine {
         {
         }
   
+        Entity* createEntity_root(
+            const std::string& name,
+            UUID entityID = UUID()
+        );
+
         Entity* createEntity(
             const std::string& name,
             UUID entityID = UUID()
@@ -52,14 +57,14 @@ namespace Lengine {
             return entities;
         }
 
-        const std::vector<UUID>& getRootEntities() const { return rootEntities; }
-        std::vector<UUID>& getRootEntities() {
+        const std::vector<UUID>& GetRootEntities() const { return rootEntities; }
+        std::vector<UUID>& GetRootEntities() {
             return rootEntities;
         }
 
         bool IsRootEntity(const UUID& id)
         {
-            const auto& roots = getRootEntities();
+            const auto& roots = GetRootEntities();
 
             return std::find(roots.begin(), roots.end(), id) != roots.end();
         }
@@ -79,8 +84,9 @@ namespace Lengine {
         void RemoveEntity(const UUID);
         void RemoveEntityRecursive(UUID id);
 
-
-        
+        std::unique_ptr<Scene> Clone();
+       
+ 
         const MeshRendererStorage& MeshRenderers() const {
             return meshRenderers;
         }

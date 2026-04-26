@@ -18,7 +18,7 @@ namespace Lengine {
         Camera3d();
         ~Camera3d();
 
-        void init(
+        void Init(
             InputManager* inputManager,
             const uint32_t width = 1280,
             const uint32_t height = 720,
@@ -51,6 +51,8 @@ namespace Lengine {
         glm::vec3 getUp() const;
 
         CameraControlMode controlMode = CameraControlMode::first;
+
+
     private:
         glm::vec3 position = {0, 10, 0};
         glm::vec3 front;
@@ -68,6 +70,7 @@ namespace Lengine {
 
         float speedFactor = 10.0f;
         float speedMultiplier = 1.0f;
+
 
     };
 

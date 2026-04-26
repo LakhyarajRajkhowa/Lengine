@@ -518,7 +518,7 @@ protected:
 	*/
 	static PxU32 computeByteSize(const PxU32 numWheels);
 	static PxU8* patchupPointers(const PxU32 nbWheels, PxVehicleDrive* vehDrive, PxU8* ptr);
-	virtual void init(const PxU32 numWheels);
+	virtual void Init(const PxU32 numWheels);
 
 	/**
 	\brief Deallocate a PxVehicle4WDrive instance.

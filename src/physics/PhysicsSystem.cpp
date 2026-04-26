@@ -6,12 +6,8 @@ using namespace Lengine;
 
 bool PhysicsSystem::dirty = true;
 
-PhysicsSystem& PhysicsSystem::getInstance() {
-    static PhysicsSystem instance;
-    return instance;
-}
 
-void PhysicsSystem::init() {
+void PhysicsSystem::Init() {
     static PxDefaultAllocator gAllocator;
     static PxDefaultErrorCallback gErrorCallback;
 
@@ -56,6 +52,7 @@ void PhysicsSystem::init() {
     scene = physics->createScene(sceneDesc);
 
     CreateGroundPlane();
+
 
 }
 

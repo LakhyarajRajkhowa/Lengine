@@ -32,6 +32,17 @@ namespace Lengine {
             return m_Data;
         }
 
+         void CloneFrom(
+             const MeshRendererStorage& src,
+             const std::unordered_map<UUID, UUID>& map)
+         {
+             for (const auto& [oldEntity, comp] : src.All())
+             {
+                 UUID newEntity = map.at(oldEntity);
+                 m_Data[newEntity] = comp;
+             }
+         }
+
     private:
         std::unordered_map<UUID, MeshRenderer> m_Data;
     };

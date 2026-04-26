@@ -3,7 +3,7 @@
 
 class FullscreenQuad {
 public:
-    void init();
+    void Init();
     void draw();
 private:
     GLuint quadVAO = 0;

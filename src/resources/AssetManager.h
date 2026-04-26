@@ -9,11 +9,9 @@
 #include "../core/paths.h"
 #include "../assets/AssetRegistry.h"
 
-
 #include "../graphics/opengl/GLSLProgram.h"
 #include "../graphics/opengl/GLTexture.h"
 #include "../graphics/geometry/Mesh.h"
-#include "../graphics/geometry/Model.h"
 #include "../graphics/material/MaterialLoader.h"
 #include "../resources/TextureCache.h"
 #include "../utils/metaFileSystem.h"
@@ -22,8 +20,10 @@
 #include "../utils/C++20.h"
 #include "../scene/Scene.h"
 
-#include "../resources/AssetEditor.h"
-#include "../resources/AssetImporter.h"
+#include "resources/AssetEditor.h"
+#include "resources/AssetImporter.h"
+
+#include "resources/LoadingSystem.h"
 
 #include "transform/TransformSystem.h"
 namespace fs = std::filesystem;
@@ -58,19 +58,18 @@ namespace Lengine {
 
 	struct PendingSubmeshRequest {
 		UUID entityID;
-		UUID submeshID;
+		UUID meshID;
 	};
 
 
 
 	class AssetManager {
 	private:
-		std::unordered_map<UUID, std::shared_ptr<Mesh>> meshes;
 		std::unordered_map<std::string, std::shared_ptr<GLSLProgram>> shaders;
 		std::unordered_map<UUID, std::shared_ptr<GLTexture>> textures;
 		std::unordered_map<UUID, std::shared_ptr<PhongMaterial>> materials;
 		std::unordered_map<UUID, std::shared_ptr<Material>> pbrMaterials;
-		std::unordered_map<UUID, std::shared_ptr<Submesh>> submeshes;
+		std::unordered_map<UUID, std::shared_ptr<Mesh>> submeshes;
 		std::unordered_map<UUID, std::shared_ptr<Skeleton>> skeletons;
 		std::unordered_map<UUID, std::shared_ptr<Animation>> animations;
 
@@ -107,10 +106,10 @@ namespace Lengine {
 		const AssetMetadata* GetAssetMetaData(const UUID& uuid) const;
 
 		// SUBMESH
-		void RequestSubmeshLoad(const UUID& submeshID, const UUID& entityID);
+		void RequestSubmeshLoad(const UUID& meshID, const UUID& entityID);
 		bool LoadSubmesh(const UUID& uuid);
 		bool processPendingSubmesh(const UUID& id);
-		Submesh* GetSubmesh(const UUID& id);
+		Mesh* GetSubmesh(const UUID& id);
 
 		// SKELETONS
 		bool LoadSkeleton(const UUID& uuid);

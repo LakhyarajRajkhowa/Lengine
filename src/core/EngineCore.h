@@ -2,7 +2,6 @@
 
 #include <external/json.hpp>
 
-#include "core/Lengine.h"
 #include "core/Timer.h"
 #include "core/settings.h"
 #include "core/EventSystem.h"
@@ -31,7 +30,7 @@ namespace Lengine {
         EngineCore();
 
         void initSystems();
-        void run();
+        void run(const EditorMode mode);
         void presentFrame();
         void shutdown();
 
@@ -53,7 +52,9 @@ namespace Lengine {
     private:
 
         void UpdateTimer();
-        void updateRuntime();
+        void updateRuntime(const EditorMode& mode);
+        void updateEssentials(const EditorMode& mode);
+
 
 
     private:
