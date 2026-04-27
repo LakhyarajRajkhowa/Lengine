@@ -16,9 +16,7 @@ namespace Lengine {
 
     public:
 
-        
-
-
+     
         static GLTexture loadPNG(const std::string& filePath);
         static GLTexture loadTexture2D(
             const std::string& filePath,

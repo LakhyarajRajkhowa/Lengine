@@ -39,8 +39,7 @@ namespace Lengine {
 
     };
 
-    // idk why m i even making these classes 
-    // TODO : Learn Templating and implement it
+    // TODO :  Templating
     class MeshImporter
     {
     public:
@@ -50,6 +49,12 @@ namespace Lengine {
     {
     public:
         static void Import(const fs::path& assetPath, UUID fileID);
+        static fs::path ExtractEmbeddedTexture(
+            const aiTexture* tex,
+            int index,
+            const fs::path& texturesDir,
+            const std::string& matName
+        );
     };
 
     class MaterialImporter

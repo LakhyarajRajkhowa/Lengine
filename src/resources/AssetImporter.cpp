@@ -1,3 +1,6 @@
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "external/stb_image_write.h"
+
 #include "AssetImporter.h"
 
 #include <string>
@@ -1030,9 +1033,7 @@ bool AssetImporter::ImportTextureFile(const fs::path& externalPath, const UUID& 
         meta.close();
     }
 
-    
   
-    // ---------------- IMPORT ----------------
    TextureImporter::Import(destPath, fileID);
 
     return true;
@@ -1083,38 +1084,52 @@ void MaterialImporter::ImportAssimpMaterial(
         in >> j;
     }
 
-    // ------------------------------------------------------------
-    // Collect texture paths
-    // ------------------------------------------------------------
     fs::path albedoPath;
     fs::path normalPath;
     fs::path metallicPath;
     fs::path roughnessPath;
     fs::path aoPath;
 
+    fs::path modelRoot = modelPath.parent_path();
+    fs::path texturesDir = modelRoot / "textures";
+
+    if (!fs::exists(texturesDir))
+    {
+        fs::create_directories(texturesDir);
+    }
+
     auto getTexPath = [&](aiTextureType type, fs::path& outPath)
         {
             aiString texPath;
             if (mat->GetTexture(type, 0, &texPath) == AI_SUCCESS)
             {
+                // Embedded texture
                 if (texPath.C_Str()[0] == '*')
-                    return; // embedded texture (skip for now)
+                {
+                    int index = atoi(texPath.C_Str() + 1);
+                    const aiTexture* tex = scene->mTextures[index];
 
+                    outPath = TextureImporter::ExtractEmbeddedTexture(
+                        tex,
+                        index,
+                        texturesDir,   
+                        matName
+                    );
+                    return;
+                }
+
+                // External texture
                 outPath = fs::weakly_canonical(
-                    modelPath.parent_path() / texPath.C_Str()
+                    modelRoot / texPath.C_Str()
                 );
             }
         };
-
     getTexPath(aiTextureType_BASE_COLOR, albedoPath);
     getTexPath(aiTextureType_NORMALS, normalPath);
     getTexPath(aiTextureType_METALNESS, metallicPath);
     getTexPath(aiTextureType_DIFFUSE_ROUGHNESS, roughnessPath);
     getTexPath(aiTextureType_AMBIENT_OCCLUSION, aoPath);
 
-    // ------------------------------------------------------------
-    // Detect ARM (metallic / roughness / ao share same texture)
-    // ------------------------------------------------------------
     bool useARM = false;
     fs::path armPath;
 
@@ -1130,9 +1145,6 @@ void MaterialImporter::ImportAssimpMaterial(
         armPath = roughnessPath;
     }
 
-    // ------------------------------------------------------------
-    // Write texture section
-    // ------------------------------------------------------------
     if (!albedoPath.empty())
         j["textures"]["albedo"] = albedoPath.string();
 
@@ -1155,9 +1167,6 @@ void MaterialImporter::ImportAssimpMaterial(
             j["textures"]["ao"] = aoPath.string();
     }
 
-    // ------------------------------------------------------------
-    // Scalar fallbacks
-    // ------------------------------------------------------------
     aiColor4D baseColor;
     if (aiGetMaterialColor(mat, AI_MATKEY_BASE_COLOR, &baseColor) == AI_SUCCESS)
     {
@@ -1172,17 +1181,11 @@ void MaterialImporter::ImportAssimpMaterial(
     mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
     j["roughness"] = roughness;
 
-    // ------------------------------------------------------------
-    // Save material file
-    // ------------------------------------------------------------
     {
         std::ofstream out(matPath);
         out << std::setw(4) << j;
     }
 
-    // ------------------------------------------------------------
-    // Register material asset
-    // ------------------------------------------------------------
 
     fs::path metaPath = matPath;
     metaPath += ".meta";
@@ -1208,6 +1211,44 @@ void MaterialImporter::ImportAssimpMaterial(
 
 }
 
+fs::path TextureImporter::ExtractEmbeddedTexture(
+    const aiTexture* tex,
+    int index,
+    const fs::path& texturesDir,
+    const std::string& matName
+)
+{
+    std::string baseName = matName + "_embedded_" + std::to_string(index);
+    fs::path outPath;
+
+    if (tex->mHeight == 0)
+    {
+        // Compressed (png/jpg already)
+        std::string ext = tex->achFormatHint;
+        if (ext.empty()) ext = "png";
+
+        outPath = texturesDir / (baseName + "." + ext);
+
+        std::ofstream out(outPath, std::ios::binary);
+        out.write(reinterpret_cast<const char*>(tex->pcData), tex->mWidth);
+    }
+    else
+    {
+        // Raw → convert to PNG
+        outPath = texturesDir / (baseName + ".png");
+
+        stbi_write_png(
+            outPath.string().c_str(),
+            tex->mWidth,
+            tex->mHeight,
+            4,
+            tex->pcData,
+            tex->mWidth * 4
+        );
+    }
+
+    return fs::weakly_canonical(outPath);
+}
 
 void TextureImporter::Import(const fs::path& assetPath, UUID fileID)
 {
